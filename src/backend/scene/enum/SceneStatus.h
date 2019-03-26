@@ -1,9 +1,0 @@
-#pragma once
-
-enum class SceneStatus
-{
-	EMPTY_SCENE,
-	UNCALIBRATED_FOOTAGE,
-	CALIBRATED_FOOTAGE,
-	PROCESSED_FOOTAGE
-};

@@ -1,5 +1,5 @@
 ﻿cmake_minimum_required(VERSION 3.9)
-project(3DPose LANGUAGES CXX)
+project(OpticalMocap LANGUAGES CXX)
 
 # Include OpenMP
 include(FindOpenMP)
@@ -25,13 +25,17 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 link_directories(${OpenCV_LIB_DIR})
 
+#Include Boost package, headers, libraries
+find_package(Boost REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
+link_directories(${Boost_LIBRARY_DIRS})
+
 # Add source to this project's executable.
 add_executable (${PROJECT_NAME} "Main.cpp" 
-								"frontend/Console.cpp" "frontend/Console.h"
-								"backend/scene/SceneManager.cpp" "backend/scene/SceneManager.h"
-								"backend/scene/Scene.cpp" "backend/scene/Scene.h"
-								"backend/camera/OptitrackCamera.cpp" "backend/camera/OptitrackCamera.h"
-								"backend/scene/enum/CaptureMode.h")
+								"view/Console.cpp" "view/Console.h"
+								"model/scene/SceneManager.cpp" "model/scene/SceneManager.h"
+								"model/camera/OptitrackCamera.cpp" "model/camera/OptitrackCamera.h"
+								"model/scene/enum/CaptureMode.h")
 
 # Link it all together
-target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} OptiTrack::CameraLibrary2015x64S Qt5::Widgets Qt5::Core Qt5::Quick Qt5::QuickWidgets Qt5::QuickControls2)
+target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} Boost::boost OptiTrack::CameraLibrary2015x64S Qt5::Widgets Qt5::Core Qt5::Quick Qt5::QuickWidgets Qt5::QuickControls2)

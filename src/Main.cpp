@@ -1,8 +1,9 @@
-#include "backend/scene/SceneManager.h"
-#include "frontend/CLI.h"
+#include "model/scene/SceneManager.h"
+#include "view/Console.h"
 
 int main(int argc, char* argv[])
 {
 	SceneManager sceneManager("../data");
-	CLI cli(sceneManager);
+	Console console(sceneManager);	
+	console.start();
 }
