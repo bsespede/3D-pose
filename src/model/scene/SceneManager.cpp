@@ -26,14 +26,12 @@ bool SceneManager::sceneExists(std::string name)
 
 bool SceneManager::hasPreviousRecording(std::string name, CaptureMode captureMode)
 {
-	std::string captureModeFolder = captureMode == CaptureMode::UNCALIBRATED_CAPTURE ? "calibration" : "capture";
-	return boost::filesystem::exists(path + "/" + name + "/" + captureModeFolder);
+	return boost::filesystem::exists(path + "/" + name + "/" + captureMode.toString());
 }
 
 void SceneManager::deleteRecording(std::string name, CaptureMode captureMode)
 {
-	std::string captureModeFolder = captureMode == CaptureMode::UNCALIBRATED_CAPTURE ? "calibration" : "capture";
-	boost::filesystem::remove_all(path + "/" + name + "/" + captureModeFolder);
+	boost::filesystem::remove_all(path + "/" + name + "/" + captureMode.toString());
 }
 
 bool SceneManager::initializeCameras()
@@ -68,13 +66,11 @@ void SceneManager::captureFrames(std::string name, CaptureMode captureMode)
 		std::this_thread::sleep_until(timePoint);
 	}
 
-	std::string captureModeFolder = captureMode == CaptureMode::UNCALIBRATED_CAPTURE ? "calibration" : "capture";
-
 	if (!frames.empty())
 	{
 		for (std::pair<int, cv::Mat> keyValue : frames.front())
 		{
-			std::string cameraFolder = path + "/" + name + "/" + captureModeFolder + "/cam-" + std::to_string(keyValue.first);
+			std::string cameraFolder = path + "/" + name + "/" + captureMode.toString() + "/cam-" + std::to_string(keyValue.first);
 			boost::filesystem::create_directory(cameraFolder);
 		}
 	}
@@ -89,7 +85,7 @@ void SceneManager::captureFrames(std::string name, CaptureMode captureMode)
 
 		for (std::pair<int, cv::Mat> keyValue : frame)
 		{
-			std::string cameraFolder = path + "/" + name + "/" + captureModeFolder + "/cam-" + std::to_string(keyValue.first);
+			std::string cameraFolder = path + "/" + name + "/" + captureMode.toString() + "/cam-" + std::to_string(keyValue.first);
 			std::string frameFile = cameraFolder + "/" + std::to_string(frameNumber) + ".png";
 			
 			cv::imwrite(frameFile, keyValue.second);
