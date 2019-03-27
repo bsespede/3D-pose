@@ -14,6 +14,8 @@
 #include "model/camera/OptitrackCamera.h"
 #include "model/scene/enum/CaptureMode.h"
 
+#define CAPTURE_FPS 30
+
 class SceneManager
 {
 private:

@@ -7,7 +7,6 @@
 #include "cameralibrary.h"
 
 #define MAX_CAMERAS 16
-#define CAMERA_FPS 30
 
 class OptitrackCamera
 {

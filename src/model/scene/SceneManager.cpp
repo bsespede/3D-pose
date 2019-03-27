@@ -59,8 +59,13 @@ void SceneManager::captureFrames(std::string name, CaptureMode captureMode)
 
 	while (recording)
 	{
+		int milisecondsToSleep = (int)(1.0 / CAPTURE_FPS);
+		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(milisecondsToSleep);
+
 		std::map<int, cv::Mat> frame = optitrackCamera.capture();
 		frames.push_back(frame);
+
+		std::this_thread::sleep_until(timePoint);
 	}
 
 	std::string captureModeFolder = captureMode == CaptureMode::UNCALIBRATED_CAPTURE ? "calibration" : "capture";
