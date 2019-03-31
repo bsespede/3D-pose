@@ -1,6 +1,6 @@
 #include "OptitrackCamera.h"
 
-OptitrackCamera::OptitrackCamera()
+OptitrackCamera::OptitrackCamera() : cameraCount(0)
 {
 	CameraLibrary_EnableDevelopment();
 }
@@ -30,6 +30,8 @@ bool OptitrackCamera::initialize()
 		BOOST_LOG_TRIVIAL(error) << "Couldn't connect to any cameras";
 		return false;
 	}
+
+	return true;
 }
 
 void OptitrackCamera::start(CaptureMode captureMode)

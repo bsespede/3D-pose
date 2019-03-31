@@ -1,4 +1,5 @@
 #include "Console.h"
+#include "model/scene/enum/CalibrationMode.h"
 
 Console::Console(SceneManager& sceneManager) : sceneManager(sceneManager)
 {
@@ -90,31 +91,21 @@ void Console::showSceneOperations(std::string name)
 	while (true)
 	{
 		printf("\nChoose an action from the following:\n");
-		printf("(1) Capture calibration scene\n");
-		printf("(2) Calibrate scene\n");
-		printf("(3) Capture mocap scene\n");
-		printf("(4) Generate skeleton file\n");
-		printf("(5) Back\n");
+		printf("(1) Calibrate scene\n");
+		printf("(2) Capture scene\n");
+		printf("(3) Back\n");
 
 		int input = getch();
 
 		if (input == '1')
 		{
-			showRecordScene(name, CaptureMode::UNCALIBRATED_CAPTURE);
+			showCalibrationOptions(name); 
 		}
 		else if (input == '2')
 		{
-			showCalibrateScene(name);
+			showRecordScene(name);
 		}
 		else if (input == '3')
-		{
-			showRecordScene(name, CaptureMode::CALIBRATED_CAPTURE);
-		}
-		else if (input == '4')
-		{
-			showProcessScene(name);
-		}
-		else if (input == '5')
 		{
 			return;
 		}
@@ -125,9 +116,9 @@ void Console::showSceneOperations(std::string name)
 	}
 }
 
-void Console::showRecordScene(std::string name, CaptureMode captureMode)
+void Console::showRecordScene(std::string name)
 {
-	if (sceneManager.hasPreviousRecording(name, captureMode))
+	if (sceneManager.hasPreviousRecording(name))
 	{
 		while (true)
 		{
@@ -139,7 +130,7 @@ void Console::showRecordScene(std::string name, CaptureMode captureMode)
 
 			if (input == '1')
 			{
-				sceneManager.deleteRecording(name, captureMode);
+				sceneManager.deleteRecording(name);
 			}
 			else if (input == '2')
 			{
@@ -153,7 +144,6 @@ void Console::showRecordScene(std::string name, CaptureMode captureMode)
 	}
 
 	printf("\nInitializing cameras...\n");
-
 	if (!sceneManager.initializeCameras())
 	{
 		showStatusMessage("Camera initialization failed\n", RED);
@@ -163,42 +153,113 @@ void Console::showRecordScene(std::string name, CaptureMode captureMode)
 	printf("Synchronizing cameras...\n");
 	sceneManager.synchronizeCameras(captureMode);
 
-	printf("Cameras are now recording (press any key to stop)\n");
-
+	printf("Cameras are now recording (press any key to stop)...\n");
 	sceneManager.startRecording(name, captureMode);
 	
 	getch();
 
+	printf("Stopped capturing frames...\n");
 	sceneManager.stopRecording();
-}
 
-void Console::showCalibrateScene(std::string name)
-{
-	printf("\nCalibrating cameras...\n");
-
-	if (sceneManager.calibrateScene(name))
-	{
-		showStatusMessage("Scene calibrated succesfully\n", GREEN);
-		showSceneOperations(name);
-	}
-	else
-	{
-		showStatusMessage("Scene calibration failed\n", RED);
-	}
-}
-
-void Console::showProcessScene(std::string name)
-{
 	printf("Processing scene...\n");
+	while (!sceneManager.hasFinishedProcessing())
+	{
+		std::this_thread::sleep_for(1s);
+	}
 
-	if (sceneManager.processScene(name))
+	showStatusMessage("Scene recorded succesfully\n", GREEN);
+}
+
+void Console::showCalibrationOptions(std::string name)
+{
+	while (true)
 	{
-		showStatusMessage("Scene processed succesfully\n", GREEN);
+		printf("\nChoose an action from the following:\n");
+		printf("(1) Intrinsic calibration\n");
+		printf("(2) Extrinsic calibration\n");
+		printf("(5) Back\n");
+
+		int input = getch();
+
+		if (input == '1')
+		{
+			showCalibration(name, CalibrationMode::INTRINSICS);
+		}
+		else if (input == '2')
+		{
+			showCalibration(name, CalibrationMode::EXTRINSICS);
+		}
+		else if (input == '3')
+		{
+			return;
+		}
+		else
+		{
+			showStatusMessage("Choose a valid option\n", RED);
+		}
 	}
-	else
+}
+
+void Console::showCalibrateScene(std::string name, CalibrationMode calibrationMode)
+{
+	if (sceneManager.hasPreviousCalibration(name, calibrationMode))
 	{
-		showStatusMessage("Scene processing failed\n", RED);
+		while (true)
+		{
+			printf("\nThis scene already has an %s calibration, would you like to replace it?:\n", calibrationMode.toString());
+			printf("(1) Yes\n");
+			printf("(2) No\n");
+
+			char input = getch();
+
+			if (input == '1')
+			{
+				sceneManager.deleteCalibration(name, calibrationMode);
+			}
+			else if (input == '2')
+			{
+				return;
+			}
+			else
+			{
+				showStatusMessage("Choose a valid option\n", RED);
+			}
+		}
 	}
+
+	printf("\nInitializing cameras...\n");
+	if (!sceneManager.initializeCameras())
+	{
+		showStatusMessage("Camera initialization failed\n", RED);
+		return;
+	}
+
+	printf("Synchronizing cameras...\n");
+	sceneManager.synchronizeCameras(calibrationMode.getCaptureMode());
+
+	printf("Cameras are now capturing frames for calibration (press any key to stop)...\n");
+	sceneManager.startCalibrating(name, calibrationMode);
+
+	getch();
+
+	printf("Stopped capturing frames...\n");
+	sceneManager.stopCalibrating();
+
+	printf("Processing calibration...\n");
+	while (!sceneManager.hasFinishedProcessing())
+	{
+		std::this_thread::sleep_for(1s);
+	}
+
+	if (calibrationMode == CalibrationMode::EXTRINSICS)
+	{	
+		printf("Put the axis in the scene (press any key when ready)...\n");
+		
+		getch();
+		sceneManager.captureCalibrationAxis(name);
+	}
+
+	showStatusMessage("Calibrated scene succesfully\n", GREEN);
 }
 
 void Console::showStatusMessage(std::string message, int fontColor)
