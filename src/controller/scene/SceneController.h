@@ -1,15 +1,18 @@
 #pragma once
 
 #include <string>
+#include "boost/filesystem.h"
+#include "model/scene/Scene.h"
 
 using namespace std;
+using namespace boost;
 
 class SceneController
 {
 private:
-	string dataPath;
+	string path;
 public:
-	SceneController(string dataPath);
+	SceneController(string path);
 
 	// I/O scenes
 	bool sceneExists(string name);

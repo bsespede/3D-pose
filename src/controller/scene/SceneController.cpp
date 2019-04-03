@@ -1,4 +1,69 @@
-#include "SceneManager.h"
+#include "SceneController.h"
+
+SceneController::SceneController(string path)
+{
+	this->path = path;
+}
+
+bool SceneController::sceneExists(string name)
+{
+	return filesystem::exists(path + "/" + name + "/config.json");
+}
+
+Scene SceneController::loadScene(string name)
+{
+	// TODO: Load json
+	string name = ...;
+	string date = ...;
+	return Scene(name, date);
+}
+
+Scene SceneController::createScene(string name)
+{
+	string date = ...;
+	// TODO: Create json
+	return Scene(name, date);
+}
+
+bool SceneController::hasSceneCapture(Scene scene)
+{
+	return filesystem::exists(path + "/" + name + "/capture");
+}
+
+bool SceneController::hasIntrinsicsCapture(Scene scene)
+{
+	return filesystem::exists(path + "/" + name + "/intrinsics");
+}
+
+bool SceneController::hasExtrinsicsCapture(Scene scene)
+{
+	return filesystem::exists(path + "/" + name + "/extrinsics");
+}
+
+bool SceneController::hasProcessedIntrinsics(Scene scene)
+{
+	return filesystem::exists(path + "/" + name + "/intrinsics.json");
+}
+
+bool SceneController::hasProcessedExtrinsics(Scene scene)
+{
+	return filesystem::exists(path + "/" + name + "/extrinsics.json");
+}
+
+void SceneController::deleteSceneCapture(Scene scene)
+{
+	filesystem::remove_all(path + "/" + name + "/capture");
+}
+
+void SceneController::deleteIntrinsicsCapture(Scene scene)
+{
+	filesystem::remove_all(path + "/" + name + "/intrinsics");
+}
+
+void SceneController::deleteExtrinsicsCapture(Scene scene)
+{
+	filesystem::remove_all(path + "/" + name + "/extrinsics");
+}
 
 SceneManager::SceneManager(std::string path) : path(path), optitrackCamera(OptitrackCamera()), recording(false), processing(false)
 {
