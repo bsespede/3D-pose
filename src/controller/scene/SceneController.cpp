@@ -1,6 +1,6 @@
 #include "SceneManager.h"
 
-SceneManager::SceneManager(std::string path) : path(path), optitrackCamera(OptitrackCamera()), recording(false)
+SceneManager::SceneManager(std::string path) : path(path), optitrackCamera(OptitrackCamera()), recording(false), processing(false)
 {
 	loggerInit();
 }
@@ -24,34 +24,53 @@ bool SceneManager::sceneExists(std::string name)
 	return boost::filesystem::exists(path + "/" + name);
 }
 
-bool SceneManager::hasPreviousRecording(std::string name, CaptureMode captureMode)
+bool SceneManager::hasPreviousCapture(std::string name)
 {
-	return boost::filesystem::exists(path + "/" + name + "/" + captureMode.toString());
+	return boost::filesystem::exists(path + "/" + name + "/capture");
 }
 
-void SceneManager::deleteRecording(std::string name, CaptureMode captureMode)
+bool SceneManager::hasPreviousCapture(std::string name, CalibrationMode calibrationMode)
 {
-	boost::filesystem::remove_all(path + "/" + name + "/" + captureMode.toString());
+	return boost::filesystem::exists(path + "/" + name + "/" + calibrationMode.toString() + ".json");
 }
 
-bool SceneManager::initializeCameras()
+void SceneManager::deleteCapture(std::string name)
 {
-	return optitrackCamera.initialize();
+	boost::filesystem::remove_all(path + "/" + name + "/capture");
 }
 
-void SceneManager::synchronizeCameras(CaptureMode captureMode)
+void SceneManager::deleteCapture(std::string name, CalibrationMode calibrationMode)
 {
-	optitrackCamera.start(captureMode);
+	boost::filesystem::remove_all(path + "/" + name + "/" + calibrationMode.toString() + ".json");
 }
 
-void SceneManager::startRecording(std::string name, CaptureMode captureMode)
+bool SceneManager::initializeCapture(std::string name, CaptureMode captureMode)
 {
+	return optitrackCamera.initialize(captureMode);
+}
+
+void SceneManager::startCapture(std::string name)
+{
+	std::string sceneFolder = path + "/" + name + "/capture";
+	boost::filesystem::create_directory(sceneFolder);
+
 	recording = true;
-	std::thread captureThread = std::thread(&SceneManager::captureFrames, this, name, captureMode);
+	processing = true;
+
+	std::thread captureThread = std::thread(&SceneManager::captureSceneFrames, this, name);
 	captureThread.detach();
 }
 
-void SceneManager::captureFrames(std::string name, CaptureMode captureMode)
+void SceneManager::startCapture(std::string name, CalibrationMode calibrationMode)
+{
+	recording = true;
+	processing = true;
+
+	std::thread captureThread = std::thread(&SceneManager::captureCalibrationFrames, this, name);
+	captureThread.detach();
+}
+
+void SceneManager::captureSceneFrames(std::string name)
 {
 	std::vector<std::map<int, cv::Mat>> frames = std::vector<std::map<int, cv::Mat>>();
 
@@ -70,7 +89,7 @@ void SceneManager::captureFrames(std::string name, CaptureMode captureMode)
 	{
 		for (std::pair<int, cv::Mat> keyValue : frames.front())
 		{
-			std::string cameraFolder = path + "/" + name + "/" + captureMode.toString() + "/cam-" + std::to_string(keyValue.first);
+			std::string cameraFolder = path + "/" + name + "/capture/cam-" + std::to_string(keyValue.first);
 			boost::filesystem::create_directory(cameraFolder);
 		}
 	}
@@ -85,27 +104,26 @@ void SceneManager::captureFrames(std::string name, CaptureMode captureMode)
 
 		for (std::pair<int, cv::Mat> keyValue : frame)
 		{
-			std::string cameraFolder = path + "/" + name + "/" + captureMode.toString() + "/cam-" + std::to_string(keyValue.first);
+			std::string cameraFolder = path + "/" + name + "/capture/cam-" + std::to_string(keyValue.first);
 			std::string frameFile = cameraFolder + "/" + std::to_string(frameNumber) + ".png";
 			
 			cv::imwrite(frameFile, keyValue.second);
 		}
 	}
+
+	processing = false;
+
+	optitrackCamera.stop();
 }
 
-void SceneManager::stopRecording()
+void SceneManager::stopCapture()
 {
 	recording = false;
 }
 
-bool SceneManager::calibrateScene(std::string name)
+bool SceneManager::hasFinishedProcessing()
 {
-	return false;
-}
-
-bool SceneManager::processScene(std::string name)
-{
-	return false;
+	return processing;
 }
 
 void SceneManager::loggerInit()

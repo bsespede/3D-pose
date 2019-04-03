@@ -5,15 +5,15 @@ OptitrackCamera::OptitrackCamera() : cameraCount(0)
 	CameraLibrary_EnableDevelopment();
 }
 
-bool OptitrackCamera::initialize()
+bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 {
-	CameraLibrary::CameraManager::X();
-	CameraLibrary::CameraManager::X().WaitForInitialization();
+	CameraManager::X();
+	CameraManager::X().WaitForInitialization();
 	cameraCount = 0;
 
 	for (int i = 0; i < list.Count(); i++)
 	{
-		camera[i] = CameraLibrary::CameraManager::X().GetCamera(list[i].UID());
+		camera[i] = CameraManager::X().GetCamera(list[i].UID());
 
 		if (camera[i] == nullptr)
 		{
@@ -31,47 +31,39 @@ bool OptitrackCamera::initialize()
 		return false;
 	}
 
-	return true;
-}
+	sync = cModuleSync::Create();
 
-void OptitrackCamera::start(CaptureMode captureMode)
-{
-	sync = CameraLibrary::cModuleSync::Create();
+	if (sync == nullptr)
+	{
+		BOOST_LOG_TRIVIAL(error) << "Couldn't create sync group";
+		return false;
+	}
 
 	for (int i = 0; i < cameraCount; i++)
 	{
 		sync->AddCamera(camera[i]);
 	}
 
-	Core::eVideoMode mode; 
-	
-	if (captureMode == CaptureMode::UNCALIBRATED_CAPTURE)
-	{
-		mode = Core::eVideoMode::SegmentMode;
-	}
-	else
-	{
-		mode = Core::eVideoMode::GrayscaleMode;
-	}
-
 	for (int i = 0; i < cameraCount; i++)
 	{
 		camera[i]->Start();
-		camera[i]->SetVideoType(mode);
+		camera[i]->SetVideoType(captureMode);
 	}
+
+	return true;
 }
 
-std::map<int, cv::Mat> OptitrackCamera::capture()
+FramesPacket OptitrackCamera::captureFrames()
 {
-	CameraLibrary::FrameGroup* frameGroup = sync->GetFrameGroup();
-	std::map<int, cv::Mat> frameMap = std::map<int, cv::Mat>();
+	FrameGroup* frameGroup = sync->GetFrameGroup();
+	FramesPacket framesPacket = FramesPacket();
 
 	if (frameGroup)
 	{
 		for (int i = 0; i < frameGroup->Count(); i++)
 		{
-			CameraLibrary::Frame* frame = frameGroup->GetFrame(i);
-			CameraLibrary::Camera* camera = frame->GetCamera();
+			Frame* frame = frameGroup->GetFrame(i);
+			Camera* camera = frame->GetCamera();
 
 			int cameraId = camera->Serial();
 			int cameraWidth = camera->Width();
@@ -80,8 +72,7 @@ std::map<int, cv::Mat> OptitrackCamera::capture()
 			cv::Mat frameMat = cv::Mat(cv::Size(cameraWidth, cameraHeight), CV_8UC1);
 			frame->Rasterize(cameraWidth, cameraHeight, frameMat.step, 8, frameMat.data);
 
-			frameMap[cameraId] = frameMat;
-
+			framesPacket.addFrame(cameraId, frameMat);
 			frame->Release();
 		}
 
@@ -92,26 +83,23 @@ std::map<int, cv::Mat> OptitrackCamera::capture()
 		BOOST_LOG_TRIVIAL(error) << "Error during synchronized capture";
 	}
 
-	return frameMap;
+	return framesPacket;
 }
 
-void OptitrackCamera::stop()
+void OptitrackCamera::stopCameras()
 {
 	sync->RemoveAllCameras();
-	CameraLibrary::cModuleSync::Destroy(sync);
+	cModuleSync::Destroy(sync);
 
 	for (int i = 0; i < cameraCount; i++)
 	{
 		camera[i]->Stop();
 	}
-}
 
-void OptitrackCamera::release()
-{
 	for (int i = 0; i < cameraCount; i++)
 	{
 		camera[i]->Release();
 	}
 
-	CameraLibrary::CameraManager::X().Shutdown();
+	CameraManager::X().Shutdown();
 }
