@@ -1,8 +1,8 @@
 #include "FramesPacket.h"
 
-FramesPacket::FramesPacket()
+FramesPacket::FramesPacket(): frames(map<int, Mat>())
 {
-	frames = map<int, Mat>();
+	
 }
 
 void FramesPacket::addFrame(int camera, Mat frame)
@@ -15,7 +15,7 @@ map<int, Mat> FramesPacket::getFrames()
 	return frames;
 }
 
-Mat getMergedFrame()
+Mat FramesPacket::getMergedFrames()
 {
 	int barHeight = 20;
 	int cameraWidth = 213 + 2;
@@ -74,4 +74,6 @@ Mat getMergedFrame()
 
 		imshow("mergedImage", mergedImage);
 	}
+
+	return mergedImage;
 }

@@ -10,7 +10,7 @@ public:
 	};
 
 	Input() = default;
-	constexpr Input(Value operation) : value(input) { }
+	constexpr Input(Value input) : value(input) { }
 	bool operator==(Input other) const { return value == other.value; }
 	bool operator!=(Input other) const { return value != other.value; }
 

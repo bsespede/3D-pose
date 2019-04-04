@@ -1,12 +1,8 @@
 #include "CameraController.h"
 
-CameraController::CameraController(int camerasFps)
+CameraController::CameraController(int camerasFps): optitrackCamera(OptitrackCamera()), recording(list<FramesPacket>()), shouldRecord(false), stoppedRecording(true), camerasFps(camerasFps)
 {
-	this->optitrackCamera = OptitrackCamera();
-	this->recording = list<FramesPacket>();
-	this->shouldRecord = false;
-	this->stoppedRecording = true;
-	this->camerasFps = camerasFps;	
+	
 }
 
 bool CameraController::startCameras(CaptureMode mode)
@@ -34,7 +30,7 @@ void CameraController::record()
 {
 	while (shouldRecord)
 	{
-		int milisecondsToSleep = (int)(1.0 / cameraFps) * 1000;
+		int milisecondsToSleep = (int)(1.0 / camerasFps) * 1000;
 		chrono::system_clock::time_point timePoint = chrono::system_clock::now() + chrono::milliseconds(milisecondsToSleep);
 
 		FramesPacket frames = optitrackCamera.captureFrames();
@@ -61,7 +57,7 @@ list<FramesPacket> CameraController::getRecording()
 	return recording;
 }
 
-FramesPacket CameraController::getFrames()
+FramesPacket CameraController::getCurrentFrames()
 {
-	return optitrackCamera.capture();
+	return optitrackCamera.captureFrames();
 }

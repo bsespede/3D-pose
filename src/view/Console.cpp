@@ -1,9 +1,8 @@
 #include "Console.h"
 
-Console::Console(AppController appController)
+Console::Console(AppController& appController): appController(appController), showCamera(false)
 {
-	this->appController = appController;
-	this->showCamera = false;
+	
 }
 
 void Console::start()
@@ -68,7 +67,6 @@ void Console::showInputName(Input input)
 		{
 			showStatusMessage("Scene doesn't exist\n", RED);
 		}
-		
 	}
 	else
 	{
@@ -125,8 +123,8 @@ void Console::showOperationOptions(Scene scene, Operation operation)
 	while (true)
 	{
 		printf("\nChoose an action from the following:\n");
-		printf("(1) Capture %s\n", operation.toString());
-		printf("(2) Process %s\n", operation.toString());
+		printf("(1) Capture %s\n", operation.toString().c_str());
+		printf("(2) Process %s\n", operation.toString().c_str());
 		printf("(3) Back\n");
 
 		int input = getch();
@@ -156,7 +154,7 @@ void Console::showOverwrite(Scene scene, Operation operation)
 	{
 		while (true)
 		{
-			printf("\nThe %s has already been captured, would you like to overwrite the capture?:\n", operation.toString());
+			printf("\nThe %s has already been captured, would you like to overwrite the capture?:\n", operation.toString().c_str());
 			printf("(1) Yes\n");
 			printf("(2) No\n");
 
@@ -213,15 +211,13 @@ void Console::showCapture(Scene scene, Operation operation)
 	}
 	else if (operation == Operation::INTRINSICS)
 	{
-		printf("Prepare for checkboarding (say 'okay' to capture frame)...\n");		
+		printf("Prepare for checkboarding (capturing frame every 10 seconds)...\n");		
 		for (int checkboardNumber = 0; checkboardNumber < appController.getMaxCheckboards(); checkboardNumber++)
 		{
-			if (listener.say("okay")) // should be blocking call
-			{
-				appController.captureFrame(scene, operation);
-				printf("Captured checkboard %d/%d...", checkboardNumber, appController.getMaxCheckboards());
-				checkboardNumber++;
-			}			
+			this_thread::sleep_for(chrono::seconds(10));
+			Beep(500, 400);
+			appController.captureFrame(scene, operation);
+			printf("Captured frame %d/%d...", checkboardNumber, appController.getMaxCheckboards());
 		}
 	}
 	else

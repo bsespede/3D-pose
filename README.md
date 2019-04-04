@@ -16,10 +16,5 @@ It is composed by the following modules:
 ## Libraries
 
 The following libraries were used:
-- Visual Studio 2017
-- CMake 3.14
 - OpenCV 4.0.1
-- Qt 5.12.2
-- Octave 5.1.0
-- DeepLabCut
 - OptiTrack Camera SDK 2.1.1

@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <conio.h>
 #include <iostream>
+#include <atomic>
 #include "enum/Input.h"
 #include "controller/AppController.h"
 
@@ -16,10 +17,10 @@ using namespace std;
 class Console
 {
 private:
-	AppController appController;
+	AppController& appController;
 	atomic<bool> showCamera;
 public:
-	Console(AppController appController);
+	Console(AppController& appController);
 	void start();
 	void showMenu();
 	void showInputName(Input input);

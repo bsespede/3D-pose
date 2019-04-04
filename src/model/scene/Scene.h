@@ -7,10 +7,10 @@ using namespace std;
 class Scene
 {
 private:
-	const string name;
-	const string date;
+	string name;
+	string date;
 public:
 	Scene(string name, string date);
-	string getDate() const;
-	string getName() const;
+	string getDate();
+	string getName();
 };

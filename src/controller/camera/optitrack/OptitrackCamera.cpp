@@ -47,7 +47,7 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 	for (int i = 0; i < cameraCount; i++)
 	{
 		camera[i]->Start();
-		camera[i]->SetVideoType(captureMode);
+		camera[i]->SetVideoType(mode);
 	}
 
 	return true;

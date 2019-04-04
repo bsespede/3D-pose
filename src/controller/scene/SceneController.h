@@ -1,7 +1,9 @@
 #pragma once
 
 #include <string>
-#include "boost/filesystem.h"
+#include <boost/filesystem.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include "model/scene/Scene.h"
 #include "model/scene/enum/Operation.h"
 
