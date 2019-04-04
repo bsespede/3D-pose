@@ -8,10 +8,10 @@ using namespace cv;
 
 class FramesPacket
 {
-private:
-	map<int, Mat> frames;
 public:
 	FramesPacket();
 	void addFrame(int camera, Mat frame);
 	map<int, Mat> getFrames();
+private:
+	map<int, Mat> frames;
 };

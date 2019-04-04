@@ -1,9 +1,9 @@
 ﻿{
   "configurations": [
     {
-      "name": "Release",
+      "name": "Debug",
       "generator": "Ninja",
-      "configurationType": "Release",
+      "configurationType": "Debug",
       "inheritEnvironments": [
         "msvc_x64_x64"
       ],

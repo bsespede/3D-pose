@@ -1,8 +1,7 @@
 #include "CameraController.h"
 
-CameraController::CameraController(int camerasFps): optitrackCamera(OptitrackCamera()), capture(Capture()), isCapturing(false), isRecording(true), captureNextFrame(false), camerasFps(camerasFps)
+CameraController::CameraController(int camerasFps) : optitrackCamera(OptitrackCamera()), currentFrame(FramesPacket()), capture(Capture()), camerasFps(camerasFps)
 {
-
 }
 
 bool CameraController::startCapturing(CaptureMode mode)
@@ -11,7 +10,7 @@ bool CameraController::startCapturing(CaptureMode mode)
 	{
 		capture = Capture();
 		isCapturing = true;
-		thread captureThread = thread(&CameraController::captureThread, this);
+		std::thread captureThread = std::thread(&CameraController::captureThread, this);
 		captureThread.detach();
 		return true;
 	}
@@ -26,7 +25,7 @@ void CameraController::captureThread()
 	while (isCapturing)
 	{
 		int milisecondsToSleep = (int)(1.0 / camerasFps) * 1000;
-		chrono::system_clock::time_point timePoint = chrono::system_clock::now() + chrono::milliseconds(milisecondsToSleep);
+		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(milisecondsToSleep);
 
 		FramesPacket frame = optitrackCamera.captureFrames();
 
@@ -43,7 +42,7 @@ void CameraController::captureThread()
 
 		currentFrame = frame;
 
-		this_thread::sleep_until(timePoint);
+		std::this_thread::sleep_until(timePoint);
 	}
 }
 

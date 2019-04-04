@@ -1,8 +1,10 @@
 #include "Console.h"
 
-Console::Console(AppController& appController): appController(appController), showCamera(false), cameraRenderer(CameraRenderer(20, 160, 213, 4, 4))
+Console::Console(AppController* appController)
 {
-	
+	this->appController = appController;
+	this->cameraRenderer = new CameraRenderer(20, 160, 213, 4, 4);
+	this->showCamera = false;
 }
 
 void Console::start()
@@ -38,7 +40,7 @@ void Console::showMenu()
 		}
 		else if (input == '3')
 		{
-			return;
+			exit(0);
 		}
 		else
 		{
@@ -55,11 +57,11 @@ void Console::showInputName(Input input)
 	string name;
 	getline(cin, name);
 
-	if (!appController.sceneExists(name))
+	if (!appController->sceneExists(name))
 	{
 		if (input == Input::CREATE)
 		{
-			Scene scene = appController.createScene(name);
+			Scene scene = appController->createScene(name);
 			showStatusMessage("Scene created succesfully\n", GREEN);
 			showOperations(scene);
 		}
@@ -72,7 +74,7 @@ void Console::showInputName(Input input)
 	{
 		if (input == Input::LOAD)
 		{
-			Scene scene = appController.loadScene(name);
+			Scene scene = appController->loadScene(name);
 			showStatusMessage("Scene loaded succesfully\n", GREEN);
 			showOperations(scene);
 		}
@@ -150,7 +152,7 @@ void Console::showOperationOptions(Scene scene, Operation operation)
 
 void Console::showOverwrite(Scene scene, Operation operation)
 {
-	if (appController.hasCapture(scene, operation))
+	if (appController->hasCapture(scene, operation))
 	{
 		while (true)
 		{
@@ -162,7 +164,7 @@ void Console::showOverwrite(Scene scene, Operation operation)
 
 			if (input == '1')
 			{
-				appController.deleteCapture(scene, operation);
+				appController->deleteCapture(scene, operation);
 			}
 			else if (input == '2')
 			{
@@ -181,7 +183,7 @@ void Console::showCapture(Scene scene, Operation operation)
 	showOverwrite(scene, operation);
 
 	printf("\nInitializing cameras...\n");
-	if (!appController.startCapturing(operation.getCaptureMode()))
+	if (!appController->startCapturing(operation.getCaptureMode()))
 	{
 		showStatusMessage("Camera initialization failed\n", RED);
 		showOperationOptions(scene, operation);
@@ -195,61 +197,61 @@ void Console::showCapture(Scene scene, Operation operation)
 	{
 		printf("Prepare to capture empty scene (press any key to start)...\n");
 		getch();
-		appController.captureFrame();
+		appController->captureFrame();
 
 		printf("Prepare for wanding (press any key to start)...\n");
 		getch();
-		appController.startRecordingFrames();
+		appController->startRecordingFrames();
 
 		printf("Recording wanding (press any key to stop)...\n");
 		getch();
-		appController.stopRecordingFrames();
+		appController->stopRecordingFrames();
 
 		printf("Prepare to capture scene axis (press any key to start)...\n");
 		getch();
-		appController.captureFrame();
+		appController->captureFrame();
 	}
 	else if (operation == Operation::INTRINSICS)
 	{
 		printf("Prepare for checkboarding (capturing frame every 10 seconds)...\n");		
-		for (int checkboardNumber = 0; checkboardNumber < appController.getMaxCheckboards(); checkboardNumber++)
+		for (int checkboardNumber = 0; checkboardNumber < appController->getMaxCheckboards(); checkboardNumber++)
 		{
 			this_thread::sleep_for(chrono::seconds(10));
 			Beep(500, 400);
-			appController.captureFrame();
-			printf("Captured frame %d/%d...", checkboardNumber, appController.getMaxCheckboards());
+			appController->captureFrame();
+			printf("Captured frame %d/%d...", checkboardNumber, appController->getMaxCheckboards());
 		}
 	}
 	else
 	{
 		printf("Prepare for capture (press any key to start)...\n");
 		getch();
-		appController.startRecordingFrames();
+		appController->startRecordingFrames();
 
 		printf("Recording scene (press any key to stop)...\n");
 		getch();
-		appController.stopRecordingFrames();
+		appController->stopRecordingFrames();
 	}
 
 	showCamera = false;
-	appController.stopCapturing();
+	appController->stopCapturing();
 
 	printf("Dumping captures to disk...\n");
-	appController.dumpCapture(scene, operation);
+	appController->dumpCapture(scene, operation);
 
 	showStatusMessage("Scene recorded succesfully\n", GREEN);
 }
 
 void Console::showCameras()
 {
-	int cameraFps = appController.getCamerasFps();
+	int cameraFps = appController->getCamerasFps();
 
 	while (showCamera)
 	{
 		int milisecondsToSleep = (int)(1.0 / cameraFps) * 1000;
 		chrono::system_clock::time_point timePoint = chrono::system_clock::now() + chrono::milliseconds(milisecondsToSleep);
 
-		cameraRenderer.render(appController.getCurrentFrame());
+		cameraRenderer->render(appController->getCurrentFrame());
 
 		this_thread::sleep_until(timePoint);
 	}

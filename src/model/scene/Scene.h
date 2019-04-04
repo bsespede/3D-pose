@@ -6,11 +6,11 @@ using namespace std;
 
 class Scene
 {
-private:
-	string name;
-	string date;
 public:
 	Scene(string name, string date);
 	string getDate();
 	string getName();
+private:
+	string name;
+	string date;
 };

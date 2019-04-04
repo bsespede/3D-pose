@@ -1,8 +1,12 @@
 #include "CameraRenderer.h"
 
-CameraRenderer::CameraRenderer(int barHeight, int cameraHeight, int cameraWidth, int rows, int cols): barHeight(barHeight), cameraHeight(cameraHeight), cameraWidth(cameraWidth), rows(rows), cols(cols)
+CameraRenderer::CameraRenderer(int barHeight, int cameraHeight, int cameraWidth, int rows, int cols)
 {
-	
+	this->barHeight = barHeight;
+	this->cameraHeight = cameraHeight;
+	this->cameraWidth = cameraWidth;
+	this->rows = rows;
+	this->cols = cols;
 }
 
 void CameraRenderer::render(FramesPacket framesPacket)

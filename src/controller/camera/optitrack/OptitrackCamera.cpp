@@ -7,7 +7,7 @@ OptitrackCamera::OptitrackCamera() : cameraCount(0)
 
 bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 {
-	CameraManager::X();
+	CameraLibrary::CameraManager::X();
 	CameraManager::X().WaitForInitialization();
 	cameraCount = 0;
 

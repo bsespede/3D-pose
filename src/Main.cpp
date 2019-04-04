@@ -1,11 +1,12 @@
-#include <iostream> 
-#include <windows.h>
-
-using namespace std;
+#include "view/Console.h"
+#include "controller/AppController.h"
 
 int main(int argc, char **argv)
 {
-	Beep(500, 400);
-	cin.get();
+	AppController* appController = new AppController("../data", 20, 60);
+	Console* console = new Console(appController);
+
+	console->start();
+
 	return 0;
 }

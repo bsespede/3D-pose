@@ -1,8 +1,7 @@
 #include "FramesPacket.h"
 
-FramesPacket::FramesPacket(): frames(map<int, Mat>())
+FramesPacket::FramesPacket() : frames(map<int, Mat>())
 {
-	
 }
 
 void FramesPacket::addFrame(int camera, Mat frame)

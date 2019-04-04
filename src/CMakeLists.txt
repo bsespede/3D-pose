@@ -31,14 +31,17 @@ link_directories(${Boost_LIBRARY_DIRS})
 # Add source to this project's executable.
 add_executable (${PROJECT_NAME} "Main.cpp" 
 								"view/Console.cpp" "view/Console.h"
+								"view/CameraRenderer.cpp" "view/CameraRenderer.h"
 								"view/enum/Input.h"
 								"model/scene/Scene.cpp" "model/scene/Scene.h" 
 								"model/scene/enum/Operation.h"
 								"model/camera/FramesPacket.cpp" "model/camera/FramesPacket.h"
+								"model/capture/Capture.cpp" "model/capture/Capture.h"
 								"model/camera/enum/CaptureMode.h"
 								"controller/AppController.cpp" "controller/AppController.h"
 								"controller/scene/SceneController.cpp" "controller/scene/SceneController.h"
 								"controller/camera/CameraController.cpp" "controller/camera/CameraController.h"
+								"controller/calibration/CalibrationController.cpp" "controller/calibration/CalibrationController.h"
 								"controller/camera/optitrack/OptitrackCamera.cpp" "controller/camera/optitrack/OptitrackCamera.h")
 
 # Link it all together

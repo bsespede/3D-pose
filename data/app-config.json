@@ -1,0 +1,14 @@
+{
+  "interface": {
+    "barHeight": 20,
+    "cameraWidth": 213,
+    "cameraHeight": 160,
+    "cols": 4,
+    "rows": 4
+  },
+  "other": {
+    "fps": 60,
+    "maxCheckboards": 20,
+    "path": "../data"
+  }
+}

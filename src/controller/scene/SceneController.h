@@ -13,9 +13,6 @@ using namespace boost;
 
 class SceneController
 {
-private:
-	Capture capture;
-	string path;
 public:
 	SceneController(string path);
 
@@ -32,4 +29,9 @@ public:
 
 	// Delete folders
 	void deleteCapture(Scene scene, Operation operation);
+
+	// Capture I/O
+	void saveCapture(Scene scene, Operation operation, Capture capture);
+private:
+	string path;
 };

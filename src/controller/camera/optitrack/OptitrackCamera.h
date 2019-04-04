@@ -13,14 +13,14 @@ using namespace CameraLibrary;
 
 class OptitrackCamera
 {
-private:
-	CameraList list;
-	Camera* camera[MAX_CAMERAS];
-	cModuleSync* sync;
-	int cameraCount;
 public:
 	OptitrackCamera();
 	bool startCameras(Core::eVideoMode mode);
 	FramesPacket captureFrames();
 	void stopCameras();
+private:
+	CameraList list;
+	Camera* camera[MAX_CAMERAS];
+	cModuleSync* sync;
+	int cameraCount;
 };

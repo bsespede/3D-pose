@@ -2,7 +2,6 @@
 
 Capture::Capture() : frames(vector<FramesPacket>()), recording(list<FramesPacket>())
 {
-	
 }
 
 void Capture::addToCaptureFrame(FramesPacket frame)
@@ -10,9 +9,9 @@ void Capture::addToCaptureFrame(FramesPacket frame)
 	frames.push_back(frame);
 }
 
-void Capture::addToCaptureRecording(FramesPacket recording)
+void Capture::addToCaptureRecording(FramesPacket frame)
 {
-	recording.push_back(recording);
+	recording.push_back(frame);
 }
 
 list<FramesPacket> Capture::getRecording()

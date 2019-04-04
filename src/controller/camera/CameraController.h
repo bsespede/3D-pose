@@ -13,14 +13,6 @@ using namespace std;
 
 class CameraController
 {
-	OptitrackCamera optitrackCamera;
-	FramesPacket currentFrame;
-	atomic<bool> isCapturing;
-	atomic<bool> isRecording;
-	atomic<bool> captureNextFrame;
-	Capture capture;
-	void captureThread();
-	int camerasFps;	
 public:
 	// Hardware control
 	CameraController(int camerasFps);
@@ -38,4 +30,13 @@ public:
 
 	// Other
 	int getCamerasFps();
+private:
+	OptitrackCamera optitrackCamera;
+	FramesPacket currentFrame;
+	atomic<bool> isCapturing;
+	atomic<bool> isRecording;
+	atomic<bool> captureNextFrame;
+	Capture capture;
+	int camerasFps;
+	void captureThread();
 };

@@ -1,19 +1,15 @@
 #pragma once
 
-#include "scene/SceneController.h"
-#include "camera/CameraController.h"
-#include "calibration/calibrationController.h"
+#include "controller/scene/SceneController.h"
+#include "controller/camera/CameraController.h"
+#include "controller/calibration/CalibrationController.h"
 
 using namespace std;
 
 class AppController
 {
-private:
-	SceneController sceneController;
-	CameraController cameraController;
-	CalibrationController calibrationController;
 public:
-	AppController(string dataPath, int camerasFps, int maxCheckboards);
+	AppController(string dataPath, int maxCheckboards, int fps);
 
 	// Scene I/O
 	bool sceneExists(string name);
@@ -34,4 +30,8 @@ public:
 	FramesPacket getCurrentFrame();
 	int getCamerasFps();
 	int getMaxCheckboards();
+private:
+	SceneController* sceneController;
+	CameraController* cameraController;
+	CalibrationController* calibrationController;
 };
