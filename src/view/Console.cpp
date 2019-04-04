@@ -1,6 +1,6 @@
 #include "Console.h"
 
-Console::Console(AppController& appController)
+Console::Console(AppController appController)
 {
 	this->appController = appController;
 	this->showCamera = false;

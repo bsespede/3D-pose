@@ -4,7 +4,12 @@ project(OpticalMocap LANGUAGES CXX)
 # Find Qt package and set MOC and RCC vars
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-# Include OpenMPinclude(FindOpenMP)set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+# Include OpenMP
+include(FindOpenMP)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+
 # Include OptiTrack headers, libraries
 set(OptiTrack_INCLUDE_DIR "$ENV{OptiTrack_DIR}/include")
 include_directories(${OptiTrack_INCLUDE_DIR})
@@ -23,7 +28,17 @@ include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 # Add source to this project's executable.
-add_executable (${PROJECT_NAME} "Main.cpp" )
+add_executable (${PROJECT_NAME} "Main.cpp" 
+								"view/Console.cpp" "view/Console.h"
+								"view/enum/Input.h"
+								"model/scene/Scene.cpp" "model/scene/Scene.h" 
+								"model/scene/enum/Operation.h"
+								"model/camera/FramesPacket.cpp" "model/camera/FramesPacket.h"
+								"model/camera/enum/CaptureMode.h"
+								"controller/AppController.cpp" "controller/AppController.h"
+								"controller/scene/SceneController.cpp" "controller/scene/SceneController.h"
+								"controller/camera/CameraController.cpp" "controller/camera/CameraController.h"
+								"controller/camera/optitrack/OptitrackCamera.cpp" "controller/camera/optitrack/OptitrackCamera.h")
 
 # Link it all together
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} Boost::boost OptiTrack::CameraLibrary2015x64S)

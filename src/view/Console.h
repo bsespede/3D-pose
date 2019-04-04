@@ -16,10 +16,10 @@ using namespace std;
 class Console
 {
 private:
-	AppController& appController;
+	AppController appController;
 	atomic<bool> showCamera;
 public:
-	Console(AppController& sceneManager);
+	Console(AppController appController);
 	void start();
 	void showMenu();
 	void showInputName(Input input);
