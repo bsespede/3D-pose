@@ -1,7 +1,9 @@
 #include "Console.h"
 
-Console::Console(AppController& AppController) : AppController(AppController)
+Console::Console(AppController& appController)
 {
+	this->appController = appController;
+	this->showCamera = false;
 }
 
 void Console::start()
@@ -13,10 +15,10 @@ void Console::start()
 	showStatusMessage("/____/_____/_/    \\____/____/\\___/ \n", BLUE);
 	showStatusMessage("                                     \n", BLUE);
 
-	showMenuOptions();
+	showMenu();
 }
 
-void Console::showMenuOptions()
+void Console::showMenu()
 {
 	while (true)
 	{
@@ -29,11 +31,11 @@ void Console::showMenuOptions()
 
 		if (input == '1')
 		{
-			showSceneCreation();
+			showInputName(Input::CREATE);
 		}
 		else if (input == '2')
 		{
-			showSceneLoad();
+			showInputName(Input::LOAD);
 		}
 		else if (input == '3')
 		{
@@ -46,67 +48,100 @@ void Console::showMenuOptions()
 	}
 }
 
-void Console::showSceneCreation()
+void Console::showInputName(Input input)
 {
-	printf("\nChoose a short name for the scene:\n");
+	printf("\nInput the name of the scene:\n");
 	printf(">");
 
-	std::string name;
-	std::getline(std::cin, name);
+	string name;
+	getline(cin, name);
 
-	if (AppController.createScene(name))
+	if (!appController.sceneExists(name))
 	{
-		showStatusMessage("Scene created succesfully\n", GREEN);
-		showSceneOperations(name);
-	}
-	else
-	{
-		showStatusMessage("Scene creation failed\n", RED);
-	}
-}
-
-void Console::showSceneLoad()
-{
-	printf("\nType the name of the scene to load:\n");
-	printf(">");
-
-	std::string name;
-	std::getline(std::cin, name);
-
-	if (AppController.sceneExists(name))
-	{
+		if (input == Input::CREATE)
+		{
+			Scene scene = appController.createScene(name);
+			showStatusMessage("Scene created succesfully\n", GREEN);
+			showOperations(scene);
+		}
+		else
+		{
+			showStatusMessage("Scene doesn't exist\n", RED);
+		}
 		
-		showStatusMessage("Scene loaded succesfully\n", GREEN);
-		showSceneOperations(name);
 	}
 	else
 	{
-		showStatusMessage("Scene doesn't exist\n", RED);
+		if (input == Input::LOAD)
+		{
+			Scene scene = appController.loadScene(name);
+			showStatusMessage("Scene loaded succesfully\n", GREEN);
+			showOperations(scene);
+		}
+		else
+		{
+			showStatusMessage("Scene creation failed\n", RED);
+		}		
 	}
 }
 
-void Console::showSceneOperations(std::string name)
+void Console::showOperations(Scene scene)
 {
 	while (true)
 	{
 		printf("\nChoose an action from the following:\n");
-		printf("(1) Calibrate scene\n");
-		printf("(2) Capture scene\n");
+		printf("(1) Intrinsics\n");
+		printf("(2) Extrinsics\n");
+		printf("(3) Scene\n");
+		printf("(4) Back\n");
+
+		int input = getch();
+
+		if (input == '1')
+		{
+			showOperationOptions(scene, Operation::INTRINSICS);
+		}
+		else if (input == '2')
+		{
+			showOperationOptions(scene, Operation::EXTRINSICS);
+		}
+		else if (input == '3')
+		{
+			showOperationOptions(scene, Operation::SCENE);
+		}
+		else if (input == '4')
+		{
+			showMenu();
+		}
+		else
+		{
+			showStatusMessage("Choose a valid option\n", RED);
+		}
+	}
+}
+
+void Console::showOperationOptions(Scene scene, Operation operation)
+{
+	while (true)
+	{
+		printf("\nChoose an action from the following:\n");
+		printf("(1) Capture %s\n", operation.toString());
+		printf("(2) Process %s\n", operation.toString());
 		printf("(3) Back\n");
 
 		int input = getch();
 
 		if (input == '1')
 		{
-			showCalibrationOptions(name); 
+			showCapture(scene, operation);
 		}
 		else if (input == '2')
 		{
-			showRecordScene(name);
+			showProcess(scene, operation);
 		}
 		else if (input == '3')
 		{
-			return;
+			showOperations(scene);
 		}
 		else
 		{
@@ -115,43 +150,13 @@ void Console::showSceneOperations(std::string name)
 	}
 }
 
-void Console::showCalibrationOptions(std::string name)
+void Console::showOverwrite(Scene scene, Operation operation)
 {
-	while (true)
-	{
-		printf("\nChoose an action from the following:\n");
-		printf("(1) Intrinsic calibration\n");
-		printf("(2) Extrinsic calibration\n");
-		printf("(5) Back\n");
-
-		int input = getch();
-
-		if (input == '1')
-		{
-			showCalibrateIntrinsics(name);
-		}
-		else if (input == '2')
-		{
-			showCalibrateExtrinsics(name);
-		}
-		else if (input == '3')
-		{
-			return;
-		}
-		else
-		{
-			showStatusMessage("Choose a valid option\n", RED);
-		}
-	}
-}
-
-void Console::showRecordScene(std::string name)
-{
-	if (AppController.hasPreviousCapture(name))
+	if (appController.hasCapture(scene, operation))
 	{
 		while (true)
 		{
-			printf("\nThis scene has already been captured, would you like to replace it?:\n");
+			printf("\nThe %s has already been captured, would you like to overwrite the capture?:\n", operation.toString());
 			printf("(1) Yes\n");
 			printf("(2) No\n");
 
@@ -159,11 +164,11 @@ void Console::showRecordScene(std::string name)
 
 			if (input == '1')
 			{
-				AppController.deleteCapture(name);
+				appController.deleteCapture(scene, operation);
 			}
 			else if (input == '2')
 			{
-				return;
+				showOperationOptions(scene, operation);
 			}
 			else
 			{
@@ -171,100 +176,96 @@ void Console::showRecordScene(std::string name)
 			}
 		}
 	}
+}
+
+void Console::showCapture(Scene scene, Operation operation)
+{
+	showOverwrite(scene, operation);
 
 	printf("\nInitializing cameras...\n");
-	if (!AppController.initializeCapture(name, CaptureMode::GRAYSCALE))
+	if (!appController.startCameras(scene, operation))
 	{
 		showStatusMessage("Camera initialization failed\n", RED);
-		return;
+		showOperationOptions(scene, operation);
 	}
 
-	printf("Cameras are now recording (press any key to stop)...\n");
-	AppController.startCapture(name);
+	showCamera = true;
+	thread captureThread = thread(&Console::showCamera, this);
+	captureThread.detach();
 
-	getch();
-
-	printf("Stopped capturing frames...\n");
-	AppController.stopCapture();
-
-	printf("Processing scene...\n");
-	while (!AppController.hasFinishedProcessing())
+	if (operation == Operation::EXTRINSICS)
 	{
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+		printf("Prepare to capture empty scene (press any key to start)...\n");
+		getch();
+		appController.captureFrame(scene, operation);
+
+		printf("Prepare for wanding (press any key to start)...\n");
+		getch();
+		appController.startRecordingFrames(scene, operation);
+
+		printf("Recording wanding (press any key to stop)...\n");
+		getch();
+		appController.stopRecordingFrames(scene, operation);
+
+		printf("Prepare to capture scene axis (press any key to start)...\n");
+		getch();
+		appController.captureFrame(scene, operation);
 	}
+	else if (operation == Operation::INTRINSICS)
+	{
+		printf("Prepare for checkboarding (say 'okay' to capture frame)...\n");		
+		for (int checkboardNumber = 0; checkboardNumber < appController.getMaxCheckboards(); checkboardNumber++)
+		{
+			if (listener.say("okay")) // should be blocking call
+			{
+				appController.captureFrame(scene, operation);
+				printf("Captured checkboard %d/%d...", checkboardNumber, appController.getMaxCheckboards());
+				checkboardNumber++;
+			}			
+		}
+	}
+	else
+	{
+		printf("Prepare for capture (press any key to start)...\n");
+		getch();
+		appController.startRecordingFrames(scene, operation);
+
+		printf("Recording scene (press any key to stop)...\n");
+		getch();
+		appController.stopRecordingFrames(scene, operation);
+	}
+
+	showCamera = false;
+
+	printf("Dumping captures to disk...\n");
+	appController.dumpCapture(scene, operation);
 
 	showStatusMessage("Scene recorded succesfully\n", GREEN);
 }
 
-void Console::showCalibrateExtrinsics(std::string name)
+void Console::showCameras()
 {
-	if (AppController.hasPreviousCapture(name, CalibrationMode::EXTRINSICS))
+	int cameraFps = appController.getCameraFps();
+
+	while (showCamera)
 	{
-		while (true)
-		{
-			printf("\nThis scene already has extrinsics, would you like to replace it?:\n");
-			printf("(1) Yes\n");
-			printf("(2) No\n");
+		int milisecondsToSleep = (int)(1.0 / cameraFps) * 1000;
+		chrono::system_clock::time_point timePoint = chrono::system_clock::now() + chrono::milliseconds(milisecondsToSleep);
 
-			char input = getch();
+		Mat currentFrame = appController.getCurrentFrame();
+		imshow("Current frame", currentFrame);
 
-			if (input == '1')
-			{
-				AppController.deleteCapture(name, CalibrationMode::EXTRINSICS);
-			}
-			else if (input == '2')
-			{
-				return;
-			}
-			else
-			{
-				showStatusMessage("Choose a valid option\n", RED);
-			}
-		}
+		this_thread::sleep_until(timePoint);
 	}
-
-	if (calibrationMode == CalibrationMode::EXTRINSICS)
-	{
-		printf("\nInitializing cameras...\n");
-		if (!AppController.initializeExtrinsics(name))
-		{
-			showStatusMessage("Camera initialization failed\n", RED);
-			return;
-		}
-
-		printf("Capture empty scene (press any key when ready)...\n");
-		getch();
-		AppController.startCaptureFrame(name);
-		showStatusMessage("Empty frame captured\n", GREEN);
-
-		printf("\nCameras are ready for wanding (press any key when to start)...\n");
-		getch();
-
-		printf("Started capturing frames (press any key when to stop)...\n");
-		AppController.startCapture(name, calibrationMode);
-		getch();		
-
-		printf("Stopped capturing frames...\n");
-		AppController.stopCapture();
-
-		printf("Processing frames...\n");
-		while (!AppController.hasFinishedProcessing())
-		{
-			std::this_thread::sleep_for(std::chrono::seconds(1));
-		}
-		showStatusMessage("Calibration footage has been captured\n", GREEN);
-
-		printf("Capture scene with axis (press any key when ready)...\n");
-		getch();
-		AppController.captureExtrinsicsFrame(name, "axis");
-		showStatusMessage("Axis frame captured\n", GREEN);
-
-		// TODO: Call extrinsics processing/**/
-
-	showStatusMessage("Calibrated scene succesfully\n", GREEN);
 }
 
-void Console::showStatusMessage(std::string message, int fontColor)
+void Console::showProcess(Scene scene, Operation operation)
+{
+	// TODO
+	showStatusMessage("Processing not implemented yet\n", RED);
+}
+
+void Console::showStatusMessage(string message, int fontColor)
 {
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), fontColor);
 	printf("%s", message.c_str());

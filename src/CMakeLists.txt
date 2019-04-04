@@ -23,11 +23,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
 # Add source to this project's executable.
-add_executable (${PROJECT_NAME} "Main.cpp" 
-								"view/Console.cpp" "view/Console.h"
-								"model/scene/SceneManager.cpp" "model/scene/SceneManager.h"
-								"model/camera/OptitrackCamera.cpp" "model/camera/OptitrackCamera.h"
-								"model/scene/enum/CaptureMode.h")
+add_executable (${PROJECT_NAME} "Main.cpp" )
 
 # Link it all together
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} Boost::boost OptiTrack::CameraLibrary2015x64S)

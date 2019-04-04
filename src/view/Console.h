@@ -2,7 +2,8 @@
 
 #include <windows.h>
 #include <conio.h>
-#include <string>
+#include <iostream>
+#include "enum/Input.h"
 #include "controller/AppController.h"
 
 #define RED 0x0C
@@ -10,19 +11,23 @@
 #define GREEN 0x0A
 #define WHITE 0x07
 
+using namespace std;
+
 class Console
 {
 private:
-	AppController& sceneManager;
+	AppController& appController;
+	atomic<bool> showCamera;
 public:
 	Console(AppController& sceneManager);
 	void start();
-	void showMenuOptions();
-	void showSceneCreation();
-	void showSceneLoad();
-	void showSceneOperations(std::string name);
-	void showRecordScene(std::string name);
-	void showCalibrationOptions(std::string name);
-	void showCalibrateScene(std::string name, CalibrationMode calibrationMode);
-	void showStatusMessage(std::string message, int fontColor);
+	void showMenu();
+	void showInputName(Input input);
+	void showOperations(Scene scene);
+	void showOperationOptions(Scene scene, Operation operation);
+	void showOverwrite(Scene scene, Operation operation);
+	void showCapture(Scene scene, Operation operation);
+	void showCameras();
+	void showProcess(Scene scene, Operation operation);
+	void showStatusMessage(string message, int fontColor);
 };

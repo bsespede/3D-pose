@@ -1,9 +1,9 @@
 ﻿{
   "configurations": [
     {
-      "name": "x64-Release",
+      "name": "Release",
       "generator": "Ninja",
-      "configurationType": "RelWithDebInfo",
+      "configurationType": "Release",
       "inheritEnvironments": [
         "msvc_x64_x64"
       ],

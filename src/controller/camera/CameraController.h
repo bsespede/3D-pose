@@ -4,9 +4,9 @@
 #include <thread>
 #include <atomic>
 
-#include "controller/camera/enum/CaptureMode.h"
 #include "controller/camera/optitrack/OptitrackCamera.h"
 #include "model/camera/FramesPacket.h"
+#include "model/camera/enum/CaptureMode.h"
 
 using namespace std;
 
@@ -14,13 +14,14 @@ class CameraController
 {
 	OptitrackCamera optitrackCamera;
 	list<FramesPacket> recording;
+	FramesPacket currentFrames;
 	atomic<bool> shouldRecord;
 	atomic<bool> stoppedRecording;		
 	void record();
 	int camerasFps;	
 public:
 	// Hardware control
-	CamerasController(int camerasFps);
+	CameraController(int camerasFps);
 	bool startCameras(CaptureMode mode);
 	void stopCameras();
 
@@ -31,5 +32,5 @@ public:
 	list<FramesPacket> getRecording();
 
 	// Frame control
-	FramesPacket getFrames();
+	FramesPacket getCurrentFrames();
 };

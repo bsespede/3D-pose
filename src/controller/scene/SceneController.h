@@ -3,6 +3,7 @@
 #include <string>
 #include "boost/filesystem.h"
 #include "model/scene/Scene.h"
+#include "model/scene/enum/Operation.h"
 
 using namespace std;
 using namespace boost;
@@ -20,16 +21,11 @@ public:
 	Scene createScene(string name);
 
 	// Check existence
-	bool hasSceneCapture(Scene scene);
-	bool hasIntrinsicsCapture(Scene scene);
-	bool hasExtrinsicsCapture(Scene scene);
+	bool hasCapture(Scene scene, Operation operation);
 
 	// Check processed
-	bool hasProcessedIntrinsics(Scene scene);
-	bool hasProcessedExtrinsics(Scene scene);
+	bool hasProcessed(Scene scene, Operation operation);
 
 	// Delete folders
-	void deleteSceneCapture(Scene scene);
-	void deleteIntrinsicsCapture(Scene scene);
-	void deleteExtrinsicsCapture(Scene scene);
+	void deleteCapture(Scene scene, Operation operation);
 };
