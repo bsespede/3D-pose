@@ -14,5 +14,4 @@ public:
 	FramesPacket();
 	void addFrame(int camera, Mat frame);
 	map<int, Mat> getFrames();
-	Mat getMergedFrames();
 };

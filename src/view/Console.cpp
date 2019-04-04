@@ -1,6 +1,6 @@
 #include "Console.h"
 
-Console::Console(AppController& appController): appController(appController), showCamera(false)
+Console::Console(AppController& appController): appController(appController), showCamera(false), cameraRenderer(CameraRenderer(20, 160, 213, 4, 4))
 {
 	
 }
@@ -181,7 +181,7 @@ void Console::showCapture(Scene scene, Operation operation)
 	showOverwrite(scene, operation);
 
 	printf("\nInitializing cameras...\n");
-	if (!appController.startCameras(scene, operation))
+	if (!appController.startCapturing(operation.getCaptureMode()))
 	{
 		showStatusMessage("Camera initialization failed\n", RED);
 		showOperationOptions(scene, operation);
@@ -232,6 +232,7 @@ void Console::showCapture(Scene scene, Operation operation)
 	}
 
 	showCamera = false;
+	appController.stopCapturing();
 
 	printf("Dumping captures to disk...\n");
 	appController.dumpCapture(scene, operation);
@@ -241,15 +242,14 @@ void Console::showCapture(Scene scene, Operation operation)
 
 void Console::showCameras()
 {
-	int cameraFps = appController.getCameraFps();
+	int cameraFps = appController.getCamerasFps();
 
 	while (showCamera)
 	{
 		int milisecondsToSleep = (int)(1.0 / cameraFps) * 1000;
 		chrono::system_clock::time_point timePoint = chrono::system_clock::now() + chrono::milliseconds(milisecondsToSleep);
 
-		Mat currentFrame = appController.getCurrentFrame();
-		imshow("Current frame", currentFrame);
+		cameraRenderer.render(appController.getCurrentFrames());
 
 		this_thread::sleep_until(timePoint);
 	}

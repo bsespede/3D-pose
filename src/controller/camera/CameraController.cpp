@@ -1,55 +1,58 @@
 #include "CameraController.h"
 
-CameraController::CameraController(int camerasFps): optitrackCamera(OptitrackCamera()), recording(list<FramesPacket>()), shouldRecord(false), stoppedRecording(true), camerasFps(camerasFps)
+CameraController::CameraController(int camerasFps): optitrackCamera(OptitrackCamera()), recording(list<FramesPacket>()), isCapturing(false), isRecording(true), camerasFps(camerasFps)
 {
-	
+
 }
 
-bool CameraController::startCameras(CaptureMode mode)
+bool CameraController::startCapturing(CaptureMode mode)
 {
-	return optitrackCamera.startCameras(mode.toOptitrackMode());
+	if (optitrackCamera.startCameras(mode.toOptitrackMode()))
+	{
+		isCapturing = true;
+		thread captureThread = thread(&CameraController::capture, this);
+		captureThread.detach();
+		return true;
+	}
+	else
+	{
+		return false;
+	}	
 }
 
-void CameraController::stopCameras()
+void CameraController::stopCapturing()
 {
+	isCapturing = false;
 	optitrackCamera.stopCameras();
 }
 
 void CameraController::startRecording()
 {
 	recording.clear();
-
-	shouldRecord = true;
-	stoppedRecording = false;
-
-	thread captureThread = thread(&CameraController::record, this);
-	captureThread.detach();
+	isRecording = true;
 }
 
-void CameraController::record()
+void CameraController::capture()
 {
-	while (shouldRecord)
+	while (isCapturing)
 	{
 		int milisecondsToSleep = (int)(1.0 / camerasFps) * 1000;
 		chrono::system_clock::time_point timePoint = chrono::system_clock::now() + chrono::milliseconds(milisecondsToSleep);
 
 		FramesPacket frames = optitrackCamera.captureFrames();
-		recording.push_back(frames);
+		if (isRecording)
+		{
+			recording.push_back(frames);
+		}
+		currentFrames = frames;
 
 		this_thread::sleep_until(timePoint);
 	}
-
-	stoppedRecording = true;
 }
 
 void CameraController::stopRecording()
 {
-	shouldRecord = false;
-}
-
-bool CameraController::finishedRecording()
-{
-	return stoppedRecording;
+	isRecording = false;
 }
 
 list<FramesPacket> CameraController::getRecording()
@@ -59,5 +62,10 @@ list<FramesPacket> CameraController::getRecording()
 
 FramesPacket CameraController::getCurrentFrames()
 {
-	return optitrackCamera.captureFrames();
+	return currentFrames;
+}
+
+int CameraController::getCamerasFps()
+{
+	return camerasFps;
 }

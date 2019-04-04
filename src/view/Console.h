@@ -6,6 +6,7 @@
 #include <atomic>
 #include "enum/Input.h"
 #include "controller/AppController.h"
+#include "CameraRenderer.h"
 
 #define RED 0x0C
 #define BLUE 0x09
@@ -18,6 +19,7 @@ class Console
 {
 private:
 	AppController& appController;
+	CameraRenderer cameraRenderer;
 	atomic<bool> showCamera;
 public:
 	Console(AppController& appController);
@@ -29,6 +31,7 @@ public:
 	void showOverwrite(Scene scene, Operation operation);
 	void showCapture(Scene scene, Operation operation);
 	void showCameras();
+	void showMergedCameras(FramesPacket framesPacket);
 	void showProcess(Scene scene, Operation operation);
 	void showStatusMessage(string message, int fontColor);
 };

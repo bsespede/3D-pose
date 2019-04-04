@@ -15,22 +15,24 @@ class CameraController
 	OptitrackCamera optitrackCamera;
 	list<FramesPacket> recording;
 	FramesPacket currentFrames;
-	atomic<bool> shouldRecord;
-	atomic<bool> stoppedRecording;		
-	void record();
+	atomic<bool> isCapturing;
+	atomic<bool> isRecording;		
+	void capture();
 	int camerasFps;	
 public:
 	// Hardware control
 	CameraController(int camerasFps);
-	bool startCameras(CaptureMode mode);
-	void stopCameras();
+	bool startCapturing(CaptureMode mode);
+	void stopCapturing();
 
 	// Video control
 	void startRecording();
 	void stopRecording();
-	bool finishedRecording();
 	list<FramesPacket> getRecording();
 
 	// Frame control
 	FramesPacket getCurrentFrames();
+
+	// Other
+	int getCamerasFps();
 };
