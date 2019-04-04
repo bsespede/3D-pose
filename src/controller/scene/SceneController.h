@@ -6,6 +6,7 @@
 #include <boost/property_tree/json_parser.hpp>
 #include "model/scene/Scene.h"
 #include "model/scene/enum/Operation.h"
+#include "model/capture/Capture.h"
 
 using namespace std;
 using namespace boost;
@@ -13,6 +14,7 @@ using namespace boost;
 class SceneController
 {
 private:
+	Capture capture;
 	string path;
 public:
 	SceneController(string path);

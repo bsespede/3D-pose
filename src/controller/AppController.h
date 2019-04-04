@@ -25,13 +25,13 @@ public:
 	// Cameras
 	bool startCapturing(CaptureMode captureMode);
 	void stopCapturing();
-	void captureFrame(Scene scene, Operation operation);
-	void startRecordingFrames(Scene scene, Operation operation);
-	void stopRecordingFrames(Scene scene, Operation operation);
+	void captureFrame();
+	void startRecordingFrames();
+	void stopRecordingFrames();
 	void dumpCapture(Scene scene, Operation operation);
 
 	// Other
-	FramesPacket getCurrentFrames();
+	FramesPacket getCurrentFrame();
 	int getCamerasFps();
 	int getMaxCheckboards();
 };

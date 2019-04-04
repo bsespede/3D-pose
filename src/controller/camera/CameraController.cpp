@@ -1,6 +1,6 @@
 #include "CameraController.h"
 
-CameraController::CameraController(int camerasFps): optitrackCamera(OptitrackCamera()), recording(list<FramesPacket>()), isCapturing(false), isRecording(true), camerasFps(camerasFps)
+CameraController::CameraController(int camerasFps): optitrackCamera(OptitrackCamera()), capture(Capture()), isCapturing(false), isRecording(true), captureNextFrame(false), camerasFps(camerasFps)
 {
 
 }
@@ -9,8 +9,9 @@ bool CameraController::startCapturing(CaptureMode mode)
 {
 	if (optitrackCamera.startCameras(mode.toOptitrackMode()))
 	{
+		capture = Capture();
 		isCapturing = true;
-		thread captureThread = thread(&CameraController::capture, this);
+		thread captureThread = thread(&CameraController::captureThread, this);
 		captureThread.detach();
 		return true;
 	}
@@ -18,6 +19,32 @@ bool CameraController::startCapturing(CaptureMode mode)
 	{
 		return false;
 	}	
+}
+
+void CameraController::captureThread()
+{
+	while (isCapturing)
+	{
+		int milisecondsToSleep = (int)(1.0 / camerasFps) * 1000;
+		chrono::system_clock::time_point timePoint = chrono::system_clock::now() + chrono::milliseconds(milisecondsToSleep);
+
+		FramesPacket frame = optitrackCamera.captureFrames();
+
+		if (isRecording)
+		{
+			capture.addToCaptureRecording(frame);
+		}
+
+		if (captureNextFrame)
+		{
+			capture.addToCaptureFrame(frame);
+			captureNextFrame = false;
+		}
+
+		currentFrame = frame;
+
+		this_thread::sleep_until(timePoint);
+	}
 }
 
 void CameraController::stopCapturing()
@@ -28,26 +55,7 @@ void CameraController::stopCapturing()
 
 void CameraController::startRecording()
 {
-	recording.clear();
 	isRecording = true;
-}
-
-void CameraController::capture()
-{
-	while (isCapturing)
-	{
-		int milisecondsToSleep = (int)(1.0 / camerasFps) * 1000;
-		chrono::system_clock::time_point timePoint = chrono::system_clock::now() + chrono::milliseconds(milisecondsToSleep);
-
-		FramesPacket frames = optitrackCamera.captureFrames();
-		if (isRecording)
-		{
-			recording.push_back(frames);
-		}
-		currentFrames = frames;
-
-		this_thread::sleep_until(timePoint);
-	}
 }
 
 void CameraController::stopRecording()
@@ -55,17 +63,22 @@ void CameraController::stopRecording()
 	isRecording = false;
 }
 
-list<FramesPacket> CameraController::getRecording()
+void CameraController::captureFrame()
 {
-	return recording;
+	captureNextFrame = true;
 }
 
-FramesPacket CameraController::getCurrentFrames()
+FramesPacket CameraController::getCurrentFrame()
 {
-	return currentFrames;
+	return currentFrame;
 }
 
 int CameraController::getCamerasFps()
 {
 	return camerasFps;
+}
+
+Capture CameraController::getCapture()
+{
+	return capture;
 }

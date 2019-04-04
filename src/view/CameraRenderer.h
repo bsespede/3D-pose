@@ -1,5 +1,10 @@
 #pragma once
 
+#include <opencv2/opencv.hpp>
+#include "model/camera/FramesPacket.h"
+
+using namespace cv;
+
 class CameraRenderer
 {
 private:

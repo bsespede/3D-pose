@@ -7,17 +7,19 @@
 #include "controller/camera/optitrack/OptitrackCamera.h"
 #include "model/camera/FramesPacket.h"
 #include "model/camera/enum/CaptureMode.h"
+#include "model/capture/Capture.h"
 
 using namespace std;
 
 class CameraController
 {
 	OptitrackCamera optitrackCamera;
-	list<FramesPacket> recording;
-	FramesPacket currentFrames;
+	FramesPacket currentFrame;
 	atomic<bool> isCapturing;
-	atomic<bool> isRecording;		
-	void capture();
+	atomic<bool> isRecording;
+	atomic<bool> captureNextFrame;
+	Capture capture;
+	void captureThread();
 	int camerasFps;	
 public:
 	// Hardware control
@@ -25,13 +27,14 @@ public:
 	bool startCapturing(CaptureMode mode);
 	void stopCapturing();
 
-	// Video control
+	// Capture control
 	void startRecording();
 	void stopRecording();
-	list<FramesPacket> getRecording();
+	void captureFrame();
+	Capture getCapture();
 
 	// Frame control
-	FramesPacket getCurrentFrames();
+	FramesPacket getCurrentFrame();
 
 	// Other
 	int getCamerasFps();

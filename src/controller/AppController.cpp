@@ -40,19 +40,34 @@ void AppController::stopCapturing()
 	cameraController.stopCapturing();
 }
 
-void AppController::captureFrame(Scene scene, Operation operation);
-void AppController::startRecordingFrames(Scene scene, Operation operation);
-void AppController::stopRecordingFrames(Scene scene, Operation operation);
-void AppController::dumpCapture(Scene scene, Operation operation);
+void AppController::captureFrame()
+{
+	cameraController.captureFrame();
+}
+
+void AppController::startRecordingFrames()
+{
+	cameraController.startRecording();
+}
+
+void AppController::stopRecordingFrames()
+{
+	cameraController.stopRecording();
+}
+
+void AppController::dumpCapture(Scene scene, Operation operation)
+{
+	sceneController.saveCapture(scene, operation, cameraController.getCapture());
+}
 
 int AppController::getCamerasFps()
 {
 	return cameraController.getCamerasFps();
 }
 
-FramesPacket AppController::getCurrentFrames()
+FramesPacket AppController::getCurrentFrame()
 {
-	return cameraController.getCurrentFrames();
+	return cameraController.getCurrentFrame();
 }
 
 int AppController::getMaxCheckboards()

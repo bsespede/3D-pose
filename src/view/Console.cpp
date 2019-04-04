@@ -195,19 +195,19 @@ void Console::showCapture(Scene scene, Operation operation)
 	{
 		printf("Prepare to capture empty scene (press any key to start)...\n");
 		getch();
-		appController.captureFrame(scene, operation);
+		appController.captureFrame();
 
 		printf("Prepare for wanding (press any key to start)...\n");
 		getch();
-		appController.startRecordingFrames(scene, operation);
+		appController.startRecordingFrames();
 
 		printf("Recording wanding (press any key to stop)...\n");
 		getch();
-		appController.stopRecordingFrames(scene, operation);
+		appController.stopRecordingFrames();
 
 		printf("Prepare to capture scene axis (press any key to start)...\n");
 		getch();
-		appController.captureFrame(scene, operation);
+		appController.captureFrame();
 	}
 	else if (operation == Operation::INTRINSICS)
 	{
@@ -216,7 +216,7 @@ void Console::showCapture(Scene scene, Operation operation)
 		{
 			this_thread::sleep_for(chrono::seconds(10));
 			Beep(500, 400);
-			appController.captureFrame(scene, operation);
+			appController.captureFrame();
 			printf("Captured frame %d/%d...", checkboardNumber, appController.getMaxCheckboards());
 		}
 	}
@@ -224,11 +224,11 @@ void Console::showCapture(Scene scene, Operation operation)
 	{
 		printf("Prepare for capture (press any key to start)...\n");
 		getch();
-		appController.startRecordingFrames(scene, operation);
+		appController.startRecordingFrames();
 
 		printf("Recording scene (press any key to stop)...\n");
 		getch();
-		appController.stopRecordingFrames(scene, operation);
+		appController.stopRecordingFrames();
 	}
 
 	showCamera = false;
@@ -249,7 +249,7 @@ void Console::showCameras()
 		int milisecondsToSleep = (int)(1.0 / cameraFps) * 1000;
 		chrono::system_clock::time_point timePoint = chrono::system_clock::now() + chrono::milliseconds(milisecondsToSleep);
 
-		cameraRenderer.render(appController.getCurrentFrames());
+		cameraRenderer.render(appController.getCurrentFrame());
 
 		this_thread::sleep_until(timePoint);
 	}
