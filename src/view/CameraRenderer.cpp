@@ -62,4 +62,5 @@ void CameraRenderer::render(FramesPacket framesPacket)
 	}
 
 	imshow("mergedImage", mergedImage);
+	waitKey(1);
 }

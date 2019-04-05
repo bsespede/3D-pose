@@ -56,18 +56,18 @@ void SceneController::deleteCapture(Scene scene, Operation operation)
 	filesystem::remove_all(path + "/" + scene.getName() + "/" + operation.toString());
 }
 
-void SceneController::saveCapture(Scene scene, Operation operation, Capture capture)
+void SceneController::saveCapture(Scene scene, Operation operation, Capture* capture)
 {
 	string operationPath = path + "/" + scene.getName() + "/" + operation.toString();
 	filesystem::create_directory(operationPath);
 
 	if (operation == Operation::INTRINSICS)
 	{
-		vector<FramesPacket> frames = capture.getFrames();
+		vector<FramesPacket*> frames = capture->getFrames();
 
 		for (int checkboardNumber = 0; checkboardNumber < frames.size(); checkboardNumber++)
 		{
-			for (pair<int, Mat> pair : frames[checkboardNumber].getFrames())
+			for (pair<int, Mat> pair : frames[checkboardNumber]->getFrames())
 			{
 				string camPath = operationPath + "/cam-" + to_string(pair.first);
 				filesystem::create_directory(camPath);
@@ -79,32 +79,27 @@ void SceneController::saveCapture(Scene scene, Operation operation, Capture capt
 	}
 	else if (operation == Operation::EXTRINSICS)
 	{
-		vector<FramesPacket> frames = capture.getFrames();
+		vector<FramesPacket*> frames = capture->getFrames();
+		vector<string> labels = vector<string>{"empty", "axis"};
 
-		for (pair<int, Mat> pair : frames[0].getFrames())
+		for (int labelNumber = 0; labelNumber < frames.size(); labelNumber++)
 		{
-			string camPath = operationPath + "/cam-" + to_string(pair.first);
-			filesystem::create_directory(camPath);
+			for (pair<int, Mat> pair : frames[labelNumber]->getFrames())
+			{
+				string camPath = operationPath + "/cam-" + to_string(pair.first);
+				filesystem::create_directory(camPath);
 
-			string framePath = camPath + "/empty.png";
-			imwrite(framePath, pair.second);
+				string framePath = camPath + "/" + labels[labelNumber] + ".png";
+				imwrite(framePath, pair.second);
+			}
 		}
 
-		for (pair<int, Mat> pair : frames[1].getFrames())
-		{
-			string camPath = operationPath + "/cam-" + to_string(pair.first);
-			filesystem::create_directory(camPath);
-
-			string framePath = camPath + "/axis.png";
-			imwrite(framePath, pair.second);
-		}
-
-		list<FramesPacket> recording = capture.getRecording();
+		list<FramesPacket*> recording = capture->getRecording();
 		int frameNumber = 0;
 
-		for (FramesPacket framePacket: recording)
+		for (FramesPacket* framePacket: recording)
 		{
-			for (pair<int, Mat> pair : framePacket.getFrames())
+			for (pair<int, Mat> pair : framePacket->getFrames())
 			{
 				string camPath = operationPath + "/cam-" + to_string(pair.first);
 				filesystem::create_directory(camPath);
@@ -118,12 +113,12 @@ void SceneController::saveCapture(Scene scene, Operation operation, Capture capt
 	}
 	else
 	{
-		list<FramesPacket> recording = capture.getRecording();
+		list<FramesPacket*> recording = capture->getRecording();
 		int frameNumber = 0;
 
-		for (FramesPacket framePacket : recording)
+		for (FramesPacket* framePacket : recording)
 		{
-			for (pair<int, Mat> pair : framePacket.getFrames())
+			for (pair<int, Mat> pair : framePacket->getFrames())
 			{
 				string camPath = operationPath + "/cam-" + to_string(pair.first);
 				filesystem::create_directory(camPath);
@@ -135,4 +130,6 @@ void SceneController::saveCapture(Scene scene, Operation operation, Capture capt
 			frameNumber++;
 		}
 	}
+
+	delete capture;
 }

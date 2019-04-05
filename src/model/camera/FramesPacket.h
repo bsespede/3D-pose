@@ -10,6 +10,7 @@ class FramesPacket
 {
 public:
 	FramesPacket();
+	FramesPacket(FramesPacket* orig);
 	void addFrame(int camera, Mat frame);
 	map<int, Mat> getFrames();
 private:

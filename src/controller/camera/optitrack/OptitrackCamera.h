@@ -16,7 +16,7 @@ class OptitrackCamera
 public:
 	OptitrackCamera();
 	bool startCameras(Core::eVideoMode mode);
-	FramesPacket captureFrames();
+	FramesPacket* captureFramesPacket();
 	void stopCameras();
 private:
 	CameraList list;

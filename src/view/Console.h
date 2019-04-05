@@ -4,6 +4,8 @@
 #include <conio.h>
 #include <iostream>
 #include <atomic>
+#include <thread>
+
 #include "enum/Input.h"
 #include "controller/AppController.h"
 #include "view/CameraRenderer.h"
@@ -33,4 +35,5 @@ private:
 	AppController* appController;
 	CameraRenderer* cameraRenderer;
 	atomic<bool> showCamera;
+	int guiFps;
 };

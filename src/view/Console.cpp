@@ -2,9 +2,20 @@
 
 Console::Console(AppController* appController)
 {
+	property_tree::ptree root;
+	property_tree::read_json("app-config.json", root);
+
+	int barHeight = root.get<int>("config.barHeight");
+	int cameraHeight = root.get<int>("config.cameraHeight");
+	int cameraWidth = root.get<int>("config.cameraWidth");
+	int rows = root.get<int>("config.rows");
+	int cols = root.get<int>("config.cols");
+	int guiFps = root.get<int>("config.guiFps");
+
 	this->appController = appController;
-	this->cameraRenderer = new CameraRenderer(20, 160, 213, 4, 4);
+	this->cameraRenderer = new CameraRenderer(barHeight, cameraHeight, cameraWidth, rows, cols);
 	this->showCamera = false;
+	this->guiFps = guiFps;
 }
 
 void Console::start()
@@ -15,7 +26,7 @@ void Console::start()
 	showStatusMessage(" ___/ / /_/ / ____/ /_/ /__  /  __/  \n", BLUE);
 	showStatusMessage("/____/_____/_/    \\____/____/\\___/ \n", BLUE);
 	showStatusMessage("                                     \n", BLUE);
-
+	
 	showMenu();
 }
 
@@ -183,14 +194,14 @@ void Console::showCapture(Scene scene, Operation operation)
 	showOverwrite(scene, operation);
 
 	printf("\nInitializing cameras...\n");
-	if (!appController->startCapturing(operation.getCaptureMode()))
+	if (!appController->startCameras(operation.getCaptureMode()))
 	{
 		showStatusMessage("Camera initialization failed\n", RED);
 		showOperationOptions(scene, operation);
 	}
 
 	showCamera = true;
-	thread captureThread = thread(&Console::showCamera, this);
+	std::thread captureThread = std::thread(&Console::showCameras, this);
 	captureThread.detach();
 
 	if (operation == Operation::EXTRINSICS)
@@ -234,7 +245,7 @@ void Console::showCapture(Scene scene, Operation operation)
 	}
 
 	showCamera = false;
-	appController->stopCapturing();
+	appController->stopCameras();
 
 	printf("Dumping captures to disk...\n");
 	appController->dumpCapture(scene, operation);
@@ -244,14 +255,13 @@ void Console::showCapture(Scene scene, Operation operation)
 
 void Console::showCameras()
 {
-	int cameraFps = appController->getCamerasFps();
-
 	while (showCamera)
 	{
-		int milisecondsToSleep = (int)(1.0 / cameraFps) * 1000;
+		int milisecondsToSleep = (int)(1.0 / guiFps) * 1000;
 		chrono::system_clock::time_point timePoint = chrono::system_clock::now() + chrono::milliseconds(milisecondsToSleep);
 
-		cameraRenderer->render(appController->getCurrentFrame());
+		cameraRenderer->render(appController->getSafeFrame());
+		appController->updateSafeFrame();
 
 		this_thread::sleep_until(timePoint);
 	}
@@ -259,7 +269,7 @@ void Console::showCameras()
 
 void Console::showProcess(Scene scene, Operation operation)
 {
-	// TODO
+	// TODO: Implement capture processing
 	showStatusMessage("Processing not implemented yet\n", RED);
 }
 

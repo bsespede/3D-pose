@@ -1,83 +1,112 @@
 #include "CameraController.h"
 
-CameraController::CameraController(int camerasFps) : optitrackCamera(OptitrackCamera()), currentFrame(FramesPacket()), capture(Capture()), camerasFps(camerasFps)
+CameraController::CameraController(int camerasFps)
 {
+	this->optitrackCamera = new OptitrackCamera();
+	this->capture = new Capture();
+	this->safeFrame = FramesPacket();
+	this->shouldUpdateSafeFrame = false;
+	this->shouldLoopThread = false;
+	this->shouldRecord = false;
+	this->shouldCapture = false;
+	this->camerasFps = camerasFps;
 }
 
-bool CameraController::startCapturing(CaptureMode mode)
+bool CameraController::startCameras(CaptureMode mode)
 {
-	if (optitrackCamera.startCameras(mode.toOptitrackMode()))
+	if (optitrackCamera->startCameras(mode.toOptitrackMode()))
 	{
-		capture = Capture();
-		isCapturing = true;
-		std::thread captureThread = std::thread(&CameraController::captureThread, this);
-		captureThread.detach();
+		if (capture != nullptr)
+		{
+			delete capture;
+		}		
+		capture = new Capture();
+
+		shouldLoopThread = true;
+		thread camerasThread = thread(&CameraController::cameraLoop, this);
+		camerasThread.detach();
 		return true;
 	}
-	else
-	{
-		return false;
-	}	
+	
+	return false;
 }
 
-void CameraController::captureThread()
+void CameraController::cameraLoop()
 {
-	while (isCapturing)
+	bool shouldKeepPrevFrame = false;
+	FramesPacket* currentFrame = nullptr;
+
+	while (shouldLoopThread)
 	{
 		int milisecondsToSleep = (int)(1.0 / camerasFps) * 1000;
 		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(milisecondsToSleep);
 
-		FramesPacket frame = optitrackCamera.captureFrames();
-
-		if (isRecording)
+		if (!shouldKeepPrevFrame && currentFrame != nullptr)
 		{
-			capture.addToCaptureRecording(frame);
+			delete currentFrame;
 		}
 
-		if (captureNextFrame)
+		currentFrame = optitrackCamera->captureFramesPacket();
+		shouldKeepPrevFrame = shouldRecord || shouldCapture;
+
+		if (shouldRecord)
 		{
-			capture.addToCaptureFrame(frame);
-			captureNextFrame = false;
+			capture->addToCaptureRecording(currentFrame);
 		}
 
-		currentFrame = frame;
+		if (shouldCapture)
+		{
+			capture->addToCaptureFrame(currentFrame);
+			shouldCapture = false;
+		}
+
+		if (shouldUpdateSafeFrame)
+		{
+			safeFrame = FramesPacket(currentFrame);
+			shouldUpdateSafeFrame = false;
+		}
 
 		std::this_thread::sleep_until(timePoint);
 	}
 }
 
-void CameraController::stopCapturing()
+void CameraController::stopCameras()
 {
-	isCapturing = false;
-	optitrackCamera.stopCameras();
+	shouldLoopThread = false;
+	optitrackCamera->stopCameras();
 }
 
 void CameraController::startRecording()
 {
-	isRecording = true;
+	shouldRecord = true;
 }
 
 void CameraController::stopRecording()
 {
-	isRecording = false;
+	shouldRecord = false;
 }
 
 void CameraController::captureFrame()
 {
-	captureNextFrame = true;
+	shouldCapture = true;
 }
 
-FramesPacket CameraController::getCurrentFrame()
+void CameraController::updateSafeFrame()
 {
-	return currentFrame;
+	shouldUpdateSafeFrame = true;
+}
+
+FramesPacket CameraController::getSafeFrame()
+{
+	return safeFrame;
+}
+
+Capture* CameraController::getCapture()
+{
+	return capture;
 }
 
 int CameraController::getCamerasFps()
 {
 	return camerasFps;
-}
-
-Capture CameraController::getCapture()
-{
-	return capture;
 }

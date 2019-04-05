@@ -53,10 +53,10 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 	return true;
 }
 
-FramesPacket OptitrackCamera::captureFrames()
+FramesPacket* OptitrackCamera::captureFramesPacket()
 {
 	FrameGroup* frameGroup = sync->GetFrameGroup();
-	FramesPacket framesPacket = FramesPacket();
+	FramesPacket* framesPacket = new FramesPacket();
 
 	if (frameGroup)
 	{
@@ -72,7 +72,7 @@ FramesPacket OptitrackCamera::captureFrames()
 			cv::Mat frameMat = cv::Mat(cv::Size(cameraWidth, cameraHeight), CV_8UC1);
 			frame->Rasterize(cameraWidth, cameraHeight, frameMat.step, 8, frameMat.data);
 
-			framesPacket.addFrame(cameraId, frameMat);
+			framesPacket->addFrame(cameraId, frameMat);
 			frame->Release();
 		}
 

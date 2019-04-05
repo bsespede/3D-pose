@@ -1,25 +1,27 @@
 #include "Capture.h"
 
-Capture::Capture() : frames(vector<FramesPacket>()), recording(list<FramesPacket>())
+Capture::Capture()
 {
+	this->recording = list<FramesPacket*>();
+	this->frames = vector<FramesPacket*>();	
 }
 
-void Capture::addToCaptureFrame(FramesPacket frame)
+void Capture::addToCaptureFrame(FramesPacket* frame)
 {
 	frames.push_back(frame);
 }
 
-void Capture::addToCaptureRecording(FramesPacket frame)
+void Capture::addToCaptureRecording(FramesPacket* frame)
 {
 	recording.push_back(frame);
 }
 
-list<FramesPacket> Capture::getRecording()
+list<FramesPacket*> Capture::getRecording()
 {
 	return recording;
 }
 
-vector<FramesPacket> Capture::getFrames()
+vector<FramesPacket*> Capture::getFrames()
 {
 	return frames;
 }

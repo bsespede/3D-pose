@@ -1,10 +1,17 @@
 #include "AppController.h"
 
-AppController::AppController(string path, int maxCheckboards, int fps)
+AppController::AppController()
 {
+	property_tree::ptree root;
+	property_tree::read_json("app-config.json", root);
+
+	string path = root.get<string>("config.path");
+	int maxCheckboards = root.get<int>("config.maxCheckboards");
+	int cameraFps = root.get<int>("config.cameraFps");
+
 	this->sceneController = new SceneController(path);
 	this->calibrationController = new CalibrationController(maxCheckboards);
-	this->cameraController = new CameraController(fps);
+	this->cameraController = new CameraController(cameraFps);
 }
 
 bool AppController::sceneExists(string name)
@@ -32,14 +39,14 @@ void AppController::deleteCapture(Scene scene, Operation operation)
 	sceneController->deleteCapture(scene, operation);
 }
 
-bool AppController::startCapturing(CaptureMode captureMode)
+bool AppController::startCameras(CaptureMode captureMode)
 {
-	return cameraController->startCapturing(captureMode);
+	return cameraController->startCameras(captureMode);
 }
 
-void AppController::stopCapturing()
+void AppController::stopCameras()
 {
-	cameraController->stopCapturing();
+	cameraController->stopCameras();
 }
 
 void AppController::captureFrame()
@@ -67,9 +74,14 @@ int AppController::getCamerasFps()
 	return cameraController->getCamerasFps();
 }
 
-FramesPacket AppController::getCurrentFrame()
+FramesPacket AppController::getSafeFrame()
 {
-	return cameraController->getCurrentFrame();
+	return cameraController->getSafeFrame();
+}
+
+void AppController::updateSafeFrame()
+{
+	cameraController->updateSafeFrame();
 }
 
 int AppController::getMaxCheckboards()

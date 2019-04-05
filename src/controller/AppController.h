@@ -9,7 +9,7 @@ using namespace std;
 class AppController
 {
 public:
-	AppController(string dataPath, int maxCheckboards, int fps);
+	AppController();
 
 	// Scene I/O
 	bool sceneExists(string name);
@@ -19,15 +19,16 @@ public:
 	void deleteCapture(Scene scene, Operation operation);
 
 	// Cameras
-	bool startCapturing(CaptureMode captureMode);
-	void stopCapturing();
+	bool startCameras(CaptureMode captureMode);
+	void stopCameras();
 	void captureFrame();
 	void startRecordingFrames();
 	void stopRecordingFrames();
 	void dumpCapture(Scene scene, Operation operation);
 
 	// Other
-	FramesPacket getCurrentFrame();
+	FramesPacket getSafeFrame();
+	void updateSafeFrame();
 	int getCamerasFps();
 	int getMaxCheckboards();
 private:
