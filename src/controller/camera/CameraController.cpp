@@ -47,6 +47,14 @@ void CameraController::cameraLoop()
 		}
 
 		currentFrame = optitrackCamera->captureFramesPacket();
+
+		if (currentFrame->isEmpty())
+		{
+			delete currentFrame;
+			currentFrame = nullptr;
+			continue;
+		}
+
 		shouldKeepPrevFrame = shouldRecord || shouldCapture;
 
 		if (shouldRecord)

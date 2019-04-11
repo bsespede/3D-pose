@@ -14,8 +14,9 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}
 set(OptiTrack_INCLUDE_DIR "$ENV{OptiTrack_DIR}/include")
 include_directories(${OptiTrack_INCLUDE_DIR})
 set(OptiTrack_LIB_DIR "$ENV{OptiTrack_DIR}/lib")
-add_library(OptiTrack::CameraLibrary2015x64S STATIC IMPORTED)
-set_property(TARGET OptiTrack::CameraLibrary2015x64S PROPERTY IMPORTED_LOCATION ${OptiTrack_LIB_DIR}/CameraLibrary2015x64S.lib)
+add_library(OptiTrack::CameraLibrary2008x64S STATIC IMPORTED)
+set_property(TARGET OptiTrack::CameraLibrary2008x64S PROPERTY IMPORTED_LOCATION ${OptiTrack_LIB_DIR}/CameraLibrary2008x64S.lib)
+message("${OptiTrack_LIB_DIR}")
 
 #Include OpenCV package, headers, libraries
 find_package(OpenCV REQUIRED)
@@ -45,4 +46,4 @@ add_executable (${PROJECT_NAME} "Main.cpp"
 								"controller/camera/optitrack/OptitrackCamera.cpp" "controller/camera/optitrack/OptitrackCamera.h")
 
 # Link it all together
-target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} ${JAVA_JVM_LIBRARY} Boost::boost OptiTrack::CameraLibrary2015x64S)
+target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} Boost::boost OptiTrack::CameraLibrary2008x64S)

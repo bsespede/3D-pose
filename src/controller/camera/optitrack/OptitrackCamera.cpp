@@ -78,10 +78,6 @@ FramesPacket* OptitrackCamera::captureFramesPacket()
 
 		frameGroup->Release();
 	}
-	else
-	{
-		BOOST_LOG_TRIVIAL(error) << "Error during synchronized capture";
-	}
 
 	return framesPacket;
 }

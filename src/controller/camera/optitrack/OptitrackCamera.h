@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <opencv2/opencv.hpp>
 #include <boost/log/trivial.hpp>
 #include "cameralibrary.h"
@@ -23,4 +24,5 @@ private:
 	Camera* camera[MAX_CAMERAS];
 	cModuleSync* sync;
 	int cameraCount;
+	atomic<int> frameCount;
 };

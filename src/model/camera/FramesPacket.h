@@ -13,6 +13,7 @@ public:
 	FramesPacket(FramesPacket* orig);
 	void addFrame(int camera, Mat frame);
 	map<int, Mat> getFrames();
+	bool isEmpty();
 private:
 	map<int, Mat> frames;
 };

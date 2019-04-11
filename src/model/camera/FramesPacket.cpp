@@ -19,3 +19,8 @@ map<int, Mat> FramesPacket::getFrames()
 {
 	return frames;
 }
+
+bool FramesPacket::isEmpty()
+{
+	return frames.empty();
+}

@@ -200,9 +200,6 @@ void Console::showCapture(Scene scene, Operation operation)
 		showOperationOptions(scene, operation);
 	}
 
-	showCamera = true;
-	std::thread captureThread = std::thread(&Console::showCameras, this);
-	captureThread.detach();
 
 	if (operation == Operation::EXTRINSICS)
 	{
@@ -244,7 +241,6 @@ void Console::showCapture(Scene scene, Operation operation)
 		appController->stopRecordingFrames();
 	}
 
-	showCamera = false;
 	appController->stopCameras();
 
 	printf("Dumping captures to disk...\n");
