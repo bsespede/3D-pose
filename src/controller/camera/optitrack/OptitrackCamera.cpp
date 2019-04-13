@@ -7,7 +7,7 @@ OptitrackCamera::OptitrackCamera() : cameraCount(0)
 
 bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 {
-	CameraLibrary::CameraManager::X();
+	CameraManager::X();
 	CameraManager::X().WaitForInitialization();
 	cameraCount = 0;
 
@@ -56,30 +56,32 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 FramesPacket* OptitrackCamera::captureFramesPacket()
 {
 	FrameGroup* frameGroup = sync->GetFrameGroup();
-	FramesPacket* framesPacket = new FramesPacket();
-
+	
 	if (frameGroup)
 	{
+		FramesPacket* framesPacket = new FramesPacket();
+
 		for (int i = 0; i < frameGroup->Count(); i++)
 		{
 			Frame* frame = frameGroup->GetFrame(i);
 			Camera* camera = frame->GetCamera();
 
-			int cameraId = camera->Serial();
+			int cameraSerial = camera->Serial();
 			int cameraWidth = camera->Width();
 			int cameraHeight = camera->Height();
 
 			cv::Mat frameMat = cv::Mat(cv::Size(cameraWidth, cameraHeight), CV_8UC1);
 			frame->Rasterize(cameraWidth, cameraHeight, frameMat.step, 8, frameMat.data);
 
-			framesPacket->addFrame(cameraId, frameMat);
+			framesPacket->addFrame(cameraSerial, frameMat);
 			frame->Release();
 		}
 
 		frameGroup->Release();
+		return framesPacket;
 	}
 
-	return framesPacket;
+	return nullptr;
 }
 
 void OptitrackCamera::stopCameras()

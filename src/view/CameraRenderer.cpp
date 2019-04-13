@@ -9,7 +9,7 @@ CameraRenderer::CameraRenderer(int barHeight, int cameraHeight, int cameraWidth,
 	this->cols = cols;
 }
 
-void CameraRenderer::render(FramesPacket framesPacket)
+void CameraRenderer::render(FramesPacket* framesPacket)
 {
 	Mat mergedImage = Mat(cameraHeight * rows - rows + 1, cameraWidth * cols - cols + 1, CV_8UC1, Scalar(15));
 
@@ -39,7 +39,7 @@ void CameraRenderer::render(FramesPacket framesPacket)
 		}
 	}
 
-	for (pair<int, Mat> pair : framesPacket.getFrames()) {
+	for (pair<int, Mat> pair : framesPacket->getFrames()) {
 		int u = pair.first % cols;
 		int v = pair.first / rows;
 

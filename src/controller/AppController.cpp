@@ -74,7 +74,7 @@ int AppController::getCamerasFps()
 	return cameraController->getCamerasFps();
 }
 
-FramesPacket AppController::getSafeFrame()
+FramesPacket* AppController::getSafeFrame()
 {
 	return cameraController->getSafeFrame();
 }

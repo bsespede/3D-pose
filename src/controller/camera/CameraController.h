@@ -3,7 +3,6 @@
 #include <list>
 #include <thread>
 #include <atomic>
-#include <mutex>
 
 #include "controller/camera/optitrack/OptitrackCamera.h"
 #include "model/camera/FramesPacket.h"
@@ -27,7 +26,7 @@ public:
 	Capture* getCapture();
 
 	// Frame control
-	FramesPacket getSafeFrame();
+	FramesPacket* getSafeFrame();
 	void updateSafeFrame();
 
 	// Other
@@ -35,12 +34,11 @@ public:
 private:
 	OptitrackCamera* optitrackCamera;
 	Capture* capture;
-	FramesPacket safeFrame;
+	FramesPacket* safeFrame;
 	atomic<bool> shouldUpdateSafeFrame;
 	atomic<bool> shouldLoopThread;
 	atomic<bool> shouldRecord;
 	atomic<bool> shouldCapture;
-	mutex racePreventer;
 	int camerasFps;
 	void cameraLoop();
 };

@@ -27,7 +27,7 @@ public:
 	void dumpCapture(Scene scene, Operation operation);
 
 	// Other
-	FramesPacket getSafeFrame();
+	FramesPacket* getSafeFrame();
 	void updateSafeFrame();
 	int getCamerasFps();
 	int getMaxCheckboards();

@@ -4,8 +4,8 @@ CameraController::CameraController(int camerasFps)
 {
 	this->optitrackCamera = new OptitrackCamera();
 	this->capture = new Capture();
-	this->safeFrame = FramesPacket();
-	this->shouldUpdateSafeFrame = false;
+	this->safeFrame = nullptr;
+	this->shouldUpdateSafeFrame = true;
 	this->shouldLoopThread = false;
 	this->shouldRecord = false;
 	this->shouldCapture = false;
@@ -46,13 +46,16 @@ void CameraController::cameraLoop()
 			delete currentFrame;
 		}
 
-		currentFrame = optitrackCamera->captureFramesPacket();
+		FramesPacket* capturedFrame = optitrackCamera->captureFramesPacket();
 
-		if (currentFrame->isEmpty())
+		if (currentFrame == nullptr)
 		{
-			delete currentFrame;
-			currentFrame = nullptr;
+			std::this_thread::sleep_until(timePoint);
 			continue;
+		}
+		else
+		{
+			currentFrame = capturedFrame;
 		}
 
 		shouldKeepPrevFrame = shouldRecord || shouldCapture;
@@ -70,7 +73,12 @@ void CameraController::cameraLoop()
 
 		if (shouldUpdateSafeFrame)
 		{
-			safeFrame = FramesPacket(currentFrame);
+			if (safeFrame != nullptr)
+			{
+				delete safeFrame;
+			}			
+
+			safeFrame = new FramesPacket(currentFrame);
 			shouldUpdateSafeFrame = false;
 		}
 
@@ -104,9 +112,16 @@ void CameraController::updateSafeFrame()
 	shouldUpdateSafeFrame = true;
 }
 
-FramesPacket CameraController::getSafeFrame()
+FramesPacket* CameraController::getSafeFrame()
 {
-	return safeFrame;
+	if (shouldUpdateSafeFrame)
+	{
+		return nullptr;
+	}
+	else
+	{
+		return safeFrame;
+	}
 }
 
 Capture* CameraController::getCapture()

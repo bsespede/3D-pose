@@ -14,7 +14,7 @@ Console::Console(AppController* appController)
 
 	this->appController = appController;
 	this->cameraRenderer = new CameraRenderer(barHeight, cameraHeight, cameraWidth, rows, cols);
-	this->showCamera = false;
+	this->showCamera = true;
 	this->guiFps = guiFps;
 }
 
@@ -200,7 +200,6 @@ void Console::showCapture(Scene scene, Operation operation)
 		showOperationOptions(scene, operation);
 	}
 
-
 	if (operation == Operation::EXTRINSICS)
 	{
 		printf("Prepare to capture empty scene (press any key to start)...\n");
@@ -256,8 +255,13 @@ void Console::showCameras()
 		int milisecondsToSleep = (int)(1.0 / guiFps) * 1000;
 		chrono::system_clock::time_point timePoint = chrono::system_clock::now() + chrono::milliseconds(milisecondsToSleep);
 
-		cameraRenderer->render(appController->getSafeFrame());
-		appController->updateSafeFrame();
+		FramesPacket* safeFrame = appController->getSafeFrame();
+
+		if (safeFrame != nullptr)
+		{
+			cameraRenderer->render(safeFrame);
+			appController->updateSafeFrame();
+		}		
 
 		this_thread::sleep_until(timePoint);
 	}
