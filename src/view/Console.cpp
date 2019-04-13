@@ -14,8 +14,11 @@ Console::Console(AppController* appController)
 
 	this->appController = appController;
 	this->cameraRenderer = new CameraRenderer(barHeight, cameraHeight, cameraWidth, rows, cols);
-	this->showCamera = true;
 	this->guiFps = guiFps;
+	this->showCamera = true;
+
+	thread camerasThread = thread(&Console::showCameras, this);
+	camerasThread.detach();	
 }
 
 void Console::start()
@@ -252,7 +255,7 @@ void Console::showCameras()
 {
 	while (showCamera)
 	{
-		int milisecondsToSleep = (int)(1.0 / guiFps) * 1000;
+		int milisecondsToSleep = (int)(1.0 / guiFps * 1000);
 		chrono::system_clock::time_point timePoint = chrono::system_clock::now() + chrono::milliseconds(milisecondsToSleep);
 
 		FramesPacket* safeFrame = appController->getSafeFrame();
@@ -264,6 +267,7 @@ void Console::showCameras()
 		}		
 
 		this_thread::sleep_until(timePoint);
+		printf("%d\n", milisecondsToSleep);
 	}
 }
 

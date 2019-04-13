@@ -38,7 +38,7 @@ void CameraController::cameraLoop()
 
 	while (shouldLoopThread)
 	{
-		int milisecondsToSleep = (int)(1.0 / camerasFps) * 1000;
+		int milisecondsToSleep = (int)(1.0 / camerasFps * 1000);
 		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(milisecondsToSleep);
 
 		if (!shouldKeepPrevFrame && currentFrame != nullptr)
