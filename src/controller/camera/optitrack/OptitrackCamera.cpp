@@ -1,6 +1,6 @@
 #include "OptitrackCamera.h"
 
-OptitrackCamera::OptitrackCamera() : cameraCount(0)
+OptitrackCamera::OptitrackCamera()
 {
 	CameraLibrary_EnableDevelopment();
 }
@@ -17,7 +17,7 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 
 		if (camera[i] == nullptr)
 		{
-			BOOST_LOG_TRIVIAL(warning) << "Couldn't connect to camera " + std::to_string(i);
+			BOOST_LOG_TRIVIAL(warning) << "Couldn't connect to camera";
 		}
 		else
 		{
@@ -42,10 +42,6 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 	for (int i = 0; i < cameraCount; i++)
 	{
 		sync->AddCamera(camera[i]);
-	}
-
-	for (int i = 0; i < cameraCount; i++)
-	{
 		camera[i]->Start();
 		camera[i]->SetVideoType(mode);
 	}
@@ -66,14 +62,14 @@ FramesPacket* OptitrackCamera::captureFramesPacket()
 			Frame* frame = frameGroup->GetFrame(i);
 			Camera* camera = frame->GetCamera();
 
-			int cameraSerial = camera->Serial();
+			int cameraId = camera->CameraID();
 			int cameraWidth = camera->Width();
 			int cameraHeight = camera->Height();
 
 			cv::Mat frameMat = cv::Mat(cv::Size(cameraWidth, cameraHeight), CV_8UC1);
 			frame->Rasterize(cameraWidth, cameraHeight, frameMat.step, 8, frameMat.data);
 
-			framesPacket->addFrame(cameraSerial, frameMat);
+			framesPacket->addFrame(cameraId, frameMat);
 			frame->Release();
 		}
 

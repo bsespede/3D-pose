@@ -38,7 +38,7 @@ private:
 	atomic<bool> shouldUpdateSafeFrame;
 	atomic<bool> shouldLoopThread;
 	atomic<bool> shouldRecord;
-	atomic<bool> shouldCapture;
+	atomic<bool> shouldSnap;
 	int camerasFps;
 	void cameraLoop();
 };

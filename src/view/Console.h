@@ -30,6 +30,7 @@ public:
 	void showCapture(Scene scene, Operation operation);
 	void showCameras();
 	void showProcess(Scene scene, Operation operation);
+	void showCamerasTest();
 	void showStatusMessage(string message, int fontColor);
 private:
 	AppController* appController;

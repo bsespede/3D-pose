@@ -1,7 +1,9 @@
 #include "Scene.h"
 
-Scene::Scene(string name, string date) : name(name), date(date)
+Scene::Scene(string name, string date)
 {
+	this->name = name;
+	this->date = date;
 }
 
 string Scene::getDate()

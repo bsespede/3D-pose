@@ -15,10 +15,7 @@ Console::Console(AppController* appController)
 	this->appController = appController;
 	this->cameraRenderer = new CameraRenderer(barHeight, cameraHeight, cameraWidth, rows, cols);
 	this->guiFps = guiFps;
-	this->showCamera = true;
-
-	thread camerasThread = thread(&Console::showCameras, this);
-	camerasThread.detach();	
+	this->showCamera = false;
 }
 
 void Console::start()
@@ -40,7 +37,8 @@ void Console::showMenu()
 		printf("\nChoose an action from the following:\n");
 		printf("(1) Create scene\n");
 		printf("(2) Load scene\n");
-		printf("(3) Exit\n");
+		printf("(3) Test cameras\n");
+		printf("(4) Exit\n");
 
 		char input = getch();
 
@@ -54,7 +52,11 @@ void Console::showMenu()
 		}
 		else if (input == '3')
 		{
-			exit(0);
+			showCamerasTest();
+		}
+		else if (input == '4')
+		{
+			break;
 		}
 		else
 		{
@@ -203,6 +205,10 @@ void Console::showCapture(Scene scene, Operation operation)
 		showOperationOptions(scene, operation);
 	}
 
+	showCamera = true;
+	thread camerasThread = thread(&Console::showCameras, this);
+	camerasThread.detach();
+
 	if (operation == Operation::EXTRINSICS)
 	{
 		printf("Prepare to capture empty scene (press any key to start)...\n");
@@ -243,7 +249,8 @@ void Console::showCapture(Scene scene, Operation operation)
 		appController->stopRecordingFrames();
 	}
 
-	appController->stopCameras();
+	showCamera = false;
+	appController->stopCameras();	
 
 	printf("Dumping captures to disk...\n");
 	appController->dumpCapture(scene, operation);
@@ -267,7 +274,6 @@ void Console::showCameras()
 		}		
 
 		this_thread::sleep_until(timePoint);
-		printf("%d\n", milisecondsToSleep);
 	}
 }
 
@@ -275,6 +281,27 @@ void Console::showProcess(Scene scene, Operation operation)
 {
 	// TODO: Implement capture processing
 	showStatusMessage("Processing not implemented yet\n", RED);
+}
+
+void Console::showCamerasTest()
+{
+	printf("\nInitializing cameras...\n");
+	if (!appController->startCameras(CaptureMode::PRECISION))
+	{
+		showStatusMessage("Camera initialization failed\n", RED);
+		showMenu();
+	}
+
+	showCamera = true;
+	thread camerasThread = thread(&Console::showCameras, this);
+	camerasThread.detach();
+
+	printf("Showing initialized cameras (press any key to stop)...\n");
+	getch();
+
+	showCamera = false;
+	appController->stopCameras();
+	showStatusMessage("Camera testing finished\n", GREEN);
 }
 
 void Console::showStatusMessage(string message, int fontColor)

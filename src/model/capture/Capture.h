@@ -12,8 +12,8 @@ class Capture
 public:
 	Capture();
 	void addToCaptureRecording(FramesPacket* frame);
-	std::list<FramesPacket*> getRecording();
-	void addToCaptureFrame(FramesPacket* frame);	
+	void addToCaptureFrame(FramesPacket* frame);
+	std::list<FramesPacket*> getRecording();	
 	std::vector<FramesPacket*> getFrames();
 private:
 	std::vector<FramesPacket*> frames;
