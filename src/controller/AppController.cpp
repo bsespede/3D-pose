@@ -69,11 +69,6 @@ void AppController::dumpCapture(Scene scene, Operation operation)
 	sceneController->saveCapture(scene, operation, cameraController->getCapture());
 }
 
-int AppController::getCamerasFps()
-{
-	return cameraController->getCamerasFps();
-}
-
 FramesPacket* AppController::getSafeFrame()
 {
 	return cameraController->getSafeFrame();

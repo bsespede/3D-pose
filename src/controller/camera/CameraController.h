@@ -29,8 +29,6 @@ public:
 	FramesPacket* getSafeFrame();
 	void updateSafeFrame();
 
-	// Other
-	int getCamerasFps();
 private:
 	OptitrackCamera* optitrackCamera;
 	Capture* capture;

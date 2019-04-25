@@ -29,7 +29,6 @@ public:
 	// Other
 	FramesPacket* getSafeFrame();
 	void updateSafeFrame();
-	int getCamerasFps();
 	int getMaxCheckboards();
 private:
 	SceneController* sceneController;

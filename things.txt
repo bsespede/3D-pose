@@ -1,0 +1,22 @@
+- fix bug frontend
+- test hubs:
+	- conectar individualmente: ok
+	- conectar a salida del hub
+- test captura varias camaras
+	- camera 1: 128316
+	- camera 2: 128309 
+	- camera 3: 346594 x
+	- camera 4: 128310
+	- camera 5: 346593
+	- camera 6: 128303
+	- camera 7: 128304
+	- camera 8: 128318
+
+
+- probar calibracion intrinseca con imagenes
+- programar extrinseca
+- programar algoritmo stereo
+- programar server gpu
+
+- mandar grabacion x4 camaras
+- fijarme lo de la placa usb

@@ -62,5 +62,5 @@ void CameraRenderer::render(FramesPacket* framesPacket)
 	}
 
 	imshow("Pose3D Cameras", mergedImage);
-	waitKey(0);
+	waitKey(1);
 }

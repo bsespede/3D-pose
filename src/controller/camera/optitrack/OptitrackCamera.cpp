@@ -1,8 +1,9 @@
 #include "OptitrackCamera.h"
 
-OptitrackCamera::OptitrackCamera()
+OptitrackCamera::OptitrackCamera(int camerasFps)
 {
 	CameraLibrary_EnableDevelopment();
+	this->camerasFps = camerasFps;
 }
 
 bool OptitrackCamera::startCameras(Core::eVideoMode mode)
@@ -21,6 +22,7 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 		}
 		else
 		{
+			BOOST_LOG_TRIVIAL(warning) << "Connected camera with id " << camera[i]->Serial();
 			cameraCount++;
 		}
 	}
@@ -44,6 +46,9 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 		sync->AddCamera(camera[i]);
 		camera[i]->Start();
 		camera[i]->SetVideoType(mode);
+		camera[i]->SetExposure(camera[i]->MaximumExposureValue());
+		camera[i]->SetFrameRate(camerasFps);
+		camera[i]->SetContinuousIR(true);
 	}
 
 	return true;
@@ -75,6 +80,10 @@ FramesPacket* OptitrackCamera::captureFramesPacket()
 
 		frameGroup->Release();
 		return framesPacket;
+	}
+	else
+	{
+		BOOST_LOG_TRIVIAL(warning) << "Empty packet";
 	}
 
 	return nullptr;

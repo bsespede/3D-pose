@@ -15,7 +15,7 @@ using namespace CameraLibrary;
 class OptitrackCamera
 {
 public:
-	OptitrackCamera();
+	OptitrackCamera(int camerasFps);
 	bool startCameras(Core::eVideoMode mode);
 	FramesPacket* captureFramesPacket();
 	void stopCameras();
@@ -25,4 +25,5 @@ private:
 	cModuleSync* sync;
 	int cameraCount;
 	atomic<int> frameCount;
+	int camerasFps;
 };

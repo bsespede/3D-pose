@@ -235,7 +235,7 @@ void Console::showCapture(Scene scene, Operation operation)
 			this_thread::sleep_for(chrono::seconds(10));
 			Beep(500, 400);
 			appController->captureFrame();
-			printf("Captured frame %d/%d...", checkboardNumber, appController->getMaxCheckboards());
+			printf("Captured frame %d/%d...\n", checkboardNumber + 1, appController->getMaxCheckboards());
 		}
 	}
 	else
@@ -270,8 +270,9 @@ void Console::showCameras()
 		if (safeFrame != nullptr)
 		{
 			cameraRenderer->render(safeFrame);
-			appController->updateSafeFrame();
-		}		
+		}	
+
+		appController->updateSafeFrame();
 
 		this_thread::sleep_until(timePoint);
 	}
@@ -286,7 +287,7 @@ void Console::showProcess(Scene scene, Operation operation)
 void Console::showCamerasTest()
 {
 	printf("\nInitializing cameras...\n");
-	if (!appController->startCameras(CaptureMode::PRECISION))
+	if (!appController->startCameras(CaptureMode::GRAYSCALE))
 	{
 		showStatusMessage("Camera initialization failed\n", RED);
 		showMenu();

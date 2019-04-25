@@ -2,7 +2,7 @@
 
 CameraController::CameraController(int camerasFps)
 {
-	this->optitrackCamera = new OptitrackCamera();
+	this->optitrackCamera = new OptitrackCamera(camerasFps);
 	this->capture = new Capture();
 	this->safeFrame = nullptr;
 	this->shouldUpdateSafeFrame = false;
@@ -121,9 +121,4 @@ FramesPacket* CameraController::getSafeFrame()
 Capture* CameraController::getCapture()
 {
 	return capture;
-}
-
-int CameraController::getCamerasFps()
-{
-	return camerasFps;
 }
