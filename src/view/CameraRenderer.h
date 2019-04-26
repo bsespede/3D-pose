@@ -8,7 +8,8 @@ using namespace cv;
 class CameraRenderer
 {
 public:
-	CameraRenderer(int barHeight, int cameraHeight, int cameraWidth, int rows, int cols);
+	CameraRenderer(int cameraWidth, int cameraHeight, int maxWidth, int maxHeight, int cameraNumber, int barHeight);
+	void calculateSizeProportion(float prop, int cameraWidth, int cameraHeight, int maxWidth, int maxHeight, int cameraNumber, int barHeight);
 	void render(FramesPacket* framesPacket);
 private:
 	int barHeight;
@@ -16,4 +17,5 @@ private:
 	int cameraHeight;
 	int rows;
 	int cols;
+	float prop;
 };

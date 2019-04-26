@@ -48,7 +48,6 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 		camera[i]->SetVideoType(mode);
 		camera[i]->SetExposure(camera[i]->MaximumExposureValue());
 		camera[i]->SetFrameRate(camerasFps);
-		camera[i]->SetContinuousIR(true);
 	}
 
 	return true;

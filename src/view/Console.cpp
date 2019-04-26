@@ -205,9 +205,9 @@ void Console::showCapture(Scene scene, Operation operation)
 		showOperationOptions(scene, operation);
 	}
 
-	showCamera = true;
-	thread camerasThread = thread(&Console::showCameras, this);
-	camerasThread.detach();
+	//showCamera = true;
+	//thread camerasThread = thread(&Console::showCameras, this);
+	//camerasThread.detach();
 
 	if (operation == Operation::EXTRINSICS)
 	{
@@ -249,7 +249,7 @@ void Console::showCapture(Scene scene, Operation operation)
 		appController->stopRecordingFrames();
 	}
 
-	showCamera = false;
+	//showCamera = false;
 	appController->stopCameras();	
 
 	printf("Dumping captures to disk...\n");
