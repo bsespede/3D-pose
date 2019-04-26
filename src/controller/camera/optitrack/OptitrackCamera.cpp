@@ -1,9 +1,10 @@
 #include "OptitrackCamera.h"
 
-OptitrackCamera::OptitrackCamera(int camerasFps)
+OptitrackCamera::OptitrackCamera(Config* config)
 {
 	CameraLibrary_EnableDevelopment();
-	this->camerasFps = camerasFps;
+	this->camerasFps = config->getCamerasFps();
+	this->camerasOrder = config->getCamerasOrder();
 }
 
 bool OptitrackCamera::startCameras(Core::eVideoMode mode)
@@ -66,7 +67,7 @@ FramesPacket* OptitrackCamera::captureFramesPacket()
 			Frame* frame = frameGroup->GetFrame(i);
 			Camera* camera = frame->GetCamera();
 
-			int cameraId = camera->CameraID();
+			int cameraId = camerasOrder[camera->Serial()];
 			int cameraWidth = camera->Width();
 			int cameraHeight = camera->Height();
 

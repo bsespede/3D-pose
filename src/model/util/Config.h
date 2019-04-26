@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include <map>
 #include <string>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -22,7 +22,7 @@ public:
 	int getMaxCheckboards();
 	int getCheckboardInterval();
 	int getCamerasNumber();
-	vector<int> getCamerasOrder();
+	map<int, int> getCamerasOrder();
 	int getCamerasFps();
 private:
 	string dataPath;
@@ -34,6 +34,6 @@ private:
 	int guiFps;
 	int maxCheckboards;
 	int checkboardInterval;
-	vector<int> camerasOrder;
+	map<int, int> camerasOrder;
 	int camerasFps;	
 };

@@ -4,7 +4,7 @@ AppController::AppController(Config* config)
 {
 	this->sceneController = new SceneController(config->getDataPath());
 	this->calibrationController = new CalibrationController(config->getMaxCheckboards());
-	this->cameraController = new CameraController(config->getCamerasFps());
+	this->cameraController = new CameraController(config);
 }
 
 bool AppController::sceneExists(string name)

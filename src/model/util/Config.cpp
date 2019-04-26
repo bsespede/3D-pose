@@ -15,9 +15,12 @@ Config::Config()
 	this->guiFps = root.get<int>("config.gui.fps");
 
 	this->camerasOrder = std::vector<int>();
+	int cameraNumber = 0;
 	for (property_tree::ptree::value_type &cameraId : root.get_child("cameras.camerasOrder"))
 	{
-		camerasOrder.push_back(cameraId.second.get_value<int>());
+		int serial = cameraId.second.get_value<int>();
+		camerasOrder[serial] = cameraNumber;
+		cameraNumber++;
 	}
 
 	this->maxCheckboards = root.get<int>("config.cameras.maxCheckboards");
@@ -75,7 +78,7 @@ int Config::getCamerasNumber()
 	return camerasOrder.size();
 }
 
-vector<int> Config::getCamerasOrder()
+map<int, int> Config::getCamerasOrder()
 {
 	return camerasOrder;
 }

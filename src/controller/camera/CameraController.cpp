@@ -1,15 +1,15 @@
 #include "CameraController.h"
 
-CameraController::CameraController(int camerasFps)
+CameraController::CameraController(Config* config)
 {
-	this->optitrackCamera = new OptitrackCamera(camerasFps);
+	this->optitrackCamera = new OptitrackCamera(config);
 	this->capture = new Capture();
 	this->safeFrame = nullptr;
 	this->shouldUpdateSafeFrame = false;
 	this->shouldLoopThread = false;
 	this->shouldRecord = false;
 	this->shouldSnap = false;
-	this->camerasFps = camerasFps;
+	this->camerasFps = config->getCamerasFps();
 }
 
 bool CameraController::startCameras(CaptureMode mode)

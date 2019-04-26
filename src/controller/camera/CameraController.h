@@ -15,7 +15,7 @@ class CameraController
 {
 public:
 	// Hardware control
-	CameraController(int camerasFps);
+	CameraController(Config* config);
 	bool startCameras(CaptureMode mode);
 	void stopCameras();
 
