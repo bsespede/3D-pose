@@ -10,8 +10,7 @@
 	- camera 5: 346593
 	- camera 6: 128303
 	- camera 7: 128304
-	- camera 8: 128318
-
+	- camera 8: 128318 x
 
 - probar calibracion intrinseca con imagenes
 - programar extrinseca
@@ -19,4 +18,3 @@
 - programar server gpu
 
 - mandar grabacion x4 camaras
-- fijarme lo de la placa usb

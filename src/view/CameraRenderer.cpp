@@ -1,14 +1,14 @@
 #include "CameraRenderer.h"
 
-CameraRenderer::CameraRenderer(int cameraWidth, int cameraHeight, int maxWidth, int maxHeight, int cameraNumber, int barHeight)
+CameraRenderer::CameraRenderer(int cameraWidth, int cameraHeight, int maxWidth, int maxHeight, int camerasNumber, int barHeight)
 {
 	this->barHeight = barHeight;
 	this->cameraHeight = cameraHeight;
 	this->cameraWidth = cameraWidth;
-	calculateSizeProportion(1.0, cameraWidth, cameraHeight, maxWidth, maxHeight, cameraNumber, barHeight);
+	calculateSizeProportion(1.0, cameraWidth, cameraHeight, maxWidth, maxHeight, camerasNumber, barHeight);
 }
 
-void CameraRenderer::calculateSizeProportion(float prop, int cameraWidth, int cameraHeight, int maxWidth, int maxHeight, int cameraNumber, int barHeight)
+void CameraRenderer::calculateSizeProportion(float prop, int cameraWidth, int cameraHeight, int maxWidth, int maxHeight, int camerasNumber, int barHeight)
 {
 	int curWidth = cameraWidth * prop + 1;
 	int curHeight = cameraHeight * prop + barHeight + 2;
@@ -18,9 +18,9 @@ void CameraRenderer::calculateSizeProportion(float prop, int cameraWidth, int ca
 
 	int maxCameras = numberWidth * numberHeight;
 
-	if (maxCameras < cameraNumber)
+	if (maxCameras < camerasNumber)
 	{
-		calculateSizeProportion(prop - 0.05, cameraWidth, cameraHeight, maxWidth, maxHeight, cameraNumber, barHeight);
+		calculateSizeProportion(prop - 0.05, cameraWidth, cameraHeight, maxWidth, maxHeight, camerasNumber, barHeight);
 	}
 	else
 	{

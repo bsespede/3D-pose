@@ -1,17 +1,10 @@
 #include "AppController.h"
 
-AppController::AppController()
+AppController::AppController(Config* config)
 {
-	property_tree::ptree root;
-	property_tree::read_json("app-config.json", root);
-
-	string path = root.get<string>("config.path");
-	int maxCheckboards = root.get<int>("config.maxCheckboards");
-	int cameraFps = root.get<int>("config.cameraFps");
-
-	this->sceneController = new SceneController(path);
-	this->calibrationController = new CalibrationController(maxCheckboards);
-	this->cameraController = new CameraController(cameraFps);
+	this->sceneController = new SceneController(config->getDataPath());
+	this->calibrationController = new CalibrationController(config->getMaxCheckboards());
+	this->cameraController = new CameraController(config->getCamerasFps());
 }
 
 bool AppController::sceneExists(string name)

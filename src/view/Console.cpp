@@ -1,20 +1,11 @@
 #include "Console.h"
 
-Console::Console(AppController* appController)
+Console::Console(Config* config, AppController* appController)
 {
-	property_tree::ptree root;
-	property_tree::read_json("app-config.json", root);
-
-	int barHeight = root.get<int>("config.barHeight");
-	int cameraHeight = root.get<int>("config.cameraHeight");
-	int cameraWidth = root.get<int>("config.cameraWidth");
-	int rows = root.get<int>("config.rows");
-	int cols = root.get<int>("config.cols");
-	int guiFps = root.get<int>("config.guiFps");
-
 	this->appController = appController;
-	this->cameraRenderer = new CameraRenderer(barHeight, cameraHeight, cameraWidth, rows, cols);
-	this->guiFps = guiFps;
+	this->cameraRenderer = new CameraRenderer(config->getCameraWidth(), config->getCameraHeight(), config->getMaxWidth(), config->getMaxHeight(), config->getCamerasNumber(), config->getBarHeight());
+	this->guiFps = config->getGuiFps();
+	this->checkboardInterval = config->getCheckboardInterval();
 	this->showCamera = false;
 }
 

@@ -3,13 +3,14 @@
 #include "controller/scene/SceneController.h"
 #include "controller/camera/CameraController.h"
 #include "controller/calibration/CalibrationController.h"
+#include "model/util/Config.h"
 
 using namespace std;
 
 class AppController
 {
 public:
-	AppController();
+	AppController(Config* config);
 
 	// Scene I/O
 	bool sceneExists(string name);
