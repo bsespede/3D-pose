@@ -47,4 +47,5 @@
 - Implementacion de calibracion y calculo de distorsion usando charuco board:
 	- Se agregan parametros al config file.
 	- Impresion de charuco boards.
+	- Integracion de generacion de generacion de checkboards a UI.
 - Modificacion del tiempo de exposicion durante calibracion para reducir blur, hacer pruebas semana que viene evaluando error de reproyeccion.

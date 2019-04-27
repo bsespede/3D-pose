@@ -3,7 +3,7 @@
 AppController::AppController(Config* config)
 {
 	this->sceneController = new SceneController(config->getDataPath());
-	this->calibrationController = new CalibrationController(config->getMaxCheckboards());
+	this->calibrationController = new CalibrationController(config);
 	this->cameraController = new CameraController(config);
 }
 
@@ -75,4 +75,9 @@ void AppController::updateSafeFrame()
 int AppController::getMaxCheckboards()
 {
 	return calibrationController->getMaxCheckboards();
+}
+
+void AppController::generateCheckboard()
+{
+	calibrationController->generateCheckboard(sceneController->getPath());
 }

@@ -31,6 +31,7 @@ public:
 	void showCameras();
 	void showProcess(Scene scene, Operation operation);
 	void showCamerasTest();
+	void showGenerateCheckboard();
 	void showStatusMessage(string message, int fontColor);
 private:
 	AppController* appController;

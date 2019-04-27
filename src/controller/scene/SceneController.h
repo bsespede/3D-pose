@@ -32,6 +32,10 @@ public:
 
 	// Capture I/O
 	void saveCapture(Scene scene, Operation operation, Capture* capture);
+
+	// Other
+	string getPath();
+
 private:
 	string path;
 };

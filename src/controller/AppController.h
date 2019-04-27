@@ -31,6 +31,7 @@ public:
 	FramesPacket* getSafeFrame();
 	void updateSafeFrame();
 	int getMaxCheckboards();
+	void generateCheckboard();
 private:
 	SceneController* sceneController;
 	CameraController* cameraController;

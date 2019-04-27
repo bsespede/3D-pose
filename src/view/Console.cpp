@@ -28,7 +28,8 @@ void Console::showMenu()
 		printf("(1) Create scene\n");
 		printf("(2) Load scene\n");
 		printf("(3) Test cameras\n");
-		printf("(4) Exit\n");
+		printf("(4) Generate charuco checkboard\n");
+		printf("(5) Exit\n");
 
 		char input = getch();
 
@@ -45,6 +46,10 @@ void Console::showMenu()
 			showCamerasTest();
 		}
 		else if (input == '4')
+		{
+			showGenerateCheckboard();
+		}
+		else if (input == '5')
 		{
 			break;
 		}
@@ -294,6 +299,13 @@ void Console::showCamerasTest()
 	showCamera = false;
 	appController->stopCameras();
 	showStatusMessage("Camera testing finished\n", GREEN);
+}
+
+void Console::showGenerateCheckboard()
+{
+	printf("\nGenerating checkboard...\n");
+	appController->generateCheckboard();
+	showStatusMessage("Generated checkboard in data folder succesfully\n", GREEN);
 }
 
 void Console::showStatusMessage(string message, int fontColor)

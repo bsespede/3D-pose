@@ -133,3 +133,8 @@ void SceneController::saveCapture(Scene scene, Operation operation, Capture* cap
 
 	delete capture;
 }
+
+string SceneController::getPath()
+{
+	return path;
+}

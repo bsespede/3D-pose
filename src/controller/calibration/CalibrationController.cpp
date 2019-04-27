@@ -1,10 +1,14 @@
 #include "CalibrationController.h"
 
-CalibrationController::CalibrationController(int maxCheckboards)
+CalibrationController::CalibrationController(Config* config)
 {
 	this->dictionary = aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-	this->board = aruco::CharucoBoard::create(5, 7, 47.18f, 23.63f, dictionary);
-	this->maxCheckboards = maxCheckboards;
+	this->board = aruco::CharucoBoard::create(config->getCheckboardCols(), config->getCheckboardRows(), config->getCheckboardSquareLength(), config->getCheckboardMarkerLength(), dictionary);
+	this->checkboardName = config->getCheckboardName();
+	this->checkboardWidth = config->getCheckboardWidth();
+	this->checkboardHeight = config->getCheckboardHeight();
+	this->checkboardMargin = config->getCheckboardMargin();
+	this->maxCheckboards = config->getMaxCheckboards();
 }
 
 int CalibrationController::getMaxCheckboards()
@@ -12,11 +16,11 @@ int CalibrationController::getMaxCheckboards()
 	return maxCheckboards;
 }
 
-void CalibrationController::printCheckboard(string pathToOutput)
+void CalibrationController::generateCheckboard(string pathToOutput)
 {
 	Mat boardImage;
-	board->draw(cv::Size(1485, 2100), boardImage, 150, 1);
-	imwrite(pathToOutput + "/board.png", boardImage);
+	board->draw(cv::Size(checkboardWidth, checkboardHeight), boardImage, checkboardMargin, 1);
+	imwrite(pathToOutput + "/" + checkboardName + ".png", boardImage);
 }
 
 IntrinsicCalibration CalibrationController::calculateIntrinsics(string pathToInput)
