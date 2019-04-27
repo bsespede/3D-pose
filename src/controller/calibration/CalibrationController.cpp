@@ -2,6 +2,7 @@
 
 CalibrationController::CalibrationController(Config* config)
 {
+	this->path = config->getDataPath();
 	this->dictionary = aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 	this->board = aruco::CharucoBoard::create(config->getCheckboardCols(), config->getCheckboardRows(), config->getCheckboardSquareLength(), config->getCheckboardMarkerLength(), dictionary);
 	this->checkboardName = config->getCheckboardName();
@@ -16,24 +17,25 @@ int CalibrationController::getMaxCheckboards()
 	return maxCheckboards;
 }
 
-void CalibrationController::generateCheckboard(string pathToOutput)
+void CalibrationController::generateCheckboard()
 {
 	Mat boardImage;
 	board->draw(cv::Size(checkboardWidth, checkboardHeight), boardImage, checkboardMargin, 1);
-	imwrite(pathToOutput + "/" + checkboardName + ".png", boardImage);
+	imwrite(path + "/" + checkboardName + ".png", boardImage);
 }
 
-IntrinsicCalibration CalibrationController::calculateIntrinsics(string pathToInput)
+IntrinsicCalibration CalibrationController::calculateIntrinsics(string scene, int cameraNumber)
 {
+	string cameraPath = path + "/" + scene + "/intrinsics/cam-" + to_string(cameraNumber);
+
 	Size frameSize;
-	Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
-		
 	vector<vector<int>> allCharucoIds;
 	vector<vector<Point2f>> allCharucoCorners;
+	Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();	
 
 	for (int frameNumber = 0; frameNumber < maxCheckboards; frameNumber++)
 	{
-		Mat frame = imread(pathToInput + "/" + to_string(frameNumber) + ".png");
+		Mat frame = imread(cameraPath + "/" + to_string(frameNumber) + ".png");
 		Mat result;
 
 		vector<int> charucoIds;
@@ -41,7 +43,7 @@ IntrinsicCalibration CalibrationController::calculateIntrinsics(string pathToInp
 		aruco::detectMarkers(frame, dictionary, charucoCorners, charucoIds, params);
 
 		aruco::drawDetectedMarkers(result, charucoCorners, charucoIds);
-		imwrite(pathToInput + "/corners-" + to_string(frameNumber) + ".png", result);
+		imwrite(cameraPath + "/corners-" + to_string(frameNumber) + ".png", result);
 
 		frameSize = frame.size();
 		allCharucoIds.push_back(charucoIds);

@@ -1,7 +1,8 @@
 #include "SceneController.h"
 
-SceneController::SceneController(string path) : path(path)
+SceneController::SceneController(string path)
 {
+	this->path = path;
 }
 
 bool SceneController::sceneExists(string name)
@@ -132,9 +133,4 @@ void SceneController::saveCapture(Scene scene, Operation operation, Capture* cap
 	}
 
 	delete capture;
-}
-
-string SceneController::getPath()
-{
-	return path;
 }

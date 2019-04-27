@@ -79,5 +79,5 @@ int AppController::getMaxCheckboards()
 
 void AppController::generateCheckboard()
 {
-	calibrationController->generateCheckboard(sceneController->getPath());
+	calibrationController->generateCheckboard();
 }

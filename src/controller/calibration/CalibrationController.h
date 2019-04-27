@@ -14,10 +14,11 @@ class CalibrationController
 {
 public:
 	CalibrationController(Config* config);
-	void generateCheckboard(string pathToOutput);
-	IntrinsicCalibration calculateIntrinsics(string pathToInput);
+	void generateCheckboard();
+	IntrinsicCalibration calculateIntrinsics(string scene, int cameraNumber);
 	int getMaxCheckboards();
 private:
+	string path;
 	string checkboardName;
 	int checkboardWidth;
 	int checkboardHeight;
