@@ -16,8 +16,7 @@ void Console::start()
 	showStatusMessage("   /_ </ / / / /_/ / __ \\/ ___/ _ \\\n", BLUE);
 	showStatusMessage(" ___/ / /_/ / ____/ /_/ /__  /  __/  \n", BLUE);
 	showStatusMessage("/____/_____/_/    \\____/____/\\___/ \n", BLUE);
-	showStatusMessage("                                     \n", BLUE);
-	
+	showStatusMessage("                                     \n", BLUE);	
 	showMenu();
 }
 
@@ -196,9 +195,9 @@ void Console::showCapture(Scene scene, Operation operation)
 		showOperationOptions(scene, operation);
 	}
 
-	//showCamera = true;
-	//thread camerasThread = thread(&Console::showCameras, this);
-	//camerasThread.detach();
+	showCamera = true;
+	thread camerasThread = thread(&Console::showCameras, this);
+	camerasThread.detach();
 
 	if (operation == Operation::EXTRINSICS)
 	{
@@ -240,7 +239,7 @@ void Console::showCapture(Scene scene, Operation operation)
 		appController->stopRecordingFrames();
 	}
 
-	//showCamera = false;
+	showCamera = false;
 	appController->stopCameras();	
 
 	printf("Dumping captures to disk...\n");
@@ -251,6 +250,7 @@ void Console::showCapture(Scene scene, Operation operation)
 
 void Console::showCameras()
 {
+	int curFrame = 0;
 	while (showCamera)
 	{
 		int milisecondsToSleep = (int)(1.0 / guiFps * 1000);

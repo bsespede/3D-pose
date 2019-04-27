@@ -14,9 +14,9 @@ Config::Config()
 	this->barHeight = root.get<int>("config.gui.barHeight");
 	this->guiFps = root.get<int>("config.gui.fps");
 
-	this->camerasOrder = std::vector<int>();
+	this->camerasOrder = std::map<int, int>();
 	int cameraNumber = 0;
-	for (property_tree::ptree::value_type &cameraId : root.get_child("cameras.camerasOrder"))
+	for (property_tree::ptree::value_type &cameraId : root.get_child("config.cameras.camerasOrder"))
 	{
 		int serial = cameraId.second.get_value<int>();
 		camerasOrder[serial] = cameraNumber;

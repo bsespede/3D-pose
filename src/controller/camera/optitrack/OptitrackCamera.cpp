@@ -23,7 +23,7 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 		}
 		else
 		{
-			BOOST_LOG_TRIVIAL(warning) << "Connected camera with id " << camera[i]->Serial();
+			BOOST_LOG_TRIVIAL(warning) << "Connected camera with serial " << camera[i]->Serial();
 			cameraCount++;
 		}
 	}

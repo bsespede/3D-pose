@@ -33,7 +33,7 @@ bool CameraController::startCameras(CaptureMode mode)
 
 void CameraController::cameraLoop()
 {
-	bool shouldKeepPrevFrame = false;
+	bool shouldKeepPrevFrame = true;
 	FramesPacket* currentFrame = nullptr;
 
 	while (shouldLoopThread)
@@ -41,9 +41,10 @@ void CameraController::cameraLoop()
 		int milisecondsToSleep = (int)(1.0 / camerasFps * 1000);
 		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(milisecondsToSleep);
 
-		if (!shouldKeepPrevFrame && currentFrame != nullptr)
+		if (!shouldKeepPrevFrame)
 		{
 			delete currentFrame;
+			shouldKeepPrevFrame = true;
 		}
 
 		FramesPacket* capturedFrame = optitrackCamera->captureFramesPacket();

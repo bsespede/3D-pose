@@ -16,7 +16,6 @@ include_directories(${OptiTrack_INCLUDE_DIR})
 set(OptiTrack_LIB_DIR "$ENV{OptiTrack_DIR}/lib")
 add_library(OptiTrack::CameraLibrary2008x64S STATIC IMPORTED)
 set_property(TARGET OptiTrack::CameraLibrary2008x64S PROPERTY IMPORTED_LOCATION ${OptiTrack_LIB_DIR}/CameraLibrary2008x64S.lib)
-message("${OptiTrack_LIB_DIR}")
 
 #Include OpenCV package, headers, libraries
 find_package(OpenCV REQUIRED)
@@ -28,7 +27,6 @@ find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
-
 # Add source to this project's executable.
 add_executable (${PROJECT_NAME} "Main.cpp" 
 								"view/Console.cpp" "view/Console.h"
@@ -37,6 +35,7 @@ add_executable (${PROJECT_NAME} "Main.cpp"
 								"model/scene/Scene.cpp" "model/scene/Scene.h" 
 								"model/scene/enum/Operation.h"
 								"model/camera/FramesPacket.cpp" "model/camera/FramesPacket.h"
+								"model/calibration/IntrinsicCalibration.cpp" "model/calibration/IntrinsicCalibration.h"
 								"model/capture/Capture.cpp" "model/capture/Capture.h"
 								"model/camera/enum/CaptureMode.h"
 								"model/util/Config.cpp" "model/util/Config.h"
