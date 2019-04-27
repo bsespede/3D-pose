@@ -1,4 +1,4 @@
-25-3-2019 (32hs):
+__25-3-2019 (32hs):__
 - Arquitectura MVC:
 	- Implementacion del CLI.
 	- Modelado de camaras y escenas.
@@ -8,11 +8,11 @@
 	- Correcion de problemas con atomics
 - Implementacion de SDK de Optitrack para capturar frames.
 
-3-4-2019 (3hs):
+__3-4-2019 (3hs):__
 - Charla con Marcela en la sala y presentacion de posibles algoritmos.
 - Se termina primera implementacion del modulo de captura sincronizada.
 
-11-4-2019 (3hs):
+__11-4-2019 (3hs):__
 - Fix a frames vacios (revisar el front y el consumo de memoria).
 - Ver el tema de los hubs.
 - Ver el tema de apagar el filtro infrarrojo.
@@ -25,7 +25,7 @@
 		- Ver en detalle gain en la tool (https://v110.wiki.optitrack.com/index.php?title=Devices_pane y filter switch)
 		- LED illumination
 
-25-4-2019 (6hs):
+__25-4-2019 (6hs):__
 - Se arreglo los memory leaks de frames vacios.
 - Tema hubs: Al grabar en maxima resolucion no daba el ancho de banda, se baja el frame rate y se comprimen en MJPEG y se pueden usar los hubs. Falta probar varios hubs en daisy chain.
 - No se puede apagar el filtro infrarrojo para estas camaras, seria ideal camaras RGBD como las intel D415.
@@ -38,7 +38,7 @@
 	- Falta ver lo del indicador de camara en motive
 - BUG: No se pueden hacer 2 grabaciones seguidas en la tool (hay que abrir y cerrar la tool).
 
-28-4-2019 (6hs):
+__28-4-2019 (6hs):__
 - Se agrego un archivo de configuracion para las camaras y la tool:
 	- Se agrego una orden predeterminado de numero de serie de camaras definido en dicho archivo (solo con las camaras de abajo por ahora)
 - Se arreglo la herramienta de previsualizacion de camaras.
