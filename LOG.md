@@ -1,12 +1,23 @@
-__25-3-2019 (32hs):__
+__19-3-2019 (20hs):__
+- Preparar entorno:
+	- Instalacion de Windows 10.
+	- Instalacion de SDK de Optitrack.
+	- Correr samples del SDK de Optitrack.
+	- Compilar OpenCV 4.1 + contrib modules.
 - Arquitectura MVC:
-	- Implementacion del CLI.
+	- Preparar archivito de CMake para levantar librerias.
+	- Implementacion de CLI.
+- Leer papers de calibracion para wands
+
+__25-3-2019 (20hs):__
+- Arquitectura MVC:
 	- Modelado de camaras y escenas.
 	- Manejo de input y output de escenas.
-	- Implementacion de previsualizacion de camaras.
+	- Implementacion de previsualizacion de camaras casi completo.
 - Implementacion de captura sincronizada no bloqueante casi completa.
-	- Correcion de problemas con atomics
+	- Correcion de problemas con deadlocks.
 - Implementacion de SDK de Optitrack para capturar frames.
+- Seguir leyendo papers de calibracion.
 
 __3-4-2019 (3hs):__
 - Charla con Marcela en la sala y presentacion de posibles algoritmos.
@@ -49,3 +60,4 @@ __28-4-2019 (6hs):__
 	- Impresion de charuco boards.
 	- Integracion de generacion de generacion de checkboards a UI.
 - Modificacion del tiempo de exposicion durante calibracion para reducir blur, hacer pruebas semana que viene evaluando error de reproyeccion.
+
