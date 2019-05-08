@@ -276,8 +276,21 @@ void Console::showCameras()
 
 void Console::showProcess(Scene scene, Operation operation)
 {
-	// TODO: Implement capture processing
-	showStatusMessage("Processing not implemented yet\n", RED);
+	if (operation == Operation::EXTRINSICS)
+	{
+		showStatusMessage("Extrinsic calibration not implemented yet\n", RED);
+	}
+	else if (operation == Operation::INTRINSICS)
+	{
+		printf("\nCalculating cameras intrinsics...\n");
+		appController->calculateIntrinsics(scene);
+		
+		showStatusMessage("Intrinsic calibration failed\n", RED);
+	}
+	else
+	{
+		showStatusMessage("3D pose reconstruction not implemented yet\n", RED);
+	}
 }
 
 void Console::showCamerasTest()

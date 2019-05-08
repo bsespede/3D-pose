@@ -5,6 +5,7 @@ AppController::AppController(Config* config)
 	this->sceneController = new SceneController(config->getDataPath());
 	this->calibrationController = new CalibrationController(config);
 	this->cameraController = new CameraController(config);
+	//calibrationController->calculateIntrinsics("test-intrinsic-8", 0);
 }
 
 bool AppController::sceneExists(string name)
@@ -62,6 +63,14 @@ void AppController::dumpCapture(Scene scene, Operation operation)
 	sceneController->saveCapture(scene, operation, cameraController->getCapture());
 }
 
+void AppController::calculateIntrinsics(Scene scene)
+{
+	vector<string> camerasPath = sceneController->getCapturedCamerasDirectories(scene, Operation::INTRINSICS);
+	vector<IntrinsicCalibration> intrinsicMatrices = calibrationController->calculateIntrinsics(camerasPath);
+
+	sceneController->saveIntrinsicCalibration(scene, intrinsicMatrices);
+}
+
 FramesPacket* AppController::getSafeFrame()
 {
 	return cameraController->getSafeFrame();
@@ -79,5 +88,5 @@ int AppController::getMaxCheckboards()
 
 void AppController::generateCheckboard()
 {
-	calibrationController->generateCheckboard();
+	calibrationController->generateCheckboard(sceneController->getDataFolder());
 }

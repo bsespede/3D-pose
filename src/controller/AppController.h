@@ -26,12 +26,15 @@ public:
 	void startRecordingFrames();
 	void stopRecordingFrames();
 	void dumpCapture(Scene scene, Operation operation);
+	void calculateIntrinsics(Scene scene);
 
 	// Other
 	FramesPacket* getSafeFrame();
 	void updateSafeFrame();
 	int getMaxCheckboards();
 	void generateCheckboard();
+
+
 private:
 	SceneController* sceneController;
 	CameraController* cameraController;

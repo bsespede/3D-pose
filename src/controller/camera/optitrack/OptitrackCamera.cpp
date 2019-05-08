@@ -44,11 +44,12 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 
 	for (int i = 0; i < cameraCount; i++)
 	{
-		sync->AddCamera(camera[i]);
-		camera[i]->Start();
+		sync->AddCamera(camera[i]);		
 		camera[i]->SetVideoType(mode);
+		camera[i]->SetMJPEGQuality(0);
 		camera[i]->SetExposure(camera[i]->MaximumExposureValue());
 		camera[i]->SetFrameRate(camerasFps);
+		camera[i]->Start();
 	}
 
 	return true;
@@ -61,6 +62,19 @@ FramesPacket* OptitrackCamera::captureFramesPacket()
 	if (frameGroup)
 	{
 		FramesPacket* framesPacket = new FramesPacket();
+
+		if (frameGroup->Count() != cameraCount) {
+
+			for (int i = 0; i < frameGroup->Count(); i++)
+			{
+				Frame* frame = frameGroup->GetFrame(i);
+				frame->Release();
+			}
+			
+			frameGroup->Release();
+			
+			return nullptr;
+		}
 
 		for (int i = 0; i < frameGroup->Count(); i++)
 		{

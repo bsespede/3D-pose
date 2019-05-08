@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <opencv2/opencv.hpp>
 #include <opencv2/aruco/charuco.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -14,11 +15,10 @@ class CalibrationController
 {
 public:
 	CalibrationController(Config* config);
-	void generateCheckboard();
-	IntrinsicCalibration calculateIntrinsics(string scene, int cameraNumber);
+	void generateCheckboard(string outputFolder);
+	vector<IntrinsicCalibration> calculateIntrinsics(vector<string> camerasPath);
 	int getMaxCheckboards();
 private:
-	string path;
 	string checkboardName;
 	int checkboardWidth;
 	int checkboardHeight;

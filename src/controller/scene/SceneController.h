@@ -1,12 +1,14 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include "model/scene/Scene.h"
 #include "model/scene/enum/Operation.h"
 #include "model/capture/Capture.h"
+#include "model/calibration/IntrinsicCalibration.h"
 
 using namespace std;
 using namespace boost;
@@ -32,6 +34,12 @@ public:
 
 	// Capture I/O
 	void saveCapture(Scene scene, Operation operation, Capture* capture);
+	vector<string> getCapturedCamerasDirectories(Scene scene, Operation operation);
+	
+	// Other
+	void saveIntrinsicCalibration(Scene scene, vector<IntrinsicCalibration> intrinsicMatrices);
+	string getDataFolder();
+
 private:
 	string path;
 };

@@ -134,3 +134,26 @@ void SceneController::saveCapture(Scene scene, Operation operation, Capture* cap
 
 	delete capture;
 }
+
+vector<string> SceneController::getCapturedCamerasDirectories(Scene scene, Operation operation)
+{
+	string scenePath = path + "/" + scene.getName() + "/" + operation.toString();
+	vector<string> directories;
+
+	for (filesystem::directory_entry& entry: filesystem::directory_iterator(scenePath))
+	{
+		directories.push_back(scenePath + "/" + entry.path().leaf().string());
+	}
+
+	return directories;
+}
+
+void SceneController::saveIntrinsicCalibration(Scene scene, vector<IntrinsicCalibration> intrinsicMatrices)
+{
+	// TODO
+}
+
+string SceneController::getDataFolder()
+{
+	return path;
+}
