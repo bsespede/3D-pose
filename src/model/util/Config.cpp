@@ -13,6 +13,7 @@ Config::Config()
 	this->cameraWidth = root.get<int>("config.gui.cameraWidth");
 	this->barHeight = root.get<int>("config.gui.barHeight");
 	this->guiFps = root.get<int>("config.gui.fps");
+	this->showPreviewOnCapture = root.get<bool>("config.gui.showPreviewOnCapture");
 
 	int cameraNumber = 0;
 	this->camerasOrder = std::map<int, int>();	
@@ -25,7 +26,7 @@ Config::Config()
 	}
 	
 	this->maxCheckboards = root.get<int>("config.calibration.maxCheckboards");
-	this->checkboardInterval = root.get<int>("config.calibration.checkboardInterval");
+	this->checkboardTimer = root.get<int>("config.calibration.checkboardTimer");
 
 	this->checkboardName = root.get<string>("config.calibration.charucoCheckboard.name");
 	this->checkboardCols = root.get<int>("config.calibration.charucoCheckboard.cols");
@@ -72,14 +73,19 @@ int Config::getGuiFps()
 	return guiFps;
 }
 
-int Config::getCamerasNumber()
+bool Config::getShowPreviewOnCapture()
 {
-	return camerasOrder.size();
+	return showPreviewOnCapture;
 }
 
 map<int, int> Config::getCamerasOrder()
 {
 	return camerasOrder;
+}
+
+int Config::getCamerasNumber()
+{
+	return camerasOrder.size();
 }
 
 int Config::getCamerasFps()
@@ -92,9 +98,9 @@ int Config::getMaxCheckboards()
 	return maxCheckboards;
 }
 
-int Config::getCheckboardInterval()
+int Config::getCheckboardTimer()
 {
-	return checkboardInterval;
+	return checkboardTimer;
 }
 
 string Config::getCheckboardName() 

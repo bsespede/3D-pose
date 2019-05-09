@@ -42,21 +42,6 @@ Scene SceneController::createScene(string name)
 	return Scene(name, date);
 }
 
-bool SceneController::hasCapture(Scene scene, Operation operation)
-{
-	return filesystem::exists(path + "/" + scene.getName() + "/" + operation.toString());
-}
-
-bool SceneController::hasProcessed(Scene scene, Operation operation)
-{
-	return filesystem::exists(path + "/" + scene.getName() + "/" + operation.toString() + ".json");
-}
-
-void SceneController::deleteCapture(Scene scene, Operation operation)
-{
-	filesystem::remove_all(path + "/" + scene.getName() + "/" + operation.toString());
-}
-
 void SceneController::saveCapture(Scene scene, Operation operation, Capture* capture)
 {
 	string operationPath = path + "/" + scene.getName() + "/" + operation.toString();
@@ -135,7 +120,7 @@ void SceneController::saveCapture(Scene scene, Operation operation, Capture* cap
 	delete capture;
 }
 
-vector<string> SceneController::getCapturedCamerasDirectories(Scene scene, Operation operation)
+vector<string> SceneController::getCaptureFolders(Scene scene, Operation operation)
 {
 	string scenePath = path + "/" + scene.getName() + "/" + operation.toString();
 	vector<string> directories;
@@ -148,12 +133,32 @@ vector<string> SceneController::getCapturedCamerasDirectories(Scene scene, Opera
 	return directories;
 }
 
-void SceneController::saveIntrinsicCalibration(Scene scene, vector<IntrinsicCalibration> intrinsicMatrices)
+void SceneController::dumpIntrinsics(vector<IntrinsicCalibration> intrinsicMatrices)
 {
-	// TODO
-}
+	time_t _tm = time(NULL);
+	struct tm* curtime = localtime(&_tm);
+	string date = asctime(curtime);
 
-string SceneController::getDataFolder()
-{
-	return path;
+	string configFile = path + "/intrinsic_calibration.json";
+	property_tree::ptree root;
+
+	for (int cameraIndex = 0; cameraIndex < intrinsicMatrices.size(); cameraIndex++)
+	{
+		root.put("calibration.cam-" + to_string(cameraIndex) + ".reprojectionError", intrinsicMatrices[cameraIndex].getReprojectionError());
+
+		Mat cameraMatrix = intrinsicMatrices[cameraIndex].getCameraMatrix();
+		root.put("calibration.cam-" + to_string(cameraIndex) + ".calibrationMatrix.fx", cameraMatrix.at<double>(0, 0));
+		root.put("calibration.cam-" + to_string(cameraIndex) + ".calibrationMatrix.fy", cameraMatrix.at<double>(1, 1));
+		root.put("calibration.cam-" + to_string(cameraIndex) + ".calibrationMatrix.cx", cameraMatrix.at<double>(0, 2));
+		root.put("calibration.cam-" + to_string(cameraIndex) + ".calibrationMatrix.cy", cameraMatrix.at<double>(1, 2));
+
+		Mat distortionCoeffs = intrinsicMatrices[cameraIndex].getDistortionCoeffs();
+		root.put("calibration.cam-" + to_string(cameraIndex) + ".distortionCoefficients.k1", distortionCoeffs.at<double>(0, 0));
+		root.put("calibration.cam-" + to_string(cameraIndex) + ".distortionCoefficients.k2", distortionCoeffs.at<double>(0, 1));
+		root.put("calibration.cam-" + to_string(cameraIndex) + ".distortionCoefficients.p1", distortionCoeffs.at<double>(0, 2));
+		root.put("calibration.cam-" + to_string(cameraIndex) + ".distortionCoefficients.p2", distortionCoeffs.at<double>(0, 3));
+		root.put("calibration.cam-" + to_string(cameraIndex) + ".distortionCoefficients.k3", distortionCoeffs.at<double>(0, 4));
+	}
+	
+	property_tree::write_json(configFile, root);
 }

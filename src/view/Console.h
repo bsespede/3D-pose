@@ -22,21 +22,20 @@ class Console
 public:
 	Console(Config* config, AppController* appController);
 	void start();
-	void showMenu();
-	void showInputName(Input input);
+	void showMenu();	
+	void showSceneInput(Input input);
 	void showOperations(Scene scene);
 	void showOperationOptions(Scene scene, Operation operation);
-	void showOverwrite(Scene scene, Operation operation);
 	void showCapture(Scene scene, Operation operation);
-	void showCameras();
 	void showProcess(Scene scene, Operation operation);
-	void showCamerasTest();
-	void showGenerateCheckboard();
+	void showPreview();
+	void showPreviewGUI();
 	void showStatusMessage(string message, int fontColor);
 private:
 	AppController* appController;
 	CameraRenderer* cameraRenderer;
 	atomic<bool> showCamera;
+	bool showPreviewOnCapture;
+	int checkboardTimer;
 	int guiFps;
-	int checkboardInterval;
 };

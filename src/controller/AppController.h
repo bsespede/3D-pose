@@ -16,8 +16,6 @@ public:
 	bool sceneExists(string name);
 	Scene createScene(string name);
 	Scene loadScene(string name);
-	bool hasCapture(Scene scene, Operation operation);
-	void deleteCapture(Scene scene, Operation operation);
 
 	// Cameras
 	bool startCameras(CaptureMode captureMode);
@@ -32,8 +30,6 @@ public:
 	FramesPacket* getSafeFrame();
 	void updateSafeFrame();
 	int getMaxCheckboards();
-	void generateCheckboard();
-
 
 private:
 	SceneController* sceneController;

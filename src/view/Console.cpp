@@ -4,8 +4,9 @@ Console::Console(Config* config, AppController* appController)
 {
 	this->appController = appController;
 	this->cameraRenderer = new CameraRenderer(config->getCameraWidth(), config->getCameraHeight(), config->getMaxWidth(), config->getMaxHeight(), config->getCamerasNumber(), config->getBarHeight());
+	this->showPreviewOnCapture = config->getShowPreviewOnCapture();
+	this->checkboardTimer = config->getCheckboardTimer();
 	this->guiFps = config->getGuiFps();
-	this->checkboardInterval = config->getCheckboardInterval();
 	this->showCamera = false;
 }
 
@@ -27,29 +28,24 @@ void Console::showMenu()
 		printf("\nChoose an action from the following:\n");
 		printf("(1) Create scene\n");
 		printf("(2) Load scene\n");
-		printf("(3) Test cameras\n");
-		printf("(4) Generate checkboard\n");
-		printf("(5) Exit\n");
+		printf("(3) Preview cameras\n");
+		printf("(4) Exit\n");
 
 		char input = getch();
 
 		if (input == '1')
 		{
-			showInputName(Input::CREATE);
+			showSceneInput(Input::CREATE);
 		}
 		else if (input == '2')
 		{
-			showInputName(Input::LOAD);
+			showSceneInput(Input::LOAD);
 		}
 		else if (input == '3')
 		{
-			showCamerasTest();
+			showPreview();
 		}
 		else if (input == '4')
-		{
-			showGenerateCheckboard();
-		}
-		else if (input == '5')
 		{
 			exit(0);
 		}
@@ -60,7 +56,7 @@ void Console::showMenu()
 	}
 }
 
-void Console::showInputName(Input input)
+void Console::showSceneInput(Input input)
 {
 	printf("\nInput the name of the scene:\n");
 	printf(">");
@@ -91,7 +87,7 @@ void Console::showInputName(Input input)
 		}
 		else
 		{
-			showStatusMessage("Scene creation failed\n", RED);
+			showStatusMessage("Scene already exists\n", RED);
 		}		
 	}
 }
@@ -118,7 +114,7 @@ void Console::showOperations(Scene scene)
 		}
 		else if (input == '3')
 		{
-			showOperationOptions(scene, Operation::SCENE);
+			showCapture(scene, Operation::SCENE);
 		}
 		else if (input == '4')
 		{
@@ -161,38 +157,8 @@ void Console::showOperationOptions(Scene scene, Operation operation)
 	}
 }
 
-void Console::showOverwrite(Scene scene, Operation operation)
-{
-	if (appController->hasCapture(scene, operation))
-	{
-		while (true)
-		{
-			printf("\nThe %s has already been captured, would you like to overwrite the capture?:\n", operation.toString().c_str());
-			printf("(1) Yes\n");
-			printf("(2) No\n");
-
-			char input = getch();
-
-			if (input == '1')
-			{
-				appController->deleteCapture(scene, operation);
-			}
-			else if (input == '2')
-			{
-				showOperationOptions(scene, operation);
-			}
-			else
-			{
-				showStatusMessage("Choose a valid option\n", RED);
-			}
-		}
-	}
-}
-
 void Console::showCapture(Scene scene, Operation operation)
 {
-	showOverwrite(scene, operation);
-
 	printf("\nInitializing cameras...\n");
 	if (!appController->startCameras(operation.getCaptureMode()))
 	{
@@ -200,9 +166,12 @@ void Console::showCapture(Scene scene, Operation operation)
 		showOperationOptions(scene, operation);
 	}
 
-	showCamera = true;
-	thread camerasThread = thread(&Console::showCameras, this);
-	camerasThread.detach();
+	if (showPreviewOnCapture) 
+	{
+		showCamera = true;
+		thread camerasThread = thread(&Console::showPreview, this);
+		camerasThread.detach();
+	}	
 
 	if (operation == Operation::EXTRINSICS)
 	{
@@ -244,16 +213,60 @@ void Console::showCapture(Scene scene, Operation operation)
 		appController->stopRecordingFrames();
 	}
 
-	showCamera = false;
-	appController->stopCameras();	
-
+	if (showPreviewOnCapture)
+	{
+		showCamera = false;
+	}
+	
 	printf("Dumping captures to disk...\n");
+	appController->stopCameras();		
 	appController->dumpCapture(scene, operation);
 
-	showStatusMessage("Scene recorded succesfully\n", GREEN);
+	showStatusMessage("Scene captured succesfully\n", GREEN);
 }
 
-void Console::showCameras()
+void Console::showProcess(Scene scene, Operation operation)
+{
+	if (operation == Operation::EXTRINSICS)
+	{
+		showStatusMessage("Extrinsic calibration not implemented yet\n", RED);
+	}
+	else if (operation == Operation::INTRINSICS)
+	{
+		printf("\nCalculating cameras intrinsics...\n");
+		appController->calculateIntrinsics(scene);
+
+		showStatusMessage("Intrinsic calibration was succesfull\n", GREEN);
+	}
+	else
+	{
+		showStatusMessage("3D pose reconstruction not implemented yet\n", RED);
+	}
+}
+
+void Console::showPreview()
+{
+	printf("\nInitializing cameras...\n");
+	if (!appController->startCameras(CaptureMode::GRAYSCALE))
+	{
+		showStatusMessage("Camera initialization failed\n", RED);
+		showMenu();
+	}
+
+	showCamera = true;
+	thread camerasThread = thread(&Console::showPreviewGUI, this);
+	camerasThread.detach();
+
+	printf("Previewing cameras (press any key to stop)...\n");
+	getch();
+
+	showCamera = false;
+	appController->stopCameras();
+
+	showStatusMessage("Camera testing finished\n", GREEN);
+}
+
+void Console::showPreviewGUI()
 {
 	int curFrame = 0;
 	while (showCamera)
@@ -272,53 +285,6 @@ void Console::showCameras()
 
 		this_thread::sleep_until(timePoint);
 	}
-}
-
-void Console::showProcess(Scene scene, Operation operation)
-{
-	if (operation == Operation::EXTRINSICS)
-	{
-		showStatusMessage("Extrinsic calibration not implemented yet\n", RED);
-	}
-	else if (operation == Operation::INTRINSICS)
-	{
-		printf("\nCalculating cameras intrinsics...\n");
-		appController->calculateIntrinsics(scene);
-		
-		showStatusMessage("Intrinsic calibration failed\n", RED);
-	}
-	else
-	{
-		showStatusMessage("3D pose reconstruction not implemented yet\n", RED);
-	}
-}
-
-void Console::showCamerasTest()
-{
-	printf("\nInitializing cameras...\n");
-	if (!appController->startCameras(CaptureMode::GRAYSCALE))
-	{
-		showStatusMessage("Camera initialization failed\n", RED);
-		showMenu();
-	}
-
-	showCamera = true;
-	thread camerasThread = thread(&Console::showCameras, this);
-	camerasThread.detach();
-
-	printf("Showing initialized cameras (press any key to stop)...\n");
-	getch();
-
-	showCamera = false;
-	appController->stopCameras();
-	showStatusMessage("Camera testing finished\n", GREEN);
-}
-
-void Console::showGenerateCheckboard()
-{
-	printf("\nGenerating checkboard...\n");
-	appController->generateCheckboard();
-	showStatusMessage("Generated checkboard succesfully\n", GREEN);
 }
 
 void Console::showStatusMessage(string message, int fontColor)

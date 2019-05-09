@@ -21,6 +21,7 @@ public:
 	int getCameraWidth();
 	int getBarHeight();
 	int getGuiFps();
+	bool getShowPreviewOnCapture();
 
 	// Cameras
 	map<int, int> getCamerasOrder();
@@ -29,8 +30,8 @@ public:
 
 	// Calibration
 	int getMaxCheckboards();
-	int getCheckboardInterval();
-
+	int getCheckboardTimer();
+	
 	// CharUco
 	string getCheckboardName();
 	int getCheckboardCols();
@@ -50,6 +51,7 @@ private:
 	int cameraWidth;
 	int barHeight;
 	int guiFps;
+	bool showPreviewOnCapture;
 
 	// Cameras
 	map<int, int> camerasOrder;
@@ -57,7 +59,7 @@ private:
 
 	// CharUco
 	int maxCheckboards;
-	int checkboardInterval;
+	int checkboardTimer;
 
 	// CharUco
 	string checkboardName;	

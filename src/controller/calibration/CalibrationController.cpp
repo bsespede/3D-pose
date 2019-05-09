@@ -64,6 +64,26 @@ vector<IntrinsicCalibration> CalibrationController::calculateIntrinsics(vector<s
 		Mat distortionCoeffs;
 		vector<Mat> interpolatedCharucoCorners;
 		vector<Mat> interpolatedCharucoIds;
+		vector<Mat> rvecs, tvecs;
+		double repError;
+
+		vector<vector<Point2f>> allCornersConcatenated;
+		vector<int> allIdsConcatenated;
+		vector<int> markerCounterPerFrame;
+		markerCounterPerFrame.reserve(allCharucoCorners.size());
+
+		for (unsigned int i = 0; i < allCharucoCorners.size(); i++)
+		{
+			markerCounterPerFrame.push_back((int)allCharucoCorners[i].size());
+
+			for (unsigned int j = 0; j < allCharucoCorners[i].size(); j++)
+			{
+				allCornersConcatenated.push_back(allCharucoCorners[i][j]);
+				allIdsConcatenated.push_back(allCharucoIds[i][j]);
+			}
+		}
+
+		aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated, markerCounterPerFrame, board, frameSize, cameraMatrix, distortionCoeffs);
 
 		for (int i = 0; i < maxCheckboards - 1; i++)
 		{
@@ -77,7 +97,6 @@ vector<IntrinsicCalibration> CalibrationController::calculateIntrinsics(vector<s
 		double reprojectionError = aruco::calibrateCameraCharuco(interpolatedCharucoCorners, interpolatedCharucoIds, board, frameSize, cameraMatrix, distortionCoeffs);
 		IntrinsicCalibration calibrationResult = IntrinsicCalibration(cameraMatrix, distortionCoeffs, reprojectionError);
 
-		printf("RE: %f\n", reprojectionError);
 		calibrationMatrices.push_back(calibrationResult);
 	}
 

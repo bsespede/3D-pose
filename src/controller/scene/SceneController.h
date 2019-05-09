@@ -23,22 +23,12 @@ public:
 	Scene loadScene(string name);
 	Scene createScene(string name);
 
-	// Check existence
-	bool hasCapture(Scene scene, Operation operation);
-
-	// Check processed
-	bool hasProcessed(Scene scene, Operation operation);
-
-	// Delete folders
-	void deleteCapture(Scene scene, Operation operation);
-
-	// Capture I/O
+	// Capture
 	void saveCapture(Scene scene, Operation operation, Capture* capture);
-	vector<string> getCapturedCamerasDirectories(Scene scene, Operation operation);
 	
-	// Other
-	void saveIntrinsicCalibration(Scene scene, vector<IntrinsicCalibration> intrinsicMatrices);
-	string getDataFolder();
+	// Process
+	vector<string> getCaptureFolders(Scene scene, Operation operation);
+	void dumpIntrinsics(vector<IntrinsicCalibration> intrinsicMatrices);
 
 private:
 	string path;
