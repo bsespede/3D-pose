@@ -42,6 +42,12 @@ Scene SceneController::createScene(string name)
 	return Scene(name, date);
 }
 
+bool SceneController::hasCapture(Scene scene, Operation operation)
+{
+	string operationPath = path + "/" + scene.getName() + "/" + operation.toString();
+	return filesystem::exists(operationPath + "/capture.json");
+}
+
 void SceneController::saveCapture(Scene scene, Operation operation, Capture* capture)
 {
 	string operationPath = path + "/" + scene.getName() + "/" + operation.toString();

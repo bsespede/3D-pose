@@ -16,14 +16,19 @@ public:
 	bool sceneExists(string name);
 	Scene createScene(string name);
 	Scene loadScene(string name);
-
+	
 	// Cameras
 	bool startCameras(CaptureMode captureMode);
 	void stopCameras();
 	void captureFrame();
 	void startRecordingFrames();
 	void stopRecordingFrames();
+
+	// Capture
+	bool hasCapture(Scene scene, Operation operation);
 	void dumpCapture(Scene scene, Operation operation);
+
+	// Process
 	void calculateIntrinsics(Scene scene);
 
 	// Other

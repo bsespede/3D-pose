@@ -70,6 +70,7 @@ __9-4-2019 (9hs)__:
 	- Ahora se valida que todas las camaras aporten frames a los paquetes
 	- Esto implica que hay menos frames capturados pero que estan 100% sincronizados 
 - Se pudo realizar una captura sincronizada con 16 camaras en simultaneo
+- Validacion de existencia de capturas antes de procesar
 - Faltaria:
 	- Durante la proxima asistencia al laboratorio se intentara mejorar el frame rate
 	- Falta capturar una escena para las extrinsecas

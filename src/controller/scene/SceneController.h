@@ -24,6 +24,7 @@ public:
 	Scene createScene(string name);
 
 	// Capture
+	bool hasCapture(Scene scene, Operation operation);
 	void saveCapture(Scene scene, Operation operation, Capture* capture);
 	
 	// Process

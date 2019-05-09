@@ -47,6 +47,11 @@ void AppController::stopRecordingFrames()
 	cameraController->stopRecording();
 }
 
+bool AppController::hasCapture(Scene scene, Operation operation)
+{
+	return sceneController->hasCapture(scene, operation);
+}
+
 void AppController::dumpCapture(Scene scene, Operation operation)
 {
 	sceneController->saveCapture(scene, operation, cameraController->getCapture());

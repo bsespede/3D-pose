@@ -173,44 +173,17 @@ void Console::showCapture(Scene scene, Operation operation)
 		camerasThread.detach();
 	}	
 
-	if (operation == Operation::EXTRINSICS)
+	if (operation == Operation::INTRINSICS)
 	{
-		printf("Prepare to capture empty scene (press any key to start)...\n");
-		getch();
-		appController->captureFrame();
-
-		printf("Prepare for wanding (press any key to start)...\n");
-		getch();
-		appController->startRecordingFrames();
-
-		printf("Recording wanding (press any key to stop)...\n");
-		getch();
-		appController->stopRecordingFrames();
-
-		printf("Prepare to capture scene axis (press any key to start)...\n");
-		getch();
-		appController->captureFrame();
+		showCaptureIntrinsics(scene);
 	}
-	else if (operation == Operation::INTRINSICS)
+	else if (operation == Operation::EXTRINSICS)
 	{
-		printf("Prepare for checkboarding (capturing frame every 10 seconds)...\n");		
-		for (int checkboardNumber = 0; checkboardNumber < appController->getMaxCheckboards(); checkboardNumber++)
-		{
-			this_thread::sleep_for(chrono::seconds(10));
-			Beep(500, 400);
-			appController->captureFrame();
-			printf("Captured frame %d/%d...\n", checkboardNumber + 1, appController->getMaxCheckboards());
-		}
+		showCaptureExtrinsics(scene);
 	}
 	else
 	{
-		printf("Prepare for capture (press any key to start)...\n");
-		getch();
-		appController->startRecordingFrames();
-
-		printf("Recording scene (press any key to stop)...\n");
-		getch();
-		appController->stopRecordingFrames();
+		showCaptureScene(scene);
 	}
 
 	if (showPreviewOnCapture)
@@ -225,25 +198,92 @@ void Console::showCapture(Scene scene, Operation operation)
 	showStatusMessage("Scene captured succesfully\n", GREEN);
 }
 
+void Console::showCaptureIntrinsics(Scene scene)
+{
+	printf("Prepare for checkboarding (capturing frame every 10 seconds)...\n");
+
+	for (int checkboardNumber = 0; checkboardNumber < appController->getMaxCheckboards(); checkboardNumber++)
+	{
+		this_thread::sleep_for(chrono::seconds(10));
+
+		Beep(500, 400);
+		appController->captureFrame();
+
+		printf("Captured frame %d/%d...\n", checkboardNumber + 1, appController->getMaxCheckboards());
+	}
+}
+
+void Console::showCaptureExtrinsics(Scene scene)
+{
+	printf("Prepare to capture empty scene (press any key to start)...\n");
+	getch();
+	appController->captureFrame();
+
+	printf("Prepare for wanding (press any key to start)...\n");
+	getch();
+	appController->startRecordingFrames();
+
+	printf("Recording wanding (press any key to stop)...\n");
+	getch();
+	appController->stopRecordingFrames();
+
+	printf("Prepare to capture scene axis (press any key to start)...\n");
+	getch();
+	appController->captureFrame();
+}
+
+void Console::showCaptureScene(Scene scene)
+{
+	printf("Prepare for capture (press any key to start)...\n");
+	getch();
+	appController->startRecordingFrames();
+
+	printf("Recording scene (press any key to stop)...\n");
+	getch();
+	appController->stopRecordingFrames();
+}
+
 void Console::showProcess(Scene scene, Operation operation)
 {
-	if (operation == Operation::EXTRINSICS)
+	if (!appController->hasCapture(scene, operation))
 	{
-		showStatusMessage("Extrinsic calibration not implemented yet\n", RED);
+		showStatusMessage("There is no capture to process\n", RED);
+		showOperations(scene);
+		return;
 	}
-	else if (operation == Operation::INTRINSICS)
-	{
-		printf("\nCalculating cameras intrinsics...\n");
-		appController->calculateIntrinsics(scene);
 
-		showStatusMessage("Intrinsic calibration was succesfull\n", GREEN);
+	if (operation == Operation::INTRINSICS)
+	{
+		showProcessIntrinsics(scene);
+	}
+	else if (operation == Operation::EXTRINSICS)
+	{
+		showProcessExtrinsics(scene);
 	}
 	else
 	{
-		showStatusMessage("3D pose reconstruction not implemented yet\n", RED);
+		showProcessScene(scene);
 	}
 
 	showOperations(scene);
+}
+
+void Console::showProcessIntrinsics(Scene scene)
+{
+	printf("\nCalculating cameras intrinsics...\n");
+	appController->calculateIntrinsics(scene);
+
+	showStatusMessage("Intrinsic calibration was succesfull\n", GREEN);
+}
+
+void Console::showProcessExtrinsics(Scene scene)
+{
+	showStatusMessage("Extrinsic calibration not implemented yet\n", RED);
+}
+
+void Console::showProcessScene(Scene scene)
+{
+	showStatusMessage("3D pose reconstruction not implemented yet\n", RED);
 }
 
 void Console::showPreview()

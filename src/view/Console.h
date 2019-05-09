@@ -27,7 +27,13 @@ public:
 	void showOperations(Scene scene);
 	void showOperationOptions(Scene scene, Operation operation);
 	void showCapture(Scene scene, Operation operation);
+	void showCaptureIntrinsics(Scene scene);
+	void showCaptureExtrinsics(Scene scene);
+	void showCaptureScene(Scene scene);
 	void showProcess(Scene scene, Operation operation);
+	void showProcessIntrinsics(Scene scene);
+	void showProcessExtrinsics(Scene scene);
+	void showProcessScene(Scene scene);
 	void showPreview();
 	void showPreviewGUI();
 	void showStatusMessage(string message, int fontColor);
