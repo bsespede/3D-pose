@@ -242,6 +242,8 @@ void Console::showProcess(Scene scene, Operation operation)
 	{
 		showStatusMessage("3D pose reconstruction not implemented yet\n", RED);
 	}
+
+	showOperations(scene);
 }
 
 void Console::showPreview()

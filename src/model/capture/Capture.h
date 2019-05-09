@@ -1,8 +1,6 @@
 #pragma once
 
-#include <vector>
 #include <list>
-#include <string>
 #include "model/camera/FramesPacket.h"
 
 using namespace std;
@@ -11,11 +9,8 @@ class Capture
 {
 public:
 	Capture();
-	void addToCaptureRecording(FramesPacket* frame);
-	void addToCaptureFrame(FramesPacket* frame);
-	std::list<FramesPacket*> getRecording();	
-	std::vector<FramesPacket*> getFrames();
+	void addFrame(FramesPacket* frame);
+	std::list<FramesPacket*> getFrames();
 private:
-	std::vector<FramesPacket*> frames;
-	std::list<FramesPacket*> recording;
+	std::list<FramesPacket*> frames;
 };

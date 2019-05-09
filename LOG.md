@@ -61,7 +61,7 @@ __28-4-2019 (6hs):__
 	- Integracion de generacion de generacion de checkboards a UI.
 - Modificacion del tiempo de exposicion durante calibracion para reducir blur, hacer pruebas semana que viene evaluando error de reproyeccion.
 
-__9-4-2019 (9hs):
+__9-4-2019 (9hs)__:
 - Se capturaron boards charucos para calibracion intrinseca de las camaras (se podria mejorar los resultados con boards mas grandes)
 - Se corrigieron bugs de la calibracion y se obtuvo un error de reproyeccion de ~0.2 pixeles
 - Se pueden exportar las intrinsecas en formato json
@@ -69,6 +69,14 @@ __9-4-2019 (9hs):
 - Se corrigio el dropeo de frames:
 	- Ahora se valida que todas las camaras aporten frames a los paquetes
 	- Esto implica que hay menos frames capturados pero que estan 100% sincronizados 
-	- Durante la proxima asistencia al laboratorio se intentara mejorar el frame rate
 - Se pudo realizar una captura sincronizada con 16 camaras en simultaneo
-- Falta capturar una escena para las extrinsecas
+- Faltaria:
+	- Durante la proxima asistencia al laboratorio se intentara mejorar el frame rate
+	- Falta capturar una escena para las extrinsecas
+
+__10-4-2019 (3hs)__:
+- Refactor de captura de frames estaticos
+- Refactor de manejo de jsons en captura/calibracion para mayor logging y control
+- Faltaria:
+	- Prevenir overwrite de capturas para extrinsics/escenas
+	- Reintentar conectar a camaras cada 30 seg cuando fallan

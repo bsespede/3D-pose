@@ -7,7 +7,7 @@ SceneController::SceneController(string path)
 
 bool SceneController::sceneExists(string name)
 {
-	return filesystem::exists(path + "/" + name + "/config.json");
+	return filesystem::exists(path + "/" + name + "/scene.json");
 }
 
 Scene SceneController::loadScene(string name)
@@ -15,7 +15,7 @@ Scene SceneController::loadScene(string name)
 	string scenePath = path + "/" + name;
 
 	property_tree::ptree root;
-	property_tree::read_json(scenePath + "/config.json", root);
+	property_tree::read_json(scenePath + "/scene.json", root);
 	
 	string sceneName = root.get<string>("scene.name");
 	string sceneDate = root.get<string>("scene.date");
@@ -32,7 +32,7 @@ Scene SceneController::createScene(string name)
 	struct tm * curtime = localtime(&_tm);
 	string date = asctime(curtime);
 
-	string configFile = scenePath + "/config.json";
+	string configFile = scenePath + "/scene.json";
 	property_tree::ptree root;
 
 	root.put("scene.name", name);
@@ -47,118 +47,116 @@ void SceneController::saveCapture(Scene scene, Operation operation, Capture* cap
 	string operationPath = path + "/" + scene.getName() + "/" + operation.toString();
 	filesystem::create_directory(operationPath);
 
-	if (operation == Operation::INTRINSICS)
+	list<FramesPacket*> frames = capture->getFrames();
+	int frameNumber = 0;
+	set<int> cameraSet;
+
+	for (FramesPacket* framePacket: frames)
 	{
-		vector<FramesPacket*> frames = capture->getFrames();
-
-		for (int checkboardNumber = 0; checkboardNumber < frames.size(); checkboardNumber++)
+		for (pair<int, Mat> pair: framePacket->getFrames())
 		{
-			for (pair<int, Mat> pair : frames[checkboardNumber]->getFrames())
-			{
-				string camPath = operationPath + "/cam-" + to_string(pair.first);
-				filesystem::create_directory(camPath);
+			cameraSet.insert(pair.first);
+			string camPath = operationPath + "/cam-" + to_string(pair.first);
+			filesystem::create_directory(camPath);
 
-				string framePath = camPath + "/" + to_string(checkboardNumber) + ".png";
-				imwrite(framePath, pair.second);
-			}
-		}
-	}
-	else if (operation == Operation::EXTRINSICS)
-	{
-		vector<FramesPacket*> frames = capture->getFrames();
-		vector<string> labels = vector<string>{"empty", "axis"};
-
-		for (int labelNumber = 0; labelNumber < frames.size(); labelNumber++)
-		{
-			for (pair<int, Mat> pair : frames[labelNumber]->getFrames())
-			{
-				string camPath = operationPath + "/cam-" + to_string(pair.first);
-				filesystem::create_directory(camPath);
-
-				string framePath = camPath + "/" + labels[labelNumber] + ".png";
-				imwrite(framePath, pair.second);
-			}
+			string framePath = camPath + "/" + to_string(frameNumber) + ".png";
+			imwrite(framePath, pair.second);			
 		}
 
-		list<FramesPacket*> recording = capture->getRecording();
-		int frameNumber = 0;
-
-		for (FramesPacket* framePacket: recording)
-		{
-			for (pair<int, Mat> pair : framePacket->getFrames())
-			{
-				string camPath = operationPath + "/cam-" + to_string(pair.first);
-				filesystem::create_directory(camPath);
-
-				string framePath = camPath + "/" + to_string(frameNumber) + ".png";
-				imwrite(framePath, pair.second);
-			}
-
-			frameNumber++;
-		}
-	}
-	else
-	{
-		list<FramesPacket*> recording = capture->getRecording();
-		int frameNumber = 0;
-
-		for (FramesPacket* framePacket : recording)
-		{
-			for (pair<int, Mat> pair : framePacket->getFrames())
-			{
-				string camPath = operationPath + "/cam-" + to_string(pair.first);
-				filesystem::create_directory(camPath);
-
-				string framePath = camPath + "/" + to_string(frameNumber) + ".png";
-				imwrite(framePath, pair.second);
-			}
-
-			frameNumber++;
-		}
+		frameNumber++;
 	}
 
 	delete capture;
-}
 
-vector<string> SceneController::getCaptureFolders(Scene scene, Operation operation)
-{
-	string scenePath = path + "/" + scene.getName() + "/" + operation.toString();
-	vector<string> directories;
+	string recordFile = operationPath + "/capture.json";
+	property_tree::ptree root;
 
-	for (filesystem::directory_entry& entry: filesystem::directory_iterator(scenePath))
+	if (filesystem::exists(recordFile))
 	{
-		directories.push_back(scenePath + "/" + entry.path().leaf().string());
-	}
+		property_tree::ptree previousRoot;
+		property_tree::read_json(recordFile, previousRoot);	
 
-	return directories;
-}
+		for (property_tree::ptree::value_type &camera: previousRoot.get_child("capture.cameras"))
+		{
+			int cameraNumber = camera.second.get_value<int>();
+			cameraSet.insert(cameraNumber);
+		}
+	}	
 
-void SceneController::dumpIntrinsics(vector<IntrinsicCalibration> intrinsicMatrices)
-{
 	time_t _tm = time(NULL);
 	struct tm* curtime = localtime(&_tm);
 	string date = asctime(curtime);
+	root.put("capture.date", date);
 
-	string configFile = path + "/intrinsic_calibration.json";
+	property_tree::ptree camerasNode;
+	for (int cameraIndex: cameraSet)
+	{
+		property_tree::ptree cameraNode;
+		cameraNode.put("", cameraIndex);
+		camerasNode.push_back(std::make_pair("", cameraNode));
+	}
+
+	root.add_child("capture.cameras", camerasNode);
+	root.put("capture.frames", frameNumber);
+
+	property_tree::write_json(recordFile, root);
+}
+
+map<int, string> SceneController::getCapturedCameras(Scene scene, Operation operation)
+{
+	map<int, string> capturedCameras;
+
+	string capturePath = path + "/" + scene.getName() + "/" + operation.toString();
+	property_tree::ptree root;
+	property_tree::read_json(capturePath + "/capture.json", root);	
+
+	for (property_tree::ptree::value_type &camera: root.get_child("capture.cameras"))
+	{
+		int cameraNumber = camera.second.get_value<int>();
+		capturedCameras[cameraNumber] = capturePath + "/cam-" + to_string(cameraNumber);
+	}
+
+	return capturedCameras;
+}
+
+void SceneController::dumpIntrinsics(map<int, IntrinsicCalibration*> calibrationResults)
+{
+	string configFile = path + "/calibration.json";
 	property_tree::ptree root;
 
-	for (int cameraIndex = 0; cameraIndex < intrinsicMatrices.size(); cameraIndex++)
+	time_t _tm = time(NULL);
+	struct tm* curtime = localtime(&_tm);
+	string date = asctime(curtime);
+	root.put("calibration.date", date);
+
+	property_tree::ptree camerasNode;
+	for (pair<int, IntrinsicCalibration*> calibrationResult: calibrationResults)
 	{
-		root.put("calibration.cam-" + to_string(cameraIndex) + ".reprojectionError", intrinsicMatrices[cameraIndex].getReprojectionError());
+		property_tree::ptree cameraNode;
+		int cameraNumber = calibrationResult.first;
+		IntrinsicCalibration* intrinsics = calibrationResult.second;
+		
+		cameraNode.put("cameraId", cameraNumber);
+		cameraNode.put("reprojectionError", intrinsics->getReprojectionError());
 
-		Mat cameraMatrix = intrinsicMatrices[cameraIndex].getCameraMatrix();
-		root.put("calibration.cam-" + to_string(cameraIndex) + ".calibrationMatrix.fx", cameraMatrix.at<double>(0, 0));
-		root.put("calibration.cam-" + to_string(cameraIndex) + ".calibrationMatrix.fy", cameraMatrix.at<double>(1, 1));
-		root.put("calibration.cam-" + to_string(cameraIndex) + ".calibrationMatrix.cx", cameraMatrix.at<double>(0, 2));
-		root.put("calibration.cam-" + to_string(cameraIndex) + ".calibrationMatrix.cy", cameraMatrix.at<double>(1, 2));
+		Mat cameraMatrix = intrinsics->getCameraMatrix();
+		cameraNode.put("calibrationMatrix.fx", cameraMatrix.at<double>(0, 0));
+		cameraNode.put("calibrationMatrix.fy", cameraMatrix.at<double>(1, 1));
+		cameraNode.put("calibrationMatrix.cx", cameraMatrix.at<double>(0, 2));
+		cameraNode.put("calibrationMatrix.cy", cameraMatrix.at<double>(1, 2));
 
-		Mat distortionCoeffs = intrinsicMatrices[cameraIndex].getDistortionCoeffs();
-		root.put("calibration.cam-" + to_string(cameraIndex) + ".distortionCoefficients.k1", distortionCoeffs.at<double>(0, 0));
-		root.put("calibration.cam-" + to_string(cameraIndex) + ".distortionCoefficients.k2", distortionCoeffs.at<double>(0, 1));
-		root.put("calibration.cam-" + to_string(cameraIndex) + ".distortionCoefficients.p1", distortionCoeffs.at<double>(0, 2));
-		root.put("calibration.cam-" + to_string(cameraIndex) + ".distortionCoefficients.p2", distortionCoeffs.at<double>(0, 3));
-		root.put("calibration.cam-" + to_string(cameraIndex) + ".distortionCoefficients.k3", distortionCoeffs.at<double>(0, 4));
+		Mat distortionCoeffs = intrinsics->getDistortionCoeffs();
+		cameraNode.put("distortionCoefficients.k1", distortionCoeffs.at<double>(0, 0));
+		cameraNode.put("distortionCoefficients.k2", distortionCoeffs.at<double>(0, 1));
+		cameraNode.put("distortionCoefficients.p1", distortionCoeffs.at<double>(0, 2));
+		cameraNode.put("distortionCoefficients.p2", distortionCoeffs.at<double>(0, 3));
+		cameraNode.put("distortionCoefficients.k3", distortionCoeffs.at<double>(0, 4));
+
+		camerasNode.push_back(std::make_pair("", cameraNode));
+		delete intrinsics;
 	}
+
+	root.add_child("calibration.cameras", camerasNode);
 	
 	property_tree::write_json(configFile, root);
 }

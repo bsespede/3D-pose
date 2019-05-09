@@ -27,8 +27,8 @@ public:
 	void saveCapture(Scene scene, Operation operation, Capture* capture);
 	
 	// Process
-	vector<string> getCaptureFolders(Scene scene, Operation operation);
-	void dumpIntrinsics(vector<IntrinsicCalibration> intrinsicMatrices);
+	map<int, string> getCapturedCameras(Scene scene, Operation operation);
+	void dumpIntrinsics(map<int, IntrinsicCalibration*> intrinsicMatrices);
 
 private:
 	string path;

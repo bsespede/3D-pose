@@ -16,7 +16,8 @@ class CalibrationController
 public:
 	CalibrationController(Config* config);
 	void generateCheckboard(string outputFolder);
-	vector<IntrinsicCalibration> calculateIntrinsics(vector<string> camerasPath);
+	map<int, IntrinsicCalibration*> calculateIntrinsics(map<int, string> capturedCameras);
+	IntrinsicCalibration* calculateIntrinsics(string checkboardsPath);
 	int getMaxCheckboards();
 private:
 	string checkboardName;

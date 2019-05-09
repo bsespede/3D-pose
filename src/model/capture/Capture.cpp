@@ -2,26 +2,15 @@
 
 Capture::Capture()
 {
-	this->recording = list<FramesPacket*>();
-	this->frames = vector<FramesPacket*>();	
+	this->frames = list<FramesPacket*>();
 }
 
-void Capture::addToCaptureFrame(FramesPacket* frame)
+void Capture::addFrame(FramesPacket* frame)
 {
 	frames.push_back(frame);
 }
 
-void Capture::addToCaptureRecording(FramesPacket* frame)
-{
-	recording.push_back(frame);
-}
-
-list<FramesPacket*> Capture::getRecording()
-{
-	return recording;
-}
-
-vector<FramesPacket*> Capture::getFrames()
+list<FramesPacket*> Capture::getFrames()
 {
 	return frames;
 }

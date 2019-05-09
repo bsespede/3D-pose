@@ -56,12 +56,12 @@ void CameraController::cameraLoop()
 
 			if (shouldRecord)
 			{
-				capture->addToCaptureRecording(currentFrame);
+				capture->addFrame(currentFrame);
 			}
 
 			if (shouldSnap)
 			{
-				capture->addToCaptureFrame(currentFrame);
+				capture->addFrame(currentFrame);
 				shouldSnap = false;
 			}
 

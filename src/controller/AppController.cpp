@@ -54,8 +54,8 @@ void AppController::dumpCapture(Scene scene, Operation operation)
 
 void AppController::calculateIntrinsics(Scene scene)
 {
-	vector<string> camerasPath = sceneController->getCaptureFolders(scene, Operation::INTRINSICS);
-	vector<IntrinsicCalibration> intrinsicMatrices = calibrationController->calculateIntrinsics(camerasPath);
+	map<int, string> capturedCameras = sceneController->getCapturedCameras(scene, Operation::INTRINSICS);
+	map<int, IntrinsicCalibration*> intrinsicMatrices = calibrationController->calculateIntrinsics(capturedCameras);
 
 	sceneController->dumpIntrinsics(intrinsicMatrices);
 }
