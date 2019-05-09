@@ -54,10 +54,21 @@ __28-4-2019 (6hs):__
 	- Se agrego una orden predeterminado de numero de serie de camaras definido en dicho archivo (solo con las camaras de abajo por ahora)
 - Se arreglo la herramienta de previsualizacion de camaras.
 - Se incorporo el algoritmo de calibracion de intrinsecas:
-	- El algoritmo con checkboard tiene un error de reproyeccion > 1.5. Vamos a recalibrar usando un board charuco para mejorar presicion.
+	- El algoritmo con checkboard tiene un error de reproyeccion ~1.5. Vamos a recalibrar usando un board charuco para mejorar presicion.
 - Implementacion de calibracion y calculo de distorsion usando charuco board:
 	- Se agregan parametros al config file.
 	- Impresion de charuco boards.
 	- Integracion de generacion de generacion de checkboards a UI.
 - Modificacion del tiempo de exposicion durante calibracion para reducir blur, hacer pruebas semana que viene evaluando error de reproyeccion.
 
+__9-4-2019 (9hs):
+- Se capturaron boards charucos para calibracion intrinseca de las camaras (se podria mejorar los resultados con boards mas grandes)
+- Se corrigieron bugs de la calibracion y se obtuvo un error de reproyeccion de ~0.2 pixeles
+- Se pueden exportar las intrinsecas en formato json
+- Se corrigieron bugs menores en la UI
+- Se corrigio el dropeo de frames:
+	- Ahora se valida que todas las camaras aporten frames a los paquetes
+	- Esto implica que hay menos frames capturados pero que estan 100% sincronizados 
+	- Durante la proxima asistencia al laboratorio se intentara mejorar el frame rate
+- Se pudo realizar una captura sincronizada con 16 camaras en simultaneo
+- Falta capturar una escena para las extrinsecas
