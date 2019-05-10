@@ -32,6 +32,7 @@ map<int, IntrinsicCalibration*> CalibrationController::calculateIntrinsics(map<i
 		int cameraId = cameraData.first;
 		string cameraPath = cameraData.second;
 
+		BOOST_LOG_TRIVIAL(warning) << "Calibrating camera #" << cameraId;
 		IntrinsicCalibration* calibrationResults = calculateIntrinsics(cameraPath);
 		calibrationMatrices[cameraId] = calibrationResults;
 	}
@@ -42,8 +43,8 @@ map<int, IntrinsicCalibration*> CalibrationController::calculateIntrinsics(map<i
 IntrinsicCalibration* CalibrationController::calculateIntrinsics(string checkboardsPath)
 {
 	Size frameSize;
-	vector<vector<int>> allCharucoIds;
-	vector<vector<vector<Point2f>>> allCharucoCorners;
+	vector<vector<int>> allArucoIds;
+	vector<vector<vector<Point2f>>> allArucoCorners;
 	vector<Mat> allFrames;
 
 	Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
@@ -51,55 +52,57 @@ IntrinsicCalibration* CalibrationController::calculateIntrinsics(string checkboa
 	for (int frameNumber = 0; frameNumber < maxCheckboards; frameNumber++)
 	{
 		Mat frame = imread(checkboardsPath + "/" + to_string(frameNumber) + ".png");
-		Mat result = frame.clone();
 
-		vector<int> charucoIds;
-		vector<vector<Point2f>> charucoCorners;
+		vector<int> arucoIds;
+		vector<vector<Point2f>> arucoCorners;
 		vector<vector<Point2f>> rejected;
 
-		aruco::detectMarkers(frame, dictionary, charucoCorners, charucoIds, params, rejected);
-		aruco::refineDetectedMarkers(frame, board, charucoCorners, charucoIds, rejected);
-
-		aruco::drawDetectedMarkers(result, charucoCorners, charucoIds);
-		imwrite(checkboardsPath + "/corners-" + to_string(frameNumber) + ".png", result);
+		aruco::detectMarkers(frame, dictionary, arucoCorners, arucoIds, params);
 
 		frameSize = frame.size();
-		allCharucoIds.push_back(charucoIds);
-		allCharucoCorners.push_back(charucoCorners);
+		allArucoIds.push_back(arucoIds);
+		allArucoCorners.push_back(arucoCorners);
 		allFrames.push_back(frame);
 	}
 
 	Mat cameraMatrix;
 	Mat distortionCoeffs;
-	vector<Mat> interpolatedCharucoCorners;
-	vector<Mat> interpolatedCharucoIds;
-	vector<Mat> rvecs, tvecs;
-
+	
 	vector<vector<Point2f>> allCornersConcatenated;
 	vector<int> allIdsConcatenated;
 	vector<int> markerCounterPerFrame;
-	markerCounterPerFrame.reserve(allCharucoCorners.size());
+	markerCounterPerFrame.reserve(allArucoCorners.size());
 
-	for (unsigned int i = 0; i < allCharucoCorners.size(); i++)
+	for (unsigned int i = 0; i < allArucoCorners.size(); i++)
 	{
-		markerCounterPerFrame.push_back((int)allCharucoCorners[i].size());
+		markerCounterPerFrame.push_back((int)allArucoCorners[i].size());
 
-		for (unsigned int j = 0; j < allCharucoCorners[i].size(); j++)
+		for (unsigned int j = 0; j < allArucoCorners[i].size(); j++)
 		{
-			allCornersConcatenated.push_back(allCharucoCorners[i][j]);
-			allIdsConcatenated.push_back(allCharucoIds[i][j]);
+			allCornersConcatenated.push_back(allArucoCorners[i][j]);
+			allIdsConcatenated.push_back(allArucoIds[i][j]);
 		}
 	}
 
 	aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated, markerCounterPerFrame, board, frameSize, cameraMatrix, distortionCoeffs);
 
-	for (int i = 0; i < maxCheckboards; i++)
+	vector<Mat> interpolatedCharucoCorners;
+	vector<Mat> interpolatedCharucoIds;
+
+	for (int frameNumber = 0; frameNumber < maxCheckboards; frameNumber++)
 	{
 		Mat currentCharucoCorners, currentCharucoIds;
 
-		aruco::interpolateCornersCharuco(allCharucoCorners[i], allCharucoIds[i], allFrames[i], board, currentCharucoCorners, currentCharucoIds);
+		aruco::interpolateCornersCharuco(allArucoCorners[frameNumber], allArucoIds[frameNumber], allFrames[frameNumber], board, currentCharucoCorners, currentCharucoIds);
 		interpolatedCharucoCorners.push_back(currentCharucoCorners);
 		interpolatedCharucoIds.push_back(currentCharucoIds);
+
+		Mat result = allFrames[frameNumber].clone();
+		string resultFolder = checkboardsPath + "/corners";
+
+		filesystem::create_directory(resultFolder);
+		aruco::drawDetectedMarkers(result, allArucoCorners[frameNumber], allArucoIds[frameNumber]);		
+		imwrite(resultFolder + "/" + to_string(frameNumber) + ".png", result);
 	}
 
 	double reprojectionError = aruco::calibrateCameraCharuco(interpolatedCharucoCorners, interpolatedCharucoIds, board, frameSize, cameraMatrix, distortionCoeffs);
