@@ -83,6 +83,11 @@ void CameraController::cameraLoop()
 
 void CameraController::stopCameras()
 {
+	while (shouldSnap || shouldRecord)
+	{
+		this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
+
 	shouldLoopThread = false;
 	optitrackCamera->stopCameras();
 }

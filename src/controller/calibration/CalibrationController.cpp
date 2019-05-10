@@ -43,69 +43,51 @@ map<int, IntrinsicCalibration*> CalibrationController::calculateIntrinsics(map<i
 IntrinsicCalibration* CalibrationController::calculateIntrinsics(string checkboardsPath)
 {
 	Size frameSize;
-	vector<vector<int>> allArucoIds;
-	vector<vector<vector<Point2f>>> allArucoCorners;
-	vector<Mat> allFrames;
+	vector<vector<int>> allCharucoIds;
+	vector<vector<Point2f>> allCharucoCorners;
 
 	Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
+	params->cornerRefinementMethod = aruco::CORNER_REFINE_NONE;
 
 	for (int frameNumber = 0; frameNumber < maxCheckboards; frameNumber++)
 	{
 		Mat frame = imread(checkboardsPath + "/" + to_string(frameNumber) + ".png");
+		Mat result = frame.clone();
+		frameSize = frame.size();
 
 		vector<int> arucoIds;
 		vector<vector<Point2f>> arucoCorners;
-		vector<vector<Point2f>> rejected;
-
 		aruco::detectMarkers(frame, dictionary, arucoCorners, arucoIds, params);
 
-		frameSize = frame.size();
-		allArucoIds.push_back(arucoIds);
-		allArucoCorners.push_back(arucoCorners);
-		allFrames.push_back(frame);
+		if (arucoIds.size() > 0)
+		{
+			vector<int> charucoIds;
+			vector<cv::Point2f> charucoCorners;
+			aruco::interpolateCornersCharuco(arucoCorners, arucoIds, frame, board, charucoCorners, charucoIds);
+			
+			if (charucoIds.size() > 4)
+			{
+				string resultFolder = checkboardsPath + "/corners";
+				filesystem::create_directory(resultFolder);				
+
+				aruco::drawDetectedMarkers(result, arucoCorners);
+				aruco::drawDetectedCornersCharuco(result, charucoCorners, charucoIds, Scalar(0, 0, 255));				
+				imwrite(resultFolder + "/" + to_string(frameNumber) + ".png", result);
+
+				allCharucoIds.push_back(charucoIds);
+				allCharucoCorners.push_back(charucoCorners);
+			}
+			else
+			{
+				BOOST_LOG_TRIVIAL(warning) << "Not enough corners in frame " << frameNumber;
+			}
+		}
 	}
 
 	Mat cameraMatrix;
 	Mat distortionCoeffs;
 	
-	vector<vector<Point2f>> allCornersConcatenated;
-	vector<int> allIdsConcatenated;
-	vector<int> markerCounterPerFrame;
-	markerCounterPerFrame.reserve(allArucoCorners.size());
-
-	for (unsigned int i = 0; i < allArucoCorners.size(); i++)
-	{
-		markerCounterPerFrame.push_back((int)allArucoCorners[i].size());
-
-		for (unsigned int j = 0; j < allArucoCorners[i].size(); j++)
-		{
-			allCornersConcatenated.push_back(allArucoCorners[i][j]);
-			allIdsConcatenated.push_back(allArucoIds[i][j]);
-		}
-	}
-
-	aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated, markerCounterPerFrame, board, frameSize, cameraMatrix, distortionCoeffs);
-
-	vector<Mat> interpolatedCharucoCorners;
-	vector<Mat> interpolatedCharucoIds;
-
-	for (int frameNumber = 0; frameNumber < maxCheckboards; frameNumber++)
-	{
-		Mat currentCharucoCorners, currentCharucoIds;
-
-		aruco::interpolateCornersCharuco(allArucoCorners[frameNumber], allArucoIds[frameNumber], allFrames[frameNumber], board, currentCharucoCorners, currentCharucoIds);
-		interpolatedCharucoCorners.push_back(currentCharucoCorners);
-		interpolatedCharucoIds.push_back(currentCharucoIds);
-
-		Mat result = allFrames[frameNumber].clone();
-		string resultFolder = checkboardsPath + "/corners";
-
-		filesystem::create_directory(resultFolder);
-		aruco::drawDetectedMarkers(result, allArucoCorners[frameNumber], allArucoIds[frameNumber]);		
-		imwrite(resultFolder + "/" + to_string(frameNumber) + ".png", result);
-	}
-
-	double reprojectionError = aruco::calibrateCameraCharuco(interpolatedCharucoCorners, interpolatedCharucoIds, board, frameSize, cameraMatrix, distortionCoeffs);
+	double reprojectionError = aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, frameSize, cameraMatrix, distortionCoeffs);
 	IntrinsicCalibration* calibrationResult = new IntrinsicCalibration(cameraMatrix, distortionCoeffs, reprojectionError);
 
 	return calibrationResult;

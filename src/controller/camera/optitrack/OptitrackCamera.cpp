@@ -63,7 +63,7 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 		camera[i]->SetExposure(camera[i]->MaximumExposureValue());
 		camera[i]->SetFrameRate(camerasFps);
 		camera[i]->SetNumeric(true, camerasOrder[camera[i]->Serial()]);
-		camera[i]->Start();
+		camera[i]->Start();	
 	}
 
 	return true;

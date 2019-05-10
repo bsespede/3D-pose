@@ -197,7 +197,7 @@ void Console::showCapture(Scene scene, Operation operation)
 	}
 	
 	printf("Dumping captures to disk...\n");
-	appController->stopCameras();		
+	appController->stopCameras();	
 	appController->dumpCapture(scene, operation);
 
 	showStatusMessage("Scene captured succesfully\n", GREEN);

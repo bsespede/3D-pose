@@ -75,9 +75,11 @@ __9-4-2019 (9hs)__:
 	- Durante la proxima asistencia al laboratorio se intentara mejorar el frame rate
 	- Falta capturar una escena para las extrinsecas
 
-__10-4-2019 (3hs)__:
+__10-4-2019 (6hs)__:
 - Refactor de captura de frames estaticos
 - Refactor de manejo de jsons en captura/calibracion para mayor logging y control
+- Al dejar de usar precalibracion aruco anda mejor, solo charuco
+- Fix deadlock cuando se frenan las camaras
 - Faltaria:
 	- Prevenir overwrite de capturas para extrinsics/escenas
 	- Reintentar conectar a camaras cada 30 seg cuando fallan
