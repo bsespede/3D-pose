@@ -11,26 +11,35 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 {
 	CameraManager::X();
 	CameraManager::X().WaitForInitialization();
+
+	list.Refresh();
 	cameraCount = 0;
 
 	for (int i = 0; i < list.Count(); i++)
 	{
 		camera[i] = CameraManager::X().GetCamera(list[i].UID());
+		int cameraNumber = camerasOrder[list[i].Serial()];
 
 		if (camera[i] == nullptr)
 		{
-			BOOST_LOG_TRIVIAL(warning) << "Couldn't connect to camera";
+			BOOST_LOG_TRIVIAL(warning) << "Couldn't connect to camera #" << cameraNumber;			
 		}
 		else
 		{
-			BOOST_LOG_TRIVIAL(warning) << "Connected camera with serial " << camera[i]->Serial();
+			BOOST_LOG_TRIVIAL(warning) << "Connected to camera #" << cameraNumber;
 			cameraCount++;
 		}
 	}
 
 	if (cameraCount == 0)
 	{
-		BOOST_LOG_TRIVIAL(error) << "Couldn't connect to any cameras";
+		BOOST_LOG_TRIVIAL(warning) << "Couldn't connect to any camera";
+		return false;
+	}
+
+	if (cameraCount != list.Count())
+	{
+		shutdownCameras();
 		return false;
 	}
 
@@ -44,11 +53,16 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 
 	for (int i = 0; i < cameraCount; i++)
 	{
-		sync->AddCamera(camera[i]);		
+		sync->AddCamera(camera[i]);
+	}
+
+	for (int i = 0; i < cameraCount; i++)
+	{
 		camera[i]->SetVideoType(mode);
 		camera[i]->SetMJPEGQuality(0);
 		camera[i]->SetExposure(camera[i]->MaximumExposureValue());
 		camera[i]->SetFrameRate(camerasFps);
+		camera[i]->SetNumeric(true, camerasOrder[camera[i]->Serial()]);
 		camera[i]->Start();
 	}
 
@@ -63,16 +77,9 @@ FramesPacket* OptitrackCamera::captureFramesPacket()
 	{
 		FramesPacket* framesPacket = new FramesPacket();
 
-		if (frameGroup->Count() != cameraCount) {
-
-			for (int i = 0; i < frameGroup->Count(); i++)
-			{
-				Frame* frame = frameGroup->GetFrame(i);
-				frame->Release();
-			}
-			
-			frameGroup->Release();
-			
+		if (frameGroup->Count() != cameraCount)
+		{			
+			frameGroup->Release();			
 			return nullptr;
 		}
 
@@ -105,18 +112,31 @@ FramesPacket* OptitrackCamera::captureFramesPacket()
 
 void OptitrackCamera::stopCameras()
 {
-	sync->RemoveAllCameras();
-	cModuleSync::Destroy(sync);
-
 	for (int i = 0; i < cameraCount; i++)
 	{
 		camera[i]->Stop();
 	}
 
-	for (int i = 0; i < cameraCount; i++)
+	sync->RemoveAllCameras();
+	cModuleSync::Destroy(sync);
+
+	shutdownCameras();
+}
+
+void OptitrackCamera::shutdownCameras()
+{
+	for (int i = 0; i < list.Count(); i++)
 	{
-		camera[i]->Release();
+		if (camera[i] != nullptr)
+		{
+			camera[i]->Release();
+		}
 	}
 
 	CameraManager::X().Shutdown();
+
+	while (!CameraManager::X().AreCamerasShutdown())
+	{
+		this_thread::sleep_for(std::chrono::milliseconds(500));
+	}
 }

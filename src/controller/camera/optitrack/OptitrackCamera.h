@@ -1,11 +1,11 @@
 #pragma once
 
 #include <map>
+#include <thread>
 #include <atomic>
 #include <opencv2/opencv.hpp>
 #include <boost/log/trivial.hpp>
-#include "cameralibrary.h"
-
+#include <cameralibrary.h>
 #include "model/camera/FramesPacket.h"
 #include "model/util/Config.h"
 
@@ -22,13 +22,13 @@ public:
 	bool startCameras(Core::eVideoMode mode);
 	FramesPacket* captureFramesPacket();
 	void stopCameras();
+	void shutdownCameras();
 private:
 	map<int, int> camerasOrder;
 	int camerasFps;
-	CameraList list;
-	Camera* camera[MAX_CAMERAS];
-	cModuleSync* sync;
 	int cameraCount;
 	atomic<int> frameCount;
-	
+	CameraList list;
+	Camera* camera[MAX_CAMERAS];
+	cModuleSync* sync;	
 };

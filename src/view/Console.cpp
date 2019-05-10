@@ -159,6 +159,11 @@ void Console::showOperationOptions(Scene scene, Operation operation)
 
 void Console::showCapture(Scene scene, Operation operation)
 {
+	if (operation != Operation::INTRINSICS && appController->hasCapture(scene, operation))
+	{
+		// TODO: Show overwrite
+	}
+
 	printf("\nInitializing cameras...\n");
 	if (!appController->startCameras(operation.getCaptureMode()))
 	{
