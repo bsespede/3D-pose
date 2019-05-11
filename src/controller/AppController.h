@@ -1,18 +1,17 @@
 #pragma once
 
-#include "controller/scene/SceneController.h"
+#include "controller/files/FileController.h"
 #include "controller/camera/CameraController.h"
 #include "controller/calibration/CalibrationController.h"
-#include "model/util/Config.h"
 
 using namespace std;
 
 class AppController
 {
 public:
-	AppController(Config* config);
+	AppController(FileController* fileController);
 
-	// Scene I/O
+	// Scene
 	bool sceneExists(string name);
 	Scene createScene(string name);
 	Scene loadScene(string name);
@@ -20,24 +19,21 @@ public:
 	// Cameras
 	bool startCameras(CaptureMode captureMode);
 	void stopCameras();
-	void captureFrame();
+	void startSnap();
 	void startRecordingFrames();
 	void stopRecordingFrames();
+	void updateSafeFrame();
+	FramesPacket* getSafeFrame();
 
 	// Capture
 	bool hasCapture(Scene scene, Operation operation);
-	void dumpCapture(Scene scene, Operation operation);
+	void saveCapture(Scene scene, Operation operation);
 
-	// Process
-	void calculateIntrinsics(Scene scene);
-
-	// Other
-	FramesPacket* getSafeFrame();
-	void updateSafeFrame();
+	// Calibration
+	bool calibrate(Scene scene, Operation operation);
 	int getMaxCheckboards();
-
 private:
-	SceneController* sceneController;
+	FileController* fileController;
 	CameraController* cameraController;
 	CalibrationController* calibrationController;
 };

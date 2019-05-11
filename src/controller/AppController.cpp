@@ -1,25 +1,25 @@
 #include "AppController.h"
 
-AppController::AppController(Config* config)
+AppController::AppController(FileController* fileController)
 {
-	this->sceneController = new SceneController(config->getDataPath());
-	this->calibrationController = new CalibrationController(config);
-	this->cameraController = new CameraController(config);
+	this->fileController = fileController;
+	this->calibrationController = new CalibrationController(fileController);
+	this->cameraController = new CameraController(fileController);
 }
 
 bool AppController::sceneExists(string name)
 {
-	return sceneController->sceneExists(name);
+	return fileController->sceneExists(name);
 }
 
 Scene AppController::createScene(string name)
 {
-	return sceneController->createScene(name);
+	return fileController->createScene(name);
 }
 
 Scene AppController::loadScene(string name)
 {
-	return sceneController->loadScene(name);
+	return fileController->loadScene(name);
 }
 
 bool AppController::startCameras(CaptureMode captureMode)
@@ -32,9 +32,9 @@ void AppController::stopCameras()
 	cameraController->stopCameras();
 }
 
-void AppController::captureFrame()
+void AppController::startSnap()
 {
-	cameraController->captureFrame();
+	cameraController->startSnap();
 }
 
 void AppController::startRecordingFrames()
@@ -49,20 +49,17 @@ void AppController::stopRecordingFrames()
 
 bool AppController::hasCapture(Scene scene, Operation operation)
 {
-	return sceneController->hasCapture(scene, operation);
+	return fileController->hasCapture(scene, operation);
 }
 
-void AppController::dumpCapture(Scene scene, Operation operation)
+void AppController::saveCapture(Scene scene, Operation operation)
 {
-	sceneController->saveCapture(scene, operation, cameraController->getCapture());
+	fileController->saveCapture(scene, operation, cameraController->getCapture());
 }
 
-void AppController::calculateIntrinsics(Scene scene)
+bool AppController::calibrate(Scene scene, Operation operation)
 {
-	map<int, string> capturedCameras = sceneController->getCapturedCameras(scene, Operation::INTRINSICS);
-	map<int, IntrinsicCalibration*> intrinsicMatrices = calibrationController->calculateIntrinsics(capturedCameras);
-
-	sceneController->dumpIntrinsics(intrinsicMatrices);
+	return calibrationController->calibrate(scene, operation);
 }
 
 FramesPacket* AppController::getSafeFrame()
@@ -77,5 +74,5 @@ void AppController::updateSafeFrame()
 
 int AppController::getMaxCheckboards()
 {
-	return calibrationController->getMaxCheckboards();
+	return fileController->getMaxCheckboards();
 }

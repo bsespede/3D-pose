@@ -7,8 +7,11 @@
 #include <opencv2/imgcodecs.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
+#include "model/scene/Scene.h"
+#include "model/scene/enum/Operation.h"
 #include "model/calibration/IntrinsicCalibration.h"
-#include "model/util/Config.h"
+#include "model/calibration/ExtrinsicCalibration.h"
+#include "controller/files/FileController.h"
 
 using namespace std;
 using namespace boost;
@@ -17,17 +20,13 @@ using namespace cv;
 class CalibrationController
 {
 public:
-	CalibrationController(Config* config);
-	void generateCheckboard(string outputFolder);
-	map<int, IntrinsicCalibration*> calculateIntrinsics(map<int, string> capturedCameras);
-	IntrinsicCalibration* calculateIntrinsics(string checkboardsPath);
-	int getMaxCheckboards();
+	CalibrationController(FileController* fileController);
+	bool calibrate(Scene scene, Operation operation);
+	void generateCheckboard();		
 private:
-	string checkboardName;
-	int checkboardWidth;
-	int checkboardHeight;
-	int checkboardMargin;
-	int maxCheckboards;
+	bool calculateIntrinsics(Scene scene, Operation operation);
+	bool calculateExtrinsics(Scene scene, Operation operation);
+	FileController* fileController;
 	Ptr<aruco::Dictionary> dictionary;
 	Ptr<aruco::CharucoBoard> board;
 };

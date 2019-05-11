@@ -20,7 +20,7 @@ using namespace std;
 class Console
 {
 public:
-	Console(Config* config, AppController* appController);
+	Console(FileController* fileController);
 	void start();
 	void showMenu();	
 	void showSceneInput(Input input);
@@ -38,10 +38,8 @@ public:
 	void showPreviewGUI();
 	void showStatusMessage(string message, int fontColor);
 private:
+	FileController* fileController;
 	AppController* appController;
 	CameraRenderer* cameraRenderer;
 	atomic<bool> showCamera;
-	bool showPreviewOnCapture;
-	int checkboardTimer;
-	int guiFps;
 };

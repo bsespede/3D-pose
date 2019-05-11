@@ -1,12 +1,10 @@
 #include "Console.h"
 
-Console::Console(Config* config, AppController* appController)
+Console::Console(FileController* fileController)
 {
-	this->appController = appController;
-	this->cameraRenderer = new CameraRenderer(config->getCameraWidth(), config->getCameraHeight(), config->getMaxWidth(), config->getMaxHeight(), config->getCamerasNumber(), config->getBarHeight());
-	this->showPreviewOnCapture = config->getShowPreviewOnCapture();
-	this->checkboardTimer = config->getCheckboardTimer();
-	this->guiFps = config->getGuiFps();
+	this->fileController = fileController;
+	this->appController = new AppController(fileController);
+	this->cameraRenderer = new CameraRenderer(fileController);
 	this->showCamera = false;
 }
 
@@ -171,7 +169,7 @@ void Console::showCapture(Scene scene, Operation operation)
 		showOperationOptions(scene, operation);
 	}
 
-	if (showPreviewOnCapture) 
+	if (fileController->getShowPreviewOnCapture()) 
 	{
 		showCamera = true;
 		thread camerasThread = thread(&Console::showPreview, this);
@@ -191,28 +189,28 @@ void Console::showCapture(Scene scene, Operation operation)
 		showCaptureScene(scene);
 	}
 
-	if (showPreviewOnCapture)
+	if (fileController->getShowPreviewOnCapture())
 	{
 		showCamera = false;
 	}
 	
 	printf("Dumping captures to disk...\n");
 	appController->stopCameras();	
-	appController->dumpCapture(scene, operation);
+	appController->saveCapture(scene, operation);
 
 	showStatusMessage("Scene captured succesfully\n", GREEN);
 }
 
 void Console::showCaptureIntrinsics(Scene scene)
 {
-	printf("Prepare for checkboarding (capturing frame every 10 seconds)...\n");
+	printf("Prepare for checkboarding (capturing frame every %d seconds)...\n", fileController->getCheckboardTimer());
 
 	for (int checkboardNumber = 0; checkboardNumber < appController->getMaxCheckboards(); checkboardNumber++)
 	{
-		this_thread::sleep_for(chrono::seconds(10));
+		this_thread::sleep_for(chrono::seconds(fileController->getCheckboardTimer()));
 
 		Beep(500, 400);
-		appController->captureFrame();
+		appController->startSnap();
 
 		printf("Captured frame %d/%d...\n", checkboardNumber + 1, appController->getMaxCheckboards());
 	}
@@ -220,21 +218,9 @@ void Console::showCaptureIntrinsics(Scene scene)
 
 void Console::showCaptureExtrinsics(Scene scene)
 {
-	printf("Prepare to capture empty scene (press any key to start)...\n");
+	printf("Prepare to capture checkboard (press any key to start)...\n");
 	getch();
-	appController->captureFrame();
-
-	printf("Prepare for wanding (press any key to start)...\n");
-	getch();
-	appController->startRecordingFrames();
-
-	printf("Recording wanding (press any key to stop)...\n");
-	getch();
-	appController->stopRecordingFrames();
-
-	printf("Prepare to capture scene axis (press any key to start)...\n");
-	getch();
-	appController->captureFrame();
+	appController->startSnap();
 }
 
 void Console::showCaptureScene(Scene scene)
@@ -276,14 +262,17 @@ void Console::showProcess(Scene scene, Operation operation)
 void Console::showProcessIntrinsics(Scene scene)
 {
 	printf("\nCalculating cameras intrinsics...\n");
-	appController->calculateIntrinsics(scene);
+	appController->calibrate(scene, Operation::INTRINSICS);
 
 	showStatusMessage("Intrinsic calibration was succesfull\n", GREEN);
 }
 
 void Console::showProcessExtrinsics(Scene scene)
 {
-	showStatusMessage("Extrinsic calibration not implemented yet\n", RED);
+	printf("\nCalculating cameras extrinsics...\n");
+	appController->calibrate(scene, Operation::EXTRINSICS);
+
+	showStatusMessage("Extrinsic calibration was succesfull\n", GREEN);
 }
 
 void Console::showProcessScene(Scene scene)
@@ -318,7 +307,7 @@ void Console::showPreviewGUI()
 	int curFrame = 0;
 	while (showCamera)
 	{
-		int milisecondsToSleep = (int)(1.0 / guiFps * 1000);
+		int milisecondsToSleep = (int)(1.0 / fileController->getGuiFps() * 1000);
 		chrono::system_clock::time_point timePoint = chrono::system_clock::now() + chrono::milliseconds(milisecondsToSleep);
 
 		FramesPacket* safeFrame = appController->getSafeFrame();

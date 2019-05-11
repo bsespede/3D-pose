@@ -1,18 +1,16 @@
 #include "OptitrackCamera.h"
 
-OptitrackCamera::OptitrackCamera(Config* config)
+OptitrackCamera::OptitrackCamera(FileController* fileController)
 {
 	CameraLibrary_EnableDevelopment();
-	this->camerasFps = config->getCamerasFps();
-	this->camerasOrder = config->getCamerasOrder();
+	this->camerasFps = fileController->getCamerasFps();
+	this->camerasOrder = fileController->getCamerasOrder();
 }
 
 bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 {
 	CameraManager::X();
 	CameraManager::X().WaitForInitialization();
-
-	list.Refresh();
 	cameraCount = 0;
 
 	for (int i = 0; i < list.Count(); i++)

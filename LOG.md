@@ -82,4 +82,9 @@ __10-4-2019 (6hs)__:
 - Fix deadlock cuando se frenan las camaras
 - Faltaria:
 	- Prevenir overwrite de capturas para extrinsics/escenas
-	- Reintentar conectar a camaras cada 30 seg cuando fallan
+
+__11-4-2019 (6hs)__:
+- Refactor gigante para separar el acceso al config file
+- Primera implementacion de extrinsics con charuco (+exportacion a JSON) -> solo para probar
+- Faltaria:
+	- Separar acceso al fileController con wrappers para cada clase

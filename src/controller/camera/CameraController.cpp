@@ -1,15 +1,15 @@
 #include "CameraController.h"
 
-CameraController::CameraController(Config* config)
+CameraController::CameraController(FileController* fileController)
 {
-	this->optitrackCamera = new OptitrackCamera(config);
+	this->camerasFps = fileController->getCamerasFps();
+	this->optitrackCamera = new OptitrackCamera(fileController);
 	this->capture = new Capture();
 	this->safeFrame = nullptr;
 	this->shouldUpdateSafeFrame = false;
 	this->shouldLoopThread = false;
 	this->shouldRecord = false;
-	this->shouldSnap = false;
-	this->camerasFps = config->getCamerasFps();
+	this->shouldSnap = false;	
 }
 
 bool CameraController::startCameras(CaptureMode mode)
@@ -38,9 +38,6 @@ void CameraController::cameraLoop()
 
 	while (shouldLoopThread)
 	{
-		int milisecondsToSleep = (int)(1.0 / camerasFps * 1000);
-		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(milisecondsToSleep);
-
 		if (!shouldKeepPrevFrame)
 		{
 			delete currentFrame;
@@ -77,7 +74,8 @@ void CameraController::cameraLoop()
 			}
 		}
 
-		std::this_thread::sleep_until(timePoint);
+		int milisecondsToSleep = (int)(1.0 / camerasFps * 1000);
+		this_thread::sleep_for(chrono::milliseconds(milisecondsToSleep));
 	}
 }
 
@@ -102,7 +100,7 @@ void CameraController::stopRecording()
 	shouldRecord = false;
 }
 
-void CameraController::captureFrame()
+void CameraController::startSnap()
 {
 	shouldSnap = true;
 }

@@ -1,9 +1,9 @@
 #include "IntrinsicCalibration.h"
 
-IntrinsicCalibration::IntrinsicCalibration(Mat cameraMatrix, Mat distortionCoeffs, double reprojectionError)
+IntrinsicCalibration::IntrinsicCalibration(Mat cameraMatrix, Mat distortionCoefficients, double reprojectionError)
 {
 	this->cameraMatrix = cameraMatrix;
-	this->distortionCoeffs = distortionCoeffs;
+	this->distortionCoefficients = distortionCoefficients;
 	this->reprojectionError = reprojectionError;
 }
 
@@ -12,9 +12,9 @@ Mat IntrinsicCalibration::getCameraMatrix()
 	return cameraMatrix;
 }
 
-Mat IntrinsicCalibration::getDistortionCoeffs()
+Mat IntrinsicCalibration::getDistortionCoefficients()
 {
-	return distortionCoeffs;
+	return distortionCoefficients;
 }
 
 double IntrinsicCalibration::getReprojectionError()

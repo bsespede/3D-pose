@@ -3,11 +3,11 @@
 #include <list>
 #include <thread>
 #include <atomic>
-
-#include "controller/camera/optitrack/OptitrackCamera.h"
 #include "model/camera/FramesPacket.h"
 #include "model/camera/enum/CaptureMode.h"
 #include "model/capture/Capture.h"
+#include "controller/files/FileController.h"
+#include "controller/camera/optitrack/OptitrackCamera.h"
 
 using namespace std;
 
@@ -15,21 +15,22 @@ class CameraController
 {
 public:
 	// Hardware control
-	CameraController(Config* config);
+	CameraController(FileController* fileController);
 	bool startCameras(CaptureMode mode);
 	void stopCameras();
 
 	// Capture control
 	void startRecording();
 	void stopRecording();
-	void captureFrame();
+	void startSnap();
 	Capture* getCapture();
 
 	// Frame control
 	FramesPacket* getSafeFrame();
 	void updateSafeFrame();
-
 private:
+	void cameraLoop();
+	FileController* fileController;
 	OptitrackCamera* optitrackCamera;
 	Capture* capture;
 	FramesPacket* safeFrame;
@@ -38,5 +39,4 @@ private:
 	atomic<bool> shouldRecord;
 	atomic<bool> shouldSnap;
 	int camerasFps;
-	void cameraLoop();
 };

@@ -1,94 +1,198 @@
 #include "CalibrationController.h"
 
-CalibrationController::CalibrationController(Config* config)
+CalibrationController::CalibrationController(FileController* fileController)
 {
-	this->dictionary = aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-	this->board = aruco::CharucoBoard::create(config->getCheckboardCols(), config->getCheckboardRows(), config->getCheckboardSquareLength(), config->getCheckboardMarkerLength(), dictionary);
-	this->checkboardName = config->getCheckboardName();
-	this->checkboardWidth = config->getCheckboardWidth();
-	this->checkboardHeight = config->getCheckboardHeight();
-	this->checkboardMargin = config->getCheckboardMargin();
-	this->maxCheckboards = config->getMaxCheckboards();
+	int checkboardCols = fileController->getCheckboardCols();
+	int checkboardRows = fileController->getCheckboardRows();
+	int checkboardSquareLength = fileController->getCheckboardSquareLength();
+	int checkboardMarkerLength = fileController->getCheckboardMarkerLength();
+
+	this->fileController = fileController;
+	this->dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+	this->board = aruco::CharucoBoard::create(checkboardCols, checkboardRows, checkboardSquareLength, checkboardMarkerLength, dictionary);
 }
 
-int CalibrationController::getMaxCheckboards()
-{
-	return maxCheckboards;
-}
-
-void CalibrationController::generateCheckboard(string outputFolder)
+void CalibrationController::generateCheckboard()
 {
 	Mat boardImage;
-	board->draw(cv::Size(checkboardWidth, checkboardHeight), boardImage, checkboardMargin, 1);
-	imwrite(outputFolder + "/" + checkboardName + ".png", boardImage);
+	string dataFolder = fileController->getDataFolder();
+	int checkboardWidth = fileController->getCheckboardWidth();
+	int checkboardHeight = fileController->getCheckboardHeight();
+	int checkboardMargin = fileController->getCheckboardMargin();
+
+	board->draw(Size(checkboardWidth, checkboardHeight), boardImage, checkboardMargin, 1);
+	imwrite(dataFolder + "/board.png", boardImage);
 }
 
-map<int, IntrinsicCalibration*> CalibrationController::calculateIntrinsics(map<int, string> capturedCameras)
+bool CalibrationController::calibrate(Scene scene, Operation operation)
 {
-	map<int, IntrinsicCalibration*> calibrationMatrices;
-
-	for (pair<int, string> cameraData: capturedCameras)
+	if (!fileController->hasCapture(scene, operation))
 	{
-		int cameraId = cameraData.first;
-		string cameraPath = cameraData.second;
-
-		BOOST_LOG_TRIVIAL(warning) << "Calibrating camera #" << cameraId;
-		IntrinsicCalibration* calibrationResults = calculateIntrinsics(cameraPath);
-		calibrationMatrices[cameraId] = calibrationResults;
+		BOOST_LOG_TRIVIAL(warning) << "Cannot calibrate scene " << scene.getName() << " since it has no " << operation.toString() << " capture or it is corrupted";
+		return false;
 	}
 
-	return calibrationMatrices;
+	bool calibrationSuccess;
+
+	if (operation == Operation::INTRINSICS)
+	{
+		calibrationSuccess = calculateIntrinsics(scene, operation);
+	} 
+	else if (operation == Operation::EXTRINSICS)
+	{
+		calibrationSuccess = calculateExtrinsics(scene, operation);
+	}
+
+	return calibrationSuccess;
 }
 
-IntrinsicCalibration* CalibrationController::calculateIntrinsics(string checkboardsPath)
+bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation)
 {
-	Size frameSize;
-	vector<vector<int>> allCharucoIds;
-	vector<vector<Point2f>> allCharucoCorners;
+	map<int, IntrinsicCalibration*> calibrationResults;
+	vector<int> capturedCameras = fileController->getCapturedCameras(scene, operation);
 
-	Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
-	params->cornerRefinementMethod = aruco::CORNER_REFINE_NONE;
-
-	for (int frameNumber = 0; frameNumber < maxCheckboards; frameNumber++)
+	for (int cameraNumber: capturedCameras)
 	{
-		Mat frame = imread(checkboardsPath + "/" + to_string(frameNumber) + ".png");
-		Mat result = frame.clone();
-		frameSize = frame.size();
+		int maxCheckboards = fileController->getMaxCheckboards();
+
+		Size frameSize;
+		vector<vector<int>> allCharucoIds;
+		vector<vector<Point2f>> allCharucoCorners;
+
+		Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
+		params->cornerRefinementMethod = aruco::CORNER_REFINE_NONE;
+
+		for (int frameNumber = 0; frameNumber < maxCheckboards; frameNumber++)
+		{
+			if (!fileController->hasCapturedFrame(scene, operation, cameraNumber, frameNumber))
+			{
+				BOOST_LOG_TRIVIAL(warning) << "Could not find captured frame " << frameNumber << " from camera " << cameraNumber << " for " << operation.toString();
+				return false;
+			}
+
+			Mat frame = fileController->getCapturedFrame(scene, operation, cameraNumber, frameNumber);
+			Mat result = frame.clone();
+			frameSize = frame.size();
+
+			vector<int> arucoIds;
+			vector<vector<Point2f>> arucoCorners;
+			aruco::detectMarkers(frame, dictionary, arucoCorners, arucoIds, params);
+
+			if (arucoIds.size() > 0)
+			{
+				vector<int> charucoIds;
+				vector<Point2f> charucoCorners;
+				aruco::interpolateCornersCharuco(arucoCorners, arucoIds, frame, board, charucoCorners, charucoIds);
+
+				if (charucoIds.size() > 4)
+				{
+					aruco::drawDetectedMarkers(result, arucoCorners);
+					aruco::drawDetectedCornersCharuco(result, charucoCorners, charucoIds, Scalar(0, 0, 255));
+					fileController->saveCalibrationDetections(result, scene, operation, cameraNumber, frameNumber);
+
+					allCharucoIds.push_back(charucoIds);
+					allCharucoCorners.push_back(charucoCorners);
+				}
+				else
+				{
+					BOOST_LOG_TRIVIAL(warning) << "Not enough corners, ignoring frame " << frameNumber << " of camera " << cameraNumber;
+				}
+			}
+			else
+			{
+				BOOST_LOG_TRIVIAL(warning) << "Not enough markers, ignoring frame " << frameNumber << " of camera " << cameraNumber;
+			}
+		}
+
+		Mat cameraMatrix;
+		Mat distortionCoeffs;
+		double reprojectionError = aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, frameSize, cameraMatrix, distortionCoeffs);
+
+		calibrationResults[cameraNumber] = new IntrinsicCalibration(cameraMatrix, distortionCoeffs, reprojectionError);		
+	}
+
+	fileController->saveIntrinsics(calibrationResults);
+	return true;
+}
+
+bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation)
+{
+	map<int, ExtrinsicCalibration*> calibrationResults;
+	vector<int> capturedCameras = fileController->getCapturedCameras(scene, operation);
+
+	for (int cameraNumber : capturedCameras)
+	{
+		int frameNumber = 0;
+		if (!fileController->hasCapturedFrame(scene, operation, cameraNumber, frameNumber))
+		{
+			BOOST_LOG_TRIVIAL(warning) << "Could not find captured frame from camera " << cameraNumber << " for " << operation.toString();
+			return false;
+		}
 
 		vector<int> arucoIds;
 		vector<vector<Point2f>> arucoCorners;
+		Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
+		params->cornerRefinementMethod = aruco::CORNER_REFINE_NONE;
+
+		Mat frame = fileController->getCapturedFrame(scene, operation, cameraNumber, frameNumber);
+		Mat result = frame.clone();
+		Size frameSize = frame.size();
+
 		aruco::detectMarkers(frame, dictionary, arucoCorners, arucoIds, params);
 
 		if (arucoIds.size() > 0)
 		{
+			IntrinsicCalibration* intrinsics = fileController->getIntrinsics(cameraNumber);
+			if (intrinsics == nullptr)
+			{
+				BOOST_LOG_TRIVIAL(warning) << "No intrinsics could be found for camera " << cameraNumber;
+				return false;
+			}
+
+			Mat cameraMatrix = intrinsics->getCameraMatrix();
+			Mat distortionCoefficients = intrinsics->getDistortionCoefficients();
+
 			vector<int> charucoIds;
-			vector<cv::Point2f> charucoCorners;
-			aruco::interpolateCornersCharuco(arucoCorners, arucoIds, frame, board, charucoCorners, charucoIds);
-			
+			vector<Point2f> charucoCorners;
+			aruco::interpolateCornersCharuco(arucoCorners, arucoIds, frame, board, charucoCorners, charucoIds, cameraMatrix, distortionCoefficients);
+
 			if (charucoIds.size() > 4)
 			{
-				string resultFolder = checkboardsPath + "/corners";
-				filesystem::create_directory(resultFolder);				
-
 				aruco::drawDetectedMarkers(result, arucoCorners);
-				aruco::drawDetectedCornersCharuco(result, charucoCorners, charucoIds, Scalar(0, 0, 255));				
-				imwrite(resultFolder + "/" + to_string(frameNumber) + ".png", result);
+				aruco::drawDetectedCornersCharuco(result, charucoCorners, charucoIds, Scalar(0, 0, 255));
+				fileController->saveCalibrationDetections(result, scene, operation, cameraNumber, frameNumber);
 
-				allCharucoIds.push_back(charucoIds);
-				allCharucoCorners.push_back(charucoCorners);
+				Mat translationVector;
+				Mat rotationVector;
+				bool poseEstimationSuccess = aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distortionCoefficients, rotationVector, translationVector);
+				delete intrinsics;
+
+				if (!poseEstimationSuccess)
+				{
+					BOOST_LOG_TRIVIAL(warning) << "Pose estimation failed during extrinsics calibration of camera " << cameraNumber;
+					return false;
+				}
+				else
+				{
+					aruco::drawAxis(result, cameraMatrix, distortionCoefficients, rotationVector, translationVector, 0.1);
+					fileController->saveCalibrationDetections(result, scene, operation, cameraNumber, frameNumber);
+				}
+
+				calibrationResults[cameraNumber] = new ExtrinsicCalibration(translationVector, rotationVector);
 			}
 			else
 			{
-				BOOST_LOG_TRIVIAL(warning) << "Not enough corners in frame " << frameNumber;
+				BOOST_LOG_TRIVIAL(warning) << "Not enough corners in extrinsics calibration frame";
+				return false;
 			}
+		}
+		else
+		{
+			BOOST_LOG_TRIVIAL(warning) << "Not enough markers in extrinsics calibration frame";
+			return false;
 		}
 	}
 
-	Mat cameraMatrix;
-	Mat distortionCoeffs;
-	
-	double reprojectionError = aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, frameSize, cameraMatrix, distortionCoeffs);
-	IntrinsicCalibration* calibrationResult = new IntrinsicCalibration(cameraMatrix, distortionCoeffs, reprojectionError);
-
-	return calibrationResult;
+	fileController->saveExtrinsics(scene, calibrationResults);
+	return true;
 }

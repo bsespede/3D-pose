@@ -7,9 +7,9 @@
 #include <boost/log/trivial.hpp>
 #include <cameralibrary.h>
 #include "model/camera/FramesPacket.h"
-#include "model/util/Config.h"
+#include "controller/files/FileController.h"
 
-#define MAX_CAMERAS 32
+#define MAX_CAMERAS 16
 
 using namespace std;
 using namespace cv;
@@ -18,7 +18,7 @@ using namespace CameraLibrary;
 class OptitrackCamera
 {
 public:
-	OptitrackCamera(Config* config);
+	OptitrackCamera(FileController* fileController);
 	bool startCameras(Core::eVideoMode mode);
 	FramesPacket* captureFramesPacket();
 	void stopCameras();

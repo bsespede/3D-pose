@@ -1,7 +1,14 @@
 #include "CameraRenderer.h"
 
-CameraRenderer::CameraRenderer(int cameraWidth, int cameraHeight, int maxWidth, int maxHeight, int camerasNumber, int barHeight)
+CameraRenderer::CameraRenderer(FileController* fileController)
 {
+	int cameraWidth = fileController->getCameraWidth();
+	int cameraHeight = fileController->getCameraHeight();
+	int maxWidth = fileController->getMaxWidth();
+	int maxHeight = fileController->getMaxHeight();
+	int camerasNumber = fileController->getCamerasNumber();
+	int barHeight = fileController->getBarHeight();
+	
 	this->barHeight = barHeight;
 	calculateSizeProportion(1.0, cameraWidth, cameraHeight, maxWidth, maxHeight, camerasNumber, barHeight);
 }
