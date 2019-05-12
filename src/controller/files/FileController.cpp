@@ -13,25 +13,25 @@ FileController::FileController()
 	this->cameraWidth = root.get<int>("config.gui.cameraWidth");
 	this->barHeight = root.get<int>("config.gui.barHeight");
 	this->guiFps = root.get<int>("config.gui.fps");
-	this->showPreviewOnCapture = root.get<bool>("config.gui.showPreviewOnCapture");
+	this->showPreviewOnCapture = root.get<bool>("config.gui.showCapturePreview");
 
 	int cameraNumber = 0;
 	this->camerasOrder = std::map<int, int>();
 	this->camerasFps = root.get<int>("config.cameras.fps");
-	for (property_tree::ptree::value_type& cameraId : root.get_child("config.cameras.camerasOrder"))
+	for (property_tree::ptree::value_type& cameraId : root.get_child("config.cameras.order"))
 	{
 		int serial = cameraId.second.get_value<int>();
 		camerasOrder[serial] = cameraNumber;
 		cameraNumber++;
 	}
 
-	this->maxCheckboards = root.get<int>("config.calibration.maxCheckboards");
-	this->checkboardTimer = root.get<int>("config.calibration.checkboardTimer");
+	this->maxCheckboards = root.get<int>("config.calibration.checkboardIntrinsics.frames");
+	this->checkboardTimer = root.get<int>("config.calibration.checkboardIntrinsics.timer");
 
-	this->checkboardCols = root.get<int>("config.calibration.charucoCheckboard.cols");
-	this->checkboardRows = root.get<int>("config.calibration.charucoCheckboard.rows");
-	this->checkboardSquareLength = root.get<float>("config.calibration.charucoCheckboard.squareLength");
-	this->checkboardMarkerLength = root.get<float>("config.calibration.charucoCheckboard.markerLength");
+	this->checkboardCols = root.get<int>("config.calibration.checkboardIntrinsics.cols");
+	this->checkboardRows = root.get<int>("config.calibration.checkboardIntrinsics.rows");
+	this->checkboardSquareLength = root.get<float>("config.calibration.checkboardIntrinsics.squareLength");
+	this->checkboardMarkerLength = root.get<float>("config.calibration.checkboardIntrinsics.markerLength");
 	this->checkboardWidth = root.get<int>("config.calibration.checkboardImage.width");
 	this->checkboardHeight = root.get<int>("config.calibration.checkboardImage.height");
 	this->checkboardMargin = root.get<int>("config.calibration.checkboardImage.margin");

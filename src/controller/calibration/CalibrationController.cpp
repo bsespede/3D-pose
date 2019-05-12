@@ -104,9 +104,10 @@ bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation
 			}
 		}
 
-		Mat cameraMatrix;
+		Mat cameraMatrix = Mat::eye(3, 3, CV_64F);
 		Mat distortionCoeffs;
-		double reprojectionError = aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, frameSize, cameraMatrix, distortionCoeffs);
+		int calibrationFlags = 0 | CALIB_FIX_ASPECT_RATIO | CALIB_FIX_PRINCIPAL_POINT;
+		double reprojectionError = aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, frameSize, cameraMatrix, distortionCoeffs, noArray(), noArray(), calibrationFlags);
 
 		calibrationResults[cameraNumber] = new Intrinsics(cameraMatrix, distortionCoeffs, reprojectionError);		
 	}
@@ -182,14 +183,12 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 			}
 			else
 			{
-				BOOST_LOG_TRIVIAL(warning) << "Not enough corners in extrinsics calibration frame";
-				return false;
+				BOOST_LOG_TRIVIAL(warning) << "Not enough corners in extrinsics calibration frame of camera " << cameraNumber;
 			}
 		}
 		else
 		{
-			BOOST_LOG_TRIVIAL(warning) << "Not enough markers in extrinsics calibration frame";
-			return false;
+			BOOST_LOG_TRIVIAL(warning) << "Not enough markers in extrinsics calibration frame " << cameraNumber;
 		}
 	}
 
