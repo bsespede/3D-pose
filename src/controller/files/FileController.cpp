@@ -386,12 +386,12 @@ int FileController::getCheckboardRows()
 	return checkboardRows;
 }
 
-float FileController::getCheckboardSquareLength()
+double FileController::getCheckboardSquareLength()
 {
 	return checkboardSquareLength;
 }
 
-float FileController::getCheckboardMarkerLength()
+double FileController::getCheckboardMarkerLength()
 {
 	return checkboardMarkerLength;
 }

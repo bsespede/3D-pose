@@ -59,8 +59,8 @@ public:
 	int getCheckboardTimer();
 	int getCheckboardCols();
 	int getCheckboardRows();
-	float getCheckboardSquareLength();
-	float getCheckboardMarkerLength();
+	double getCheckboardSquareLength();
+	double getCheckboardMarkerLength();
 	int getCheckboardWidth();
 	int getCheckboardHeight();
 	int getCheckboardMargin();
@@ -87,8 +87,8 @@ private:
 	int checkboardTimer;
 	int checkboardCols;
 	int checkboardRows;
-	float checkboardSquareLength;
-	float checkboardMarkerLength;
+	double checkboardSquareLength;
+	double checkboardMarkerLength;
 	int checkboardWidth;
 	int checkboardHeight;
 	int checkboardMargin;

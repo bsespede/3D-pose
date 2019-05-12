@@ -4,8 +4,8 @@ CalibrationController::CalibrationController(FileController* fileController)
 {
 	int checkboardCols = fileController->getCheckboardCols();
 	int checkboardRows = fileController->getCheckboardRows();
-	int checkboardSquareLength = fileController->getCheckboardSquareLength();
-	int checkboardMarkerLength = fileController->getCheckboardMarkerLength();
+	double checkboardSquareLength = fileController->getCheckboardSquareLength();
+	double checkboardMarkerLength = fileController->getCheckboardMarkerLength();
 
 	this->fileController = fileController;
 	this->dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
