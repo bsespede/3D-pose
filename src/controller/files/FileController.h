@@ -8,8 +8,8 @@
 #include "model/scene/Scene.h"
 #include "model/scene/enum/Operation.h"
 #include "model/capture/Capture.h"
-#include "model/calibration/IntrinsicCalibration.h"
-#include "model/calibration/ExtrinsicCalibration.h"
+#include "model/calibration/Intrinsics.h"
+#include "model/calibration/Extrinsics.h"
 
 using namespace std;
 using namespace boost;
@@ -32,9 +32,9 @@ public:
 	Mat getCapturedFrame(Scene scene, Operation operation, int cameraNumber, int frameNumber);
 
 	// Calibration
-	IntrinsicCalibration* getIntrinsics(int cameraNumber);
-	void saveIntrinsics(map<int, IntrinsicCalibration*> calibrationResults);
-	void saveExtrinsics(Scene scene, map<int, ExtrinsicCalibration*> extrinsicMatrices);
+	Intrinsics* getIntrinsics(int cameraNumber);
+	void saveIntrinsics(map<int, Intrinsics*> calibrationResults);
+	void saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsicMatrices);
 	void saveCalibrationDetections(Mat detection, Scene scene, Operation operation, int cameraNumber, int frameNumber);
 
 	// Config file: Folder

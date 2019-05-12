@@ -32,7 +32,7 @@ bool CalibrationController::calibrate(Scene scene, Operation operation)
 		return false;
 	}
 
-	bool calibrationSuccess;
+	bool calibrationSuccess = false;
 
 	if (operation == Operation::INTRINSICS)
 	{
@@ -48,7 +48,7 @@ bool CalibrationController::calibrate(Scene scene, Operation operation)
 
 bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation)
 {
-	map<int, IntrinsicCalibration*> calibrationResults;
+	map<int, Intrinsics*> calibrationResults;
 	vector<int> capturedCameras = fileController->getCapturedCameras(scene, operation);
 
 	for (int cameraNumber: capturedCameras)
@@ -108,7 +108,7 @@ bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation
 		Mat distortionCoeffs;
 		double reprojectionError = aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, frameSize, cameraMatrix, distortionCoeffs);
 
-		calibrationResults[cameraNumber] = new IntrinsicCalibration(cameraMatrix, distortionCoeffs, reprojectionError);		
+		calibrationResults[cameraNumber] = new Intrinsics(cameraMatrix, distortionCoeffs, reprojectionError);		
 	}
 
 	fileController->saveIntrinsics(calibrationResults);
@@ -117,7 +117,7 @@ bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation
 
 bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation)
 {
-	map<int, ExtrinsicCalibration*> calibrationResults;
+	map<int, Extrinsics*> calibrationResults;
 	vector<int> capturedCameras = fileController->getCapturedCameras(scene, operation);
 
 	for (int cameraNumber : capturedCameras)
@@ -142,7 +142,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 
 		if (arucoIds.size() > 0)
 		{
-			IntrinsicCalibration* intrinsics = fileController->getIntrinsics(cameraNumber);
+			Intrinsics* intrinsics = fileController->getIntrinsics(cameraNumber);
 			if (intrinsics == nullptr)
 			{
 				BOOST_LOG_TRIVIAL(warning) << "No intrinsics could be found for camera " << cameraNumber;
@@ -178,7 +178,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 					fileController->saveCalibrationDetections(result, scene, operation, cameraNumber, frameNumber);
 				}
 
-				calibrationResults[cameraNumber] = new ExtrinsicCalibration(translationVector, rotationVector);
+				calibrationResults[cameraNumber] = new Extrinsics(translationVector, rotationVector);
 			}
 			else
 			{

@@ -9,8 +9,8 @@
 #include <boost/filesystem.hpp>
 #include "model/scene/Scene.h"
 #include "model/scene/enum/Operation.h"
-#include "model/calibration/IntrinsicCalibration.h"
-#include "model/calibration/ExtrinsicCalibration.h"
+#include "model/calibration/Intrinsics.h"
+#include "model/calibration/Extrinsics.h"
 #include "controller/files/FileController.h"
 
 using namespace std;

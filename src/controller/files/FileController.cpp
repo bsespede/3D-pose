@@ -176,7 +176,7 @@ Mat FileController::getCapturedFrame(Scene scene, Operation operation, int camer
 	}	
 }
 
-IntrinsicCalibration* FileController::getIntrinsics(int cameraNumber) 
+Intrinsics* FileController::getIntrinsics(int cameraNumber) 
 {
 	string intrinsicsFile = dataFolder + "/intrinsics.json";
 	property_tree::ptree root;
@@ -211,7 +211,7 @@ IntrinsicCalibration* FileController::getIntrinsics(int cameraNumber)
 			distortionCoefficients.at<double>(0, 3) = p2;
 			distortionCoefficients.at<double>(0, 4) = k3;
 
-			IntrinsicCalibration* intrinsics = new IntrinsicCalibration(calibrationMatrix, distortionCoefficients, reprojectionError);
+			Intrinsics* intrinsics = new Intrinsics(calibrationMatrix, distortionCoefficients, reprojectionError);
 			return intrinsics;
 		}
 	}
@@ -219,7 +219,7 @@ IntrinsicCalibration* FileController::getIntrinsics(int cameraNumber)
 	return nullptr;
 }
 
-void FileController::saveIntrinsics(map<int, IntrinsicCalibration*> calibrationResults)
+void FileController::saveIntrinsics(map<int, Intrinsics*> calibrationResults)
 {
 	string intrinsicsFile = dataFolder + "/intrinsics.json";
 	property_tree::ptree root;
@@ -230,11 +230,11 @@ void FileController::saveIntrinsics(map<int, IntrinsicCalibration*> calibrationR
 	root.put("calibration.date", date);
 
 	property_tree::ptree camerasNode;
-	for (pair<int, IntrinsicCalibration*> calibrationResult: calibrationResults)
+	for (pair<int, Intrinsics*> calibrationResult: calibrationResults)
 	{
 		property_tree::ptree cameraNode;
 		int cameraNumber = calibrationResult.first;
-		IntrinsicCalibration* intrinsics = calibrationResult.second;
+		Intrinsics* intrinsics = calibrationResult.second;
 		
 		cameraNode.put("cameraId", cameraNumber);
 		cameraNode.put("reprojectionError", intrinsics->getReprojectionError());
@@ -260,7 +260,7 @@ void FileController::saveIntrinsics(map<int, IntrinsicCalibration*> calibrationR
 	property_tree::write_json(intrinsicsFile, root);
 }
 
-void FileController::saveExtrinsics(Scene scene, map<int, ExtrinsicCalibration*> extrinsicMatrices) 
+void FileController::saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsicMatrices) 
 {
 	string extrinsicsFile = dataFolder + "/" + scene.getName() + "/extrinsics.json";
 	property_tree::ptree root;
@@ -271,11 +271,11 @@ void FileController::saveExtrinsics(Scene scene, map<int, ExtrinsicCalibration*>
 	root.put("calibration.date", date);
 
 	property_tree::ptree camerasNode;
-	for (pair<int, ExtrinsicCalibration*> calibrationResult: extrinsicMatrices)
+	for (pair<int, Extrinsics*> calibrationResult: extrinsicMatrices)
 	{
 		property_tree::ptree cameraNode;
 		int cameraNumber = calibrationResult.first;
-		ExtrinsicCalibration* extrinsics = calibrationResult.second;
+		Extrinsics* extrinsics = calibrationResult.second;
 		
 		cameraNode.put("cameraId", cameraNumber);
 

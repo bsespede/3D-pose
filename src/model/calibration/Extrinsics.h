@@ -4,10 +4,10 @@
 
 using namespace cv;
 
-class ExtrinsicCalibration
+class Extrinsics
 {
 public:
-	ExtrinsicCalibration(Mat translationMatrix, Mat rotationMatrix);
+	Extrinsics(Mat translationMatrix, Mat rotationMatrix);
 	Mat getTranslationMatrix();
 	Mat getRotationMatrix();
 private:

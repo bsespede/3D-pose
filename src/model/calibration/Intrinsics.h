@@ -4,10 +4,10 @@
 
 using namespace cv;
 
-class IntrinsicCalibration
+class Intrinsics
 {
 public:
-	IntrinsicCalibration(Mat cameraMatrix, Mat distortionCoefficients, double reprojectionError);
+	Intrinsics(Mat cameraMatrix, Mat distortionCoefficients, double reprojectionError);
 	Mat getCameraMatrix();
 	Mat getDistortionCoefficients();
 	double getReprojectionError();
