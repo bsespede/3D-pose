@@ -304,7 +304,6 @@ void Console::showPreview()
 
 void Console::showPreviewGUI()
 {
-	int curFrame = 0;
 	while (showCamera)
 	{
 		int milisecondsToSleep = (int)(1.0 / fileController->getGuiFps() * 1000);
@@ -319,7 +318,7 @@ void Console::showPreviewGUI()
 
 		appController->updateSafeFrame();
 
-		this_thread::sleep_until(timePoint);
+		this_thread::sleep_until(timePoint);		
 	}
 }
 

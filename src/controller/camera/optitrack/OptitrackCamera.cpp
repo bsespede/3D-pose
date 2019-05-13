@@ -56,7 +56,7 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 
 	for (int i = 0; i < cameraCount; i++)
 	{
-		camera[i]->SetMJPEGQuality(0);
+		camera[i]->SetMJPEGQuality(1);
 		camera[i]->SetVideoType(mode);		
 		camera[i]->SetExposure(camera[i]->MaximumExposureValue());
 		camera[i]->SetFrameRate(camerasFps);
@@ -91,7 +91,7 @@ FramesPacket* OptitrackCamera::captureFramesPacket()
 			int cameraWidth = camera->Width();
 			int cameraHeight = camera->Height();
 
-			cv::Mat frameMat = cv::Mat(cv::Size(cameraWidth, cameraHeight), CV_8UC1);
+			Mat frameMat = Mat(Size(cameraWidth, cameraHeight), CV_8UC1);
 			frame->Rasterize(cameraWidth, cameraHeight, frameMat.step, 8, frameMat.data);
 
 			framesPacket->addFrame(cameraId, frameMat);

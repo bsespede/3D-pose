@@ -51,7 +51,8 @@ bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation
 	map<int, Intrinsics*> calibrationResults;
 	vector<int> capturedCameras = fileController->getCapturedCameras(scene, operation);
 
-	for (int cameraNumber: capturedCameras)
+	#pragma omp parallel for
+	for (int cameraNumber = 0; cameraNumber < capturedCameras.size(); cameraNumber++)
 	{
 		int maxCheckboards = fileController->getMaxCheckboards();
 
@@ -64,11 +65,11 @@ bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation
 
 		for (int frameNumber = 0; frameNumber < maxCheckboards; frameNumber++)
 		{
-			if (!fileController->hasCapturedFrame(scene, operation, cameraNumber, frameNumber))
-			{
-				BOOST_LOG_TRIVIAL(warning) << "Could not find captured frame " << frameNumber << " from camera " << cameraNumber << " for " << operation.toString();
-				return false;
-			}
+			//if (!fileController->hasCapturedFrame(scene, operation, cameraNumber, frameNumber))
+			//{
+				//BOOST_LOG_TRIVIAL(warning) << "Could not find captured frame " << frameNumber << " from camera " << cameraNumber << " for " << operation.toString();
+				//return false;
+			//}
 
 			Mat frame = fileController->getCapturedFrame(scene, operation, cameraNumber, frameNumber);
 			Mat result = frame.clone();

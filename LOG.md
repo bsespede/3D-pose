@@ -86,5 +86,16 @@ __10-4-2019 (6hs)__:
 __11-4-2019 (6hs)__:
 - Refactor gigante para separar el acceso al config file
 - Primera implementacion de extrinsics con charuco (+exportacion a JSON) -> solo para probar
-- Faltaria:
-	- Separar acceso al fileController con wrappers para cada clase
+
+__21-4-2019 (?)__:
+- Cosas a probar
+	- Validar lo de los numeros de camara al grabar
+	- Ver lo del framerrate:
+		- Probar nuevo framerrate sin UI activa
+		- Probar menos camaras
+	- Probar multi-camera checkboard:
+		- Probar intrinsecas: Analizar como funciona calibrar usando video de board A0
+		- Probar extrinsecas: Analizar como ven las camaras los distintos checkboards
+	- Llevar impreso:
+		- Charuco 3x5 A0, A1
+		- Aruco 3x3 A1

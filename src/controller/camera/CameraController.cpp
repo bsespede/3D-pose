@@ -33,15 +33,15 @@ bool CameraController::startCameras(CaptureMode mode)
 
 void CameraController::cameraLoop()
 {
-	bool shouldKeepPrevFrame = true;
+	bool shouldKeepCurrFrame = true;
 	FramesPacket* currentFrame = nullptr;
 
 	while (shouldLoopThread)
 	{
-		if (!shouldKeepPrevFrame)
+		if (!shouldKeepCurrFrame)
 		{
 			delete currentFrame;
-			shouldKeepPrevFrame = true;
+			shouldKeepCurrFrame = true;
 		}
 
 		FramesPacket* capturedFrame = optitrackCamera->captureFramesPacket();
@@ -49,7 +49,7 @@ void CameraController::cameraLoop()
 		if (capturedFrame != nullptr)
 		{
 			currentFrame = capturedFrame;
-			shouldKeepPrevFrame = shouldRecord || shouldSnap;
+			shouldKeepCurrFrame = shouldRecord || shouldSnap;
 
 			if (shouldRecord)
 			{

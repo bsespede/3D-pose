@@ -71,25 +71,14 @@ void CameraRenderer::render(FramesPacket* framesPacket)
 
 		int startHorizontal = u * (cameraWidth + 2);
 		int startVertical = v * (cameraHeight + barHeight + 4);
-
 		Point2i startImage = Point2i(startHorizontal + 1, startVertical + 1 + barHeight + 2);
-		Point2i endImage = Point2i(startImage.x + cameraWidth, startImage.y + cameraHeight);
 
 		Mat resizedImage;
 		resize(pair.second, resizedImage, Size(cameraWidth, cameraHeight));
-
-		for (int camImageX = startImage.x; camImageX < endImage.x; camImageX++)
-		{
-			for (int camImageY = startImage.y; camImageY < endImage.y; camImageY++)
-			{
-				mergedImage.at<uchar>(camImageY, camImageX) = resizedImage.at<uchar>(camImageY - startImage.y, camImageX - startImage.x);
-			}
-		}
+		resizedImage.copyTo(mergedImage(Rect(startImage.x, startImage.y, cameraWidth, cameraHeight)));
 
 		Point2i startText = Point2i(startHorizontal + 5, startVertical + 15);
-		Point2i startTextShadow = Point2i(startHorizontal + 6, startVertical + 16);
-
-		int cameraNumber = u + v * cols;
+		Point2i startTextShadow = Point2i(startHorizontal + 6, startVertical + 16);		
 		putText(mergedImage, "Camera #" + to_string(pair.first), startTextShadow, FONT_HERSHEY_DUPLEX, 0.4, Scalar(0));
 		putText(mergedImage, "Camera #" + to_string(pair.first), startText, FONT_HERSHEY_DUPLEX, 0.4, Scalar(255));
 	}
