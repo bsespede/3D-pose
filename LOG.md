@@ -94,8 +94,10 @@ __21-4-2019 (?)__:
 		- Probar nuevo framerrate sin UI activa
 		- Probar menos camaras
 	- Probar multi-camera checkboard:
-		- Probar intrinsecas: Analizar como funciona calibrar usando video de board A0
-		- Probar extrinsecas: Analizar como ven las camaras los distintos checkboards
+		- Probar intrinsecas: 
+			- Analizar como funciona calibrar usando board A0 con 100 frames por camara y 3 niveles de exposicion
+		- Probar extrinsecas:
+			- Grabar video moviendo el board por todas las camaras y al final dejarlo en el piso
 	- Llevar impreso:
 		- Charuco 3x5 A0, A1
 		- Aruco 3x3 A1

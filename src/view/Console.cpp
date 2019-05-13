@@ -45,7 +45,7 @@ void Console::showMenu()
 		}
 		else if (input == '4')
 		{
-			exit(0);
+			return;
 		}
 		else
 		{
@@ -116,7 +116,7 @@ void Console::showOperations(Scene scene)
 		}
 		else if (input == '4')
 		{
-			showMenu();
+			return;
 		}
 		else
 		{
@@ -138,15 +138,15 @@ void Console::showOperationOptions(Scene scene, Operation operation)
 
 		if (input == '1')
 		{
-			showCapture(scene, operation);
+			return showCapture(scene, operation);
 		}
 		else if (input == '2')
 		{
-			showProcess(scene, operation);
+			return showProcess(scene, operation);
 		}
 		else if (input == '3')
 		{
-			showOperations(scene);
+			return;
 		}
 		else
 		{
@@ -159,7 +159,7 @@ void Console::showCapture(Scene scene, Operation operation)
 {
 	if (operation != Operation::INTRINSICS && appController->hasCapture(scene, operation))
 	{
-		// TODO: Show overwrite
+		showStatusMessage("Camera initialization failed\n", RED);
 	}
 
 	printf("\nInitializing cameras...\n");
@@ -172,7 +172,7 @@ void Console::showCapture(Scene scene, Operation operation)
 	if (fileController->getShowPreviewOnCapture()) 
 	{
 		showCamera = true;
-		thread camerasThread = thread(&Console::showPreview, this);
+		thread camerasThread = thread(&Console::showPreviewGUI, this);
 		camerasThread.detach();
 	}	
 
@@ -218,9 +218,13 @@ void Console::showCaptureIntrinsics(Scene scene)
 
 void Console::showCaptureExtrinsics(Scene scene)
 {
-	printf("Prepare to capture checkboard (press any key to start)...\n");
+	printf("Prepare for capture (press any key to start)...\n");
 	getch();
-	appController->startSnap();
+	appController->startRecordingFrames();
+
+	printf("Recording scene (press any key to stop)...\n");
+	getch();
+	appController->stopRecordingFrames();
 }
 
 void Console::showCaptureScene(Scene scene)
@@ -306,9 +310,6 @@ void Console::showPreviewGUI()
 {
 	while (showCamera)
 	{
-		int milisecondsToSleep = (int)(1.0 / fileController->getGuiFps() * 1000);
-		chrono::system_clock::time_point timePoint = chrono::system_clock::now() + chrono::milliseconds(milisecondsToSleep);
-
 		FramesPacket* safeFrame = appController->getSafeFrame();
 
 		if (safeFrame != nullptr)
@@ -316,9 +317,10 @@ void Console::showPreviewGUI()
 			cameraRenderer->render(safeFrame);
 		}	
 
-		appController->updateSafeFrame();
+		appController->updateSafeFrame();	
 
-		this_thread::sleep_until(timePoint);		
+		int milisecondsToSleep = (int)(1.0 / fileController->getGuiFps() * 1000);
+		this_thread::sleep_for(chrono::milliseconds(milisecondsToSleep));
 	}
 }
 
