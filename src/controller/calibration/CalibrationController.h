@@ -26,6 +26,8 @@ public:
 private:
 	bool calculateIntrinsics(Scene scene, Operation operation);
 	bool calculateExtrinsics(Scene scene, Operation operation);
+	bool detectCharucoCorners(Mat& input, Mat& output, vector<int> &charucoIds, vector<Point2f> &charucoCorners);
+
 	FileController* fileController;
 	Ptr<aruco::Dictionary> dictionary;
 	Ptr<aruco::CharucoBoard> board;

@@ -28,8 +28,9 @@ public:
 	bool hasCapture(Scene scene, Operation operation);
 	void saveCapture(Scene scene, Operation operation, Capture* capture);
 	vector<int> getCapturedCameras(Scene scene, Operation operation);
+	int getCapturedFrames(Scene scene, Operation operation);
 	bool hasCapturedFrame(Scene scene, Operation operation, int cameraNumber, int frameNumber);
-	Mat getCapturedFrame(Scene scene, Operation operation, int cameraNumber, int frameNumber);
+	Mat getCapturedFrame(Scene scene, Operation operation, int cameraNumber, int frameNumber);	
 
 	// Calibration
 	Intrinsics* getIntrinsics(int cameraNumber);

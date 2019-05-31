@@ -156,6 +156,15 @@ vector<int> FileController::getCapturedCameras(Scene scene, Operation operation)
 	return capturedCameras;
 }
 
+int FileController::getCapturedFrames(Scene scene, Operation operation)
+{
+	string capturePath = dataFolder + "/" + scene.getName() + "/" + operation.toString();
+	property_tree::ptree root;
+	property_tree::read_json(capturePath + "/capture.json", root);
+
+	return root.get<int>("capture.frames");
+}
+
 bool FileController::hasCapturedFrame(Scene scene, Operation operation, int cameraNumber, int frameNumber)
 {
 	string frameFile = dataFolder + "/" + scene.getName() + "/" + operation.toString() + "/cam-" + to_string(cameraNumber) + "/" + to_string(frameNumber) + ".png";
@@ -281,13 +290,19 @@ void FileController::saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsic
 
 		Mat translationMatrix = extrinsics->getTranslationMatrix();
 		cameraNode.put("translationMatrix.x", translationMatrix.at<double>(0, 0));
-		cameraNode.put("translationMatrix.y", translationMatrix.at<double>(0, 1));
-		cameraNode.put("translationMatrix.z", translationMatrix.at<double>(0, 2));
+		cameraNode.put("translationMatrix.y", translationMatrix.at<double>(1, 0));
+		cameraNode.put("translationMatrix.z", translationMatrix.at<double>(2, 0));
 
 		Mat rotationMatrix = extrinsics->getRotationMatrix();
-		cameraNode.put("rotationMatrix.x", rotationMatrix.at<double>(0, 0));
-		cameraNode.put("rotationMatrix.y", rotationMatrix.at<double>(0, 1));
-		cameraNode.put("rotationMatrix.z", rotationMatrix.at<double>(0, 2));
+		cameraNode.put("rotationMatrix.r00", rotationMatrix.at<double>(0, 0));
+		cameraNode.put("rotationMatrix.r01", rotationMatrix.at<double>(0, 1));
+		cameraNode.put("rotationMatrix.r02", rotationMatrix.at<double>(0, 2));
+		cameraNode.put("rotationMatrix.r10", rotationMatrix.at<double>(1, 0));
+		cameraNode.put("rotationMatrix.r11", rotationMatrix.at<double>(1, 1));
+		cameraNode.put("rotationMatrix.r12", rotationMatrix.at<double>(1, 2));
+		cameraNode.put("rotationMatrix.r20", rotationMatrix.at<double>(2, 0));
+		cameraNode.put("rotationMatrix.r21", rotationMatrix.at<double>(2, 1));
+		cameraNode.put("rotationMatrix.r22", rotationMatrix.at<double>(2, 2));
 
 		camerasNode.push_back(make_pair("", cameraNode));
 		delete extrinsics;
