@@ -112,8 +112,6 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 		int totalSamples = 0;
 		for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber++)
 		{
-			BOOST_LOG_TRIVIAL(warning) << "Processing frame " << frameNumber << " for camera pair " << cameraLeft << "-" << cameraRight;
-
 			if (totalSamples > 500)
 			{
 				break;
@@ -175,7 +173,6 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 				allCornersRight.push_back(finalCornersRight);
 
 				fileController->saveCalibrationDetections(frameLeftResult, scene, operation, cameraLeft, frameNumber);
-				fileController->saveCalibrationDetections(frameRightResult, scene, operation, cameraRight, frameNumber);
 			}
 		}
 
@@ -186,7 +183,6 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 		Mat essentialMatrix;
 		Mat fundamentalMatrix;
 
-		BOOST_LOG_TRIVIAL(warning) << "Calibrating camera pair " << cameraLeft << "-" << cameraRight;
 		double reprojectionError = cv::stereoCalibrate(allObjects, allCornersLeft, allCornersRight, leftIntrinsics->getCameraMatrix(), leftIntrinsics->getDistortionCoefficients(), rightIntrinsics->getCameraMatrix(), rightIntrinsics->getDistortionCoefficients(), cameraSize, rotationVector, translationVector, essentialMatrix, fundamentalMatrix);
 		calibrationResults[cameraLeft] = new Extrinsics(translationVector, rotationVector, reprojectionError);
 		BOOST_LOG_TRIVIAL(warning) << "Finished calibrating camera pair " << cameraLeft << "-" << cameraRight;

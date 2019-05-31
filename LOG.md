@@ -87,16 +87,13 @@ __11-4-2019 (6hs)__:
 - Refactor gigante para separar el acceso al config file
 - Primera implementacion de extrinsics con charuco (+exportacion a JSON) -> solo para probar
 
-__21-4-2019 (?)__:
-- Cosas a probar
-	- Validar lo de los numeros de camara al grabar
-	- Ver lo del framerrate:
-		- Probar nuevo framerrate sin UI activa
-		- Probar menos camaras
-	- Probar multi-camera checkboard:
-		- Probar intrinsecas: 
-			- Analizar como funciona calibrar usando board A0 con 100 frames por camara y 3 niveles de exposicion
-		- Probar extrinsecas:
-			- Grabar video moviendo el board por todas las camaras y al final dejarlo en el piso
-	- Llevar impreso:
-		- Charuco 3x4 A0, Charuco 3x5 A0, Charuco 3x4 A1, Charuco 3x5 A1
+__30-4-2019 (6hs)__:
+- Se valido alidar lo de los numeros de camara al grabar
+- Se verifico el problema del dropeo del frame rate y las camaras en daisy chain
+- Se probo el nuevo checkerboard -> disminujo a la mitad el error de reproyeccion
+- Se probaron varios niveles de exposion del lente hasta encontrar el ideal (25% del maximo)
+- Se grabaron extrinsecas de prueba
+
+__31-4-2019 (9hs)__:
+- Se hizo la primera implementacion de extrinsecas de a pares, falta hacer el chaining
+- No se ven los markers cuando se apoya en el piso en ninguna camara, pensar solucion
