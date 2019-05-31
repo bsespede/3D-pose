@@ -7,12 +7,12 @@ using namespace cv;
 class Extrinsics
 {
 public:
-	Extrinsics(Mat translationMatrix, Mat rotationMatrix, double reprojectionError);
-	Mat getTranslationMatrix();
-	Mat getRotationMatrix();
+	Extrinsics(Mat translationVector, Mat rotationVector, double reprojectionError);
+	Mat getTranslationVector();
+	Mat getRotationVector();
 	double getReprojectionError();
 private:
-	Mat translationMatrix;
-	Mat rotationMatrix;
+	Mat translationVector;
+	Mat rotationVector;
 	double reprojectionError;
 };

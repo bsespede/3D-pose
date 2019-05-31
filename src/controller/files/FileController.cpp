@@ -287,24 +287,17 @@ void FileController::saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsic
 		Extrinsics* extrinsics = calibrationResult.second;
 		
 		cameraNode.put("cameraId", cameraNumber);
-
 		cameraNode.put("reprojectionError", extrinsics->getReprojectionError());
 
-		Mat translationMatrix = extrinsics->getTranslationMatrix();
-		cameraNode.put("translationMatrix.x", translationMatrix.at<double>(0, 0));
-		cameraNode.put("translationMatrix.y", translationMatrix.at<double>(1, 0));
-		cameraNode.put("translationMatrix.z", translationMatrix.at<double>(2, 0));
+		Mat translationVector = extrinsics->getTranslationVector();
+		cameraNode.put("translationMatrix.x", translationVector.at<double>(0, 0));
+		cameraNode.put("translationMatrix.y", translationVector.at<double>(1, 0));
+		cameraNode.put("translationMatrix.z", translationVector.at<double>(2, 0));
 
-		Mat rotationMatrix = extrinsics->getRotationMatrix();
-		cameraNode.put("rotationMatrix.r00", rotationMatrix.at<double>(0, 0));
-		cameraNode.put("rotationMatrix.r01", rotationMatrix.at<double>(0, 1));
-		cameraNode.put("rotationMatrix.r02", rotationMatrix.at<double>(0, 2));
-		cameraNode.put("rotationMatrix.r10", rotationMatrix.at<double>(1, 0));
-		cameraNode.put("rotationMatrix.r11", rotationMatrix.at<double>(1, 1));
-		cameraNode.put("rotationMatrix.r12", rotationMatrix.at<double>(1, 2));
-		cameraNode.put("rotationMatrix.r20", rotationMatrix.at<double>(2, 0));
-		cameraNode.put("rotationMatrix.r21", rotationMatrix.at<double>(2, 1));
-		cameraNode.put("rotationMatrix.r22", rotationMatrix.at<double>(2, 2));
+		Mat rotationVector = extrinsics->getRotationVector();
+		cameraNode.put("rotationMatrix.x", rotationVector.at<double>(0, 0));
+		cameraNode.put("rotationMatrix.y", rotationVector.at<double>(1, 0));
+		cameraNode.put("rotationMatrix.z", rotationVector.at<double>(2, 0));
 
 		camerasNode.push_back(make_pair("", cameraNode));
 		delete extrinsics;

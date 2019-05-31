@@ -60,7 +60,6 @@ bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation
 		
 		vector<vector<int>> allCharucoIds;
 		vector<vector<Point2f>> allCharucoCorners;
-
 		for (int frameNumber = 0; frameNumber < maxCheckboards; frameNumber++)
 		{
 			vector<int> charucoIds = vector<int>();
@@ -95,28 +94,44 @@ bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation
 bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation)
 {
 	map<int, Extrinsics*> calibrationResults;
-	vector<int> capturedCameras = fileController->getCapturedCameras(scene, operation);
 	int capturedFrames = fileController->getCapturedFrames(scene, operation);
+	vector<int> capturedCameras = fileController->getCapturedCameras(scene, operation);
+	
+	int originCamera = 0;	
+	Mat originFrame = fileController->getCapturedFrame(scene, operation, originCamera, capturedFrames - 1);
+	Mat originFrameResult = originFrame.clone();
+
+	Intrinsics* intrinsics = fileController->getIntrinsics(originCamera);
+	Mat originCameraMatrix = intrinsics->getCameraMatrix();
+	Mat originDistortionCoefficients = intrinsics->getDistortionCoefficients();
+	Mat originRotationVector;
+	Mat originTranslationVector;
+
+	if (detectCharucoPose(originFrame, originFrameResult, originCameraMatrix, originDistortionCoefficients, originRotationVector, originTranslationVector))
+	{
+		calibrationResults[originCamera] = new Extrinsics(originTranslationVector, originRotationVector, intrinsics->getReprojectionError());
+		fileController->saveCalibrationDetections(originFrameResult, scene, operation, originCamera, capturedFrames - 1);
+	}
+	else
+	{
+		BOOST_LOG_TRIVIAL(warning) << "Could not find board in reference frame";
+	}	
 
 	#pragma omp parallel for
-	for (int cameraIndex = 0; cameraIndex < (int)capturedCameras.size() - 1; cameraIndex++)
+	for (int cameraIndex = 1; cameraIndex < (int)capturedCameras.size(); cameraIndex++)
 	{
-		int cameraLeft = capturedCameras[cameraIndex];
-		int cameraRight = capturedCameras[cameraIndex + 1];
+		int totalSamples = 0;
+		int cameraLeft = capturedCameras[cameraIndex - 1];
+		int cameraRight = capturedCameras[cameraIndex];
 		Size cameraSize;
-		BOOST_LOG_TRIVIAL(warning) << "Calibrating camera pair " << cameraLeft << "-" << cameraRight;
+
+		BOOST_LOG_TRIVIAL(warning) << "Calibrating for pair " << cameraLeft << "->" << cameraRight;
 
 		vector<vector<Point3f>> allObjects;
 		vector<vector<Point2f>> allCornersLeft;
-		vector<vector<Point2f>> allCornersRight;
-		int totalSamples = 0;
+		vector<vector<Point2f>> allCornersRight;		
 		for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber++)
 		{
-			if (totalSamples > 500)
-			{
-				break;
-			}
-
 			vector<int> idsLeft;
 			vector<Point2f> cornersLeft;
 			Mat frameLeft = fileController->getCapturedFrame(scene, operation, cameraLeft, frameNumber);
@@ -167,14 +182,14 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 
 			if (finalObjects.size() > 3) 
 			{
-				totalSamples += finalObjects.size();
 				allObjects.push_back(finalObjects);
 				allCornersLeft.push_back(finalCornersLeft);
 				allCornersRight.push_back(finalCornersRight);
-
-				fileController->saveCalibrationDetections(frameLeftResult, scene, operation, cameraLeft, frameNumber);
+				totalSamples += finalObjects.size();
 			}
 		}
+
+		BOOST_LOG_TRIVIAL(warning) << "Samples for pair " << cameraLeft << "->" << cameraRight << ": " << totalSamples;
 
 		Intrinsics* leftIntrinsics = fileController->getIntrinsics(cameraLeft);
 		Intrinsics* rightIntrinsics = fileController->getIntrinsics(cameraRight);
@@ -184,34 +199,78 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 		Mat fundamentalMatrix;
 
 		double reprojectionError = cv::stereoCalibrate(allObjects, allCornersLeft, allCornersRight, leftIntrinsics->getCameraMatrix(), leftIntrinsics->getDistortionCoefficients(), rightIntrinsics->getCameraMatrix(), rightIntrinsics->getDistortionCoefficients(), cameraSize, rotationVector, translationVector, essentialMatrix, fundamentalMatrix);
-		calibrationResults[cameraLeft] = new Extrinsics(translationVector, rotationVector, reprojectionError);
-		BOOST_LOG_TRIVIAL(warning) << "Finished calibrating camera pair " << cameraLeft << "-" << cameraRight;
+		cv::Rodrigues(rotationVector, rotationVector);
+
+		calibrationResults[cameraRight] = new Extrinsics(translationVector, rotationVector, reprojectionError);
+		BOOST_LOG_TRIVIAL(warning) << "Finished calibrating for pair " << cameraLeft << "->" << cameraRight;
 	}
 
+	for (int cameraNumber = 1; cameraNumber < (int)calibrationResults.size(); cameraNumber++)
+	{
+		Mat composedTranslationVector;
+		Mat composedRotationVector;
+		Mat currentTranslationVector = calibrationResults[cameraNumber]->getTranslationVector();
+		Mat currentRotationVector = calibrationResults[cameraNumber]->getRotationVector();
+		Mat previousTranslationVector = calibrationResults[cameraNumber - 1]->getTranslationVector();
+		Mat previousRotationVector = calibrationResults[cameraNumber - 1]->getRotationVector();
+
+		cv::composeRT(previousRotationVector, previousTranslationVector, currentRotationVector, currentTranslationVector, composedRotationVector, composedTranslationVector);
+		calibrationResults[cameraNumber] = new Extrinsics(composedTranslationVector, composedRotationVector, calibrationResults[cameraNumber]->getReprojectionError());
+	}
+	
 	fileController->saveExtrinsics(scene, calibrationResults);
 	return true;
 }
 
-bool CalibrationController::detectCharucoCorners(Mat& input, Mat& output, vector<int>& charucoIds, vector<Point2f>& charucoCorners)
+bool CalibrationController::detectCharucoCorners(Mat& inputImage, Mat& outputImage, vector<int>& charucoIds, vector<Point2f>& charucoCorners)
 {
 	Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
 	params->cornerRefinementMethod = aruco::CORNER_REFINE_NONE;
 
 	vector<int> arucoIds;
 	vector<vector<Point2f>> arucoCorners;
-	aruco::detectMarkers(input, dictionary, arucoCorners, arucoIds, params);
+	aruco::detectMarkers(inputImage, dictionary, arucoCorners, arucoIds, params);
 
 	if (arucoIds.size() > 0)
 	{
-		aruco::interpolateCornersCharuco(arucoCorners, arucoIds, input, board, charucoCorners, charucoIds);
+		aruco::interpolateCornersCharuco(arucoCorners, arucoIds, inputImage, board, charucoCorners, charucoIds);
 
-		if (charucoIds.size() > 4)
+		if (charucoIds.size() >= 4)
 		{
-			aruco::drawDetectedMarkers(output, arucoCorners);
-			aruco::drawDetectedCornersCharuco(output, charucoCorners, charucoIds, Scalar(0, 0, 255));
+			aruco::drawDetectedMarkers(outputImage, arucoCorners);
+			aruco::drawDetectedCornersCharuco(outputImage, charucoCorners, charucoIds, Scalar(255, 0, 0));
 			return true;
 		}
 	}
 	
+	return false;
+}
+
+bool CalibrationController::detectCharucoPose(Mat& inputImage, Mat& outputImage, Mat& cameraMatrix, Mat& distortionCoefficients, Mat& rotationVector, Mat& translationVector)
+{
+	vector<int> arucoIds;
+	vector<vector<Point2f>> arucoCorners;
+	vector<vector<Point2f>> arucoRejections;
+	Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
+	params->cornerRefinementMethod = aruco::CORNER_REFINE_NONE;
+
+	aruco::detectMarkers(inputImage, dictionary, arucoCorners, arucoIds, params, arucoRejections, cameraMatrix, distortionCoefficients);
+
+	if (arucoIds.size() > 0)
+	{
+		vector<int> charucoIds;
+		vector<Point2f> charucoCorners;
+		aruco::interpolateCornersCharuco(arucoCorners, arucoIds, inputImage, board, charucoCorners, charucoIds, cameraMatrix, distortionCoefficients);
+
+		if (charucoIds.size() > 0)
+		{
+			aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distortionCoefficients, rotationVector, translationVector);
+			aruco::drawDetectedMarkers(outputImage, arucoCorners);
+			aruco::drawDetectedCornersCharuco(outputImage, charucoCorners, charucoIds, Scalar(255, 255, 255));
+			aruco::drawAxis(outputImage, cameraMatrix, distortionCoefficients, rotationVector, translationVector, 10.0);
+			return true;
+		}
+	}
+
 	return false;
 }

@@ -96,4 +96,6 @@ __30-4-2019 (6hs)__:
 
 __31-4-2019 (9hs)__:
 - Se hizo la primera implementacion de extrinsecas de a pares, falta hacer el chaining
-- No se ven los markers cuando se apoya en el piso en ninguna camara, pensar solucion
+- Faltaria:
+	- No se ven los markers cuando se apoya en el piso en ninguna camara, pensar solucion
+	- Pensar tema de calibracion con error de reproyeccion alto

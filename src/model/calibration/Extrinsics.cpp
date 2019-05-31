@@ -1,20 +1,25 @@
 #include "Extrinsics.h"
 
-Extrinsics::Extrinsics(Mat translationMatrix, Mat rotationMatrix, double reprojectionError)
+Extrinsics::Extrinsics(Mat translationVector, Mat rotationVector, double reprojectionError)
 {
-	this->translationMatrix = translationMatrix;
-	this->rotationMatrix = rotationMatrix;
+	assert(translationVector.cols == 1);
+	assert(rotationVector.cols == 1);
+	assert(translationVector.rows == 3);
+	assert(rotationVector.rows == 3);
+
+	this->translationVector = translationVector;
+	this->rotationVector = rotationVector;
 	this->reprojectionError = reprojectionError;
 }
 
-Mat Extrinsics::getTranslationMatrix()
+Mat Extrinsics::getTranslationVector()
 {
-	return translationMatrix;
+	return translationVector;
 }
 
-Mat Extrinsics::getRotationMatrix()
+Mat Extrinsics::getRotationVector()
 {
-	return rotationMatrix;
+	return rotationVector;
 }
 
 double Extrinsics::getReprojectionError()
