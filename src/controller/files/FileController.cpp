@@ -288,6 +288,8 @@ void FileController::saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsic
 		
 		cameraNode.put("cameraId", cameraNumber);
 
+		cameraNode.put("reprojectionError", extrinsics->getReprojectionError());
+
 		Mat translationMatrix = extrinsics->getTranslationMatrix();
 		cameraNode.put("translationMatrix.x", translationMatrix.at<double>(0, 0));
 		cameraNode.put("translationMatrix.y", translationMatrix.at<double>(1, 0));

@@ -114,7 +114,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 		{
 			BOOST_LOG_TRIVIAL(warning) << "Processing frame " << frameNumber << " for camera pair " << cameraLeft << "-" << cameraRight;
 
-			if (totalSamples > 250)
+			if (totalSamples > 500)
 			{
 				break;
 			}
@@ -152,8 +152,8 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 
 					if (idLeft == idRight)
 					{
-						int row = idLeft / board->getChessboardSize().width;
-						int col = idLeft % board->getChessboardSize().width;
+						int row = idLeft / (board->getChessboardSize().width - 1);
+						int col = idLeft % (board->getChessboardSize().width - 1);
 						float squareSize = board->getSquareLength();
 
 						Point3f idPosition = Point3f((float)col * squareSize, (float)row * squareSize, 0);
@@ -169,10 +169,13 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 
 			if (finalObjects.size() > 3) 
 			{
+				totalSamples += finalObjects.size();
 				allObjects.push_back(finalObjects);
 				allCornersLeft.push_back(finalCornersLeft);
 				allCornersRight.push_back(finalCornersRight);
-				totalSamples += finalObjects.size();
+
+				fileController->saveCalibrationDetections(frameLeftResult, scene, operation, cameraLeft, frameNumber);
+				fileController->saveCalibrationDetections(frameRightResult, scene, operation, cameraRight, frameNumber);
 			}
 		}
 
