@@ -2,13 +2,13 @@
 
 OptitrackCamera::OptitrackCamera(FileController* fileController)
 {
-	CameraLibrary_EnableDevelopment();
 	this->camerasFps = fileController->getCamerasFps();
 	this->camerasOrder = fileController->getCamerasOrder();
 }
 
 bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 {
+	CameraLibrary_EnableDevelopment();
 	CameraManager::X();
 	CameraManager::X().WaitForInitialization();
 	cameraCount = 0;
@@ -16,15 +16,17 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 	for (int i = 0; i < list.Count(); i++)
 	{
 		camera[i] = CameraManager::X().GetCamera(list[i].UID());
-		int cameraNumber = camerasOrder[list[i].Serial()];
+		int cameraSerial = list[i].Serial();
+		int cameraNumber = camerasOrder[cameraSerial];
+		
 
 		if (camera[i] == nullptr)
 		{
-			BOOST_LOG_TRIVIAL(warning) << "Couldn't connect to camera #" << cameraNumber;			
+			BOOST_LOG_TRIVIAL(warning) << "Couldn't connect to camera #" << cameraNumber << " (" << cameraSerial << ")";
 		}
 		else
 		{
-			BOOST_LOG_TRIVIAL(warning) << "Connected to camera #" << cameraNumber;
+			BOOST_LOG_TRIVIAL(warning) << "Connected to camera #" << cameraNumber << " (" << cameraSerial << ")";
 			cameraCount++;
 		}
 	}
@@ -58,7 +60,7 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 	{
 		camera[i]->SetMJPEGQuality(1);
 		camera[i]->SetVideoType(mode);		
-		camera[i]->SetExposure(camera[i]->MaximumExposureValue());
+		camera[i]->SetExposure(camera[i]->MaximumExposureValue() * 0.25);
 		camera[i]->SetFrameRate(camerasFps);
 		camera[i]->SetFrameDecimation(camerasFps);
 		camera[i]->SetNumeric(true, camerasOrder[camera[i]->Serial()]);
@@ -78,7 +80,8 @@ FramesPacket* OptitrackCamera::captureFramesPacket()
 
 		if (frameGroup->Count() != cameraCount)
 		{			
-			frameGroup->Release();			
+			frameGroup->Release();
+			BOOST_LOG_TRIVIAL(warning) << "Dropped unsynced frame";
 			return nullptr;
 		}
 
@@ -138,4 +141,6 @@ void OptitrackCamera::shutdownCameras()
 	{
 		this_thread::sleep_for(std::chrono::milliseconds(500));
 	}
+
+	CameraManager::X().DestroyInstance();
 }

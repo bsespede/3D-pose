@@ -44,7 +44,7 @@ void CameraRenderer::render(FramesPacket* framesPacket)
 	int configBarHeight = fileController->getBarHeight();
 	int configCamerasNumber = framesPacket->getFrames().size();
 
-	calculateProportions(1.0, configCameraWidth, configCameraHeight, configMaxWidth, configMaxHeight, configCamerasNumber, configBarHeight);
+	calculateProportions(1.0, configCameraWidth, configCameraHeight, configMaxWidth, configMaxHeight, 16, configBarHeight);
 
 	int totalWidth = cols * (cameraWidth + 2) + 1;
 	int totalHeight = rows * (cameraHeight + barHeight + 4) + 1;

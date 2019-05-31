@@ -5,6 +5,7 @@ AppController::AppController(FileController* fileController)
 	this->fileController = fileController;
 	this->calibrationController = new CalibrationController(fileController);
 	this->cameraController = new CameraController(fileController);
+	calibrationController->generateCheckboard();
 }
 
 bool AppController::sceneExists(string name)

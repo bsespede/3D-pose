@@ -52,24 +52,19 @@ bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation
 	vector<int> capturedCameras = fileController->getCapturedCameras(scene, operation);
 
 	#pragma omp parallel for
-	for (int cameraNumber = 0; cameraNumber < capturedCameras.size(); cameraNumber++)
+	for (int cameraIndex = 0; cameraIndex < (int)capturedCameras.size(); cameraIndex++)
 	{
+		int cameraNumber = capturedCameras[cameraIndex];
 		int maxCheckboards = fileController->getMaxCheckboards();
 
 		Size frameSize;
 		vector<vector<int>> allCharucoIds;
 		vector<vector<Point2f>> allCharucoCorners;
-
 		Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
 		params->cornerRefinementMethod = aruco::CORNER_REFINE_NONE;
 
 		for (int frameNumber = 0; frameNumber < maxCheckboards; frameNumber++)
 		{
-			//if (!fileController->hasCapturedFrame(scene, operation, cameraNumber, frameNumber))
-			//{
-				//BOOST_LOG_TRIVIAL(warning) << "Could not find captured frame " << frameNumber << " from camera " << cameraNumber << " for " << operation.toString();
-				//return false;
-			//}
 
 			Mat frame = fileController->getCapturedFrame(scene, operation, cameraNumber, frameNumber);
 			Mat result = frame.clone();
@@ -108,7 +103,11 @@ bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation
 		Mat cameraMatrix = Mat::eye(3, 3, CV_64F);
 		Mat distortionCoeffs;
 		int calibrationFlags = 0 | CALIB_FIX_ASPECT_RATIO | CALIB_FIX_PRINCIPAL_POINT;
+
+		BOOST_LOG_TRIVIAL(warning) << "Calibrating camera " << cameraNumber;
 		double reprojectionError = aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, frameSize, cameraMatrix, distortionCoeffs, noArray(), noArray(), calibrationFlags);
+
+		BOOST_LOG_TRIVIAL(warning) << "Finished calibrating camera " << cameraNumber;
 
 		calibrationResults[cameraNumber] = new Intrinsics(cameraMatrix, distortionCoeffs, reprojectionError);		
 	}
@@ -121,26 +120,56 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 {
 	map<int, Extrinsics*> calibrationResults;
 	vector<int> capturedCameras = fileController->getCapturedCameras(scene, operation);
+	int capturedFrames = fileController->getCapturedFrames(scene, operation);
 
-	for (int cameraNumber : capturedCameras)
+	for (int cameraIndex = 0; cameraIndex < (int)capturedCameras.size(); cameraIndex++)
 	{
-		int frameNumber = 0;
-		if (!fileController->hasCapturedFrame(scene, operation, cameraNumber, frameNumber))
+		int neighborCameraIndex = (cameraIndex + 1) % (int)capturedCameras.size();
+
+		int cameraOriginal = capturedCameras[cameraIndex];
+		int cameraNeighbor = capturedCameras[neighborCameraIndex];
+
+		vector<vector<Point3f>> allObjects;
+		vector<vector<Point3f>> allCornersOriginal;
+		vector<vector<Point3f>> allCornersNeighbor;
+		for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber++)
 		{
-			BOOST_LOG_TRIVIAL(warning) << "Could not find captured frame from camera " << cameraNumber << " for " << operation.toString();
-			return false;
+			Mat frameOriginal = fileController->getCapturedFrame(scene, operation, cameraOriginal, frameNumber);
+
+			vector<int> arucoIdsOriginal;
+			vector<vector<Point2f>> arucoCornersOriginal;
+			Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
+			params->cornerRefinementMethod = aruco::CORNER_REFINE_NONE;
+
+			aruco::detectMarkers(frameOriginal, dictionary, arucoCornersOriginal, arucoIdsOriginal, params);
+
+
+			// get cornrs in cameraIndex
+			// get corners in cameraNeighbor
+
+			// set<int> uniqueIds
+			// for ids in cameraIndexIds
+				// for cameraNeighborIds
+					// if cameraIndexIds == cameraNeighborIds
+						// add id to uniqueIds
+						// break
+
+			// vector<3f> objectsInFrame
+			// vector<2f> cornerFromCameraInFrame
+			// vector<2f> cornerFromNeighborInFrame
+			// for uniqueId
+				// point3f = calculate position in board
+				// poin2f1 = position of corner of uniqueId in left img
+				// poin2f2 = position of corner of uniqueId in right img
+				// add point3f to objectsInFrame
+				// add point2f1 to cornerFromCameraInFrame
+				// add point2f2 to cornerFromNeighborInFrame
+
+			// add objectsInFrame to allObjects
+			// add cornersFromCamera to allCornersInCamera
+			// add cornersFromNeighbor to allCornersInNeighbor
+
 		}
-
-		vector<int> arucoIds;
-		vector<vector<Point2f>> arucoCorners;
-		Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
-		params->cornerRefinementMethod = aruco::CORNER_REFINE_NONE;
-
-		Mat frame = fileController->getCapturedFrame(scene, operation, cameraNumber, frameNumber);
-		Mat result = frame.clone();
-		Size frameSize = frame.size();
-
-		aruco::detectMarkers(frame, dictionary, arucoCorners, arucoIds, params);
 
 		if (arucoIds.size() > 0)
 		{
@@ -180,7 +209,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 					fileController->saveCalibrationDetections(result, scene, operation, cameraNumber, frameNumber);
 				}
 
-				calibrationResults[cameraNumber] = new Extrinsics(translationVector, rotationVector);
+				
 			}
 			else
 			{
@@ -193,6 +222,13 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 		}
 	}
 
+	calibrationResults[cameraNumber] = new Extrinsics(translationVector, rotationVector);
+
 	fileController->saveExtrinsics(scene, calibrationResults);
 	return true;
+}
+
+void CalibrationController::detectCharucoCorners(Mat frame, vector<vector<int>> &allCharucoIds, vector<vector<Point2f>> &allCharucoCorners)
+{
+	
 }

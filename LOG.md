@@ -99,5 +99,4 @@ __21-4-2019 (?)__:
 		- Probar extrinsecas:
 			- Grabar video moviendo el board por todas las camaras y al final dejarlo en el piso
 	- Llevar impreso:
-		- Charuco 3x5 A0, A1
-		- Aruco 3x3 A1
+		- Charuco 3x4 A0, Charuco 3x5 A0, Charuco 3x4 A1, Charuco 3x5 A1
