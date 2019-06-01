@@ -26,8 +26,8 @@ public:
 private:
 	bool calculateIntrinsics(Scene scene, Operation operation);
 	bool calculateExtrinsics(Scene scene, Operation operation);
-	bool detectCharucoCorners(Mat& inputImage, Mat& outputImage, vector<int>& charucoIds, vector<Point2f>& charucoCorners);
-	bool detectCharucoPose(Mat& inputImage, Mat& outputImage, Mat& cameraMatrix, Mat& distortionCoefficients, Mat& rotationVector, Mat& translationVector);
+	bool detectCharucoCorners(Mat& inputImage, Mat& outputImage, int minCharucoCorners, vector<int>& charucoIds, vector<Point2f>& charucoCorners);
+	bool detectCharucoCorners(Mat& inputImage, Mat& outputImage, int minCharucoCorners, Mat& cameraMatrix, Mat& distortionCoefficients, vector<int>& charucoIds, vector<Point2f>& charucoCorners);
 	void renderCalibration(Scene scene);
 	FileController* fileController;
 	Ptr<aruco::Dictionary> dictionary;
