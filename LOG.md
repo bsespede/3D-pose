@@ -95,7 +95,12 @@ __30-4-2019 (6hs)__:
 - Se grabaron extrinsecas de prueba
 
 __31-4-2019 (9hs)__:
-- Se hizo la primera implementacion de extrinsecas de a pares, falta hacer el chaining
+- Se hizo la primera implementacion de extrinsecas de a pares encadenadas
 - Faltaria:
-	- No se ven los markers cuando se apoya en el piso en ninguna camara, pensar solucion
+	- Probar solo las camaras de arriba
+		- Que tal el nuevo frame rate?
+		- Se puede bajar la compresion asi sube la calidad de la imagen? Se ven mejor los markers?
+	- No se ven los markers en ninguna camara cuando se apoya el board en el piso, pensar solucion
 	- Pensar tema de calibracion con error de reproyeccion alto
+	- Enfocar camaras
+	

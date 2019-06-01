@@ -34,6 +34,7 @@ public:
 
 	// Calibration
 	Intrinsics* getIntrinsics(int cameraNumber);
+	Extrinsics* getExtrinsics(Scene scene, int cameraNumber);
 	void saveIntrinsics(map<int, Intrinsics*> calibrationResults);
 	void saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsicMatrices);
 	void saveCalibrationDetections(Mat detection, Scene scene, Operation operation, int cameraNumber, int frameNumber);

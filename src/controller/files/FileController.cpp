@@ -228,6 +228,44 @@ Intrinsics* FileController::getIntrinsics(int cameraNumber)
 	return nullptr;
 }
 
+Extrinsics* FileController::getExtrinsics(Scene scene, int cameraNumber)
+{
+	string extrinsicsFile = dataFolder + "/extrinsics.json";
+	property_tree::ptree root;
+	property_tree::read_json(extrinsicsFile, root);
+
+	for (property_tree::ptree::value_type& cameraNode : root.get_child("calibration.cameras"))
+	{
+		if (cameraNumber == cameraNode.second.get<int>("cameraId"))
+		{
+			double reprojectionError = cameraNode.second.get<double>("reprojectionError");
+
+			double translationX = cameraNode.second.get<double>("calibrationMatrix.fx");
+			double translationY = cameraNode.second.get<double>("calibrationMatrix.fy");
+			double translationZ = cameraNode.second.get<double>("calibrationMatrix.cx");
+
+			Mat translationVector = Mat(3, 1, CV_64F);
+			translationVector.at<double>(0, 0) = translationX;
+			translationVector.at<double>(1, 0) = translationY;
+			translationVector.at<double>(2, 0) = translationZ;
+
+			double rotationX = cameraNode.second.get<double>("calibrationMatrix.fx");
+			double rotationY = cameraNode.second.get<double>("calibrationMatrix.fy");
+			double rotationZ = cameraNode.second.get<double>("calibrationMatrix.cx");
+
+			Mat rotationVector = Mat(3, 1, CV_64F);
+			rotationVector.at<double>(0, 0) = rotationX;
+			rotationVector.at<double>(1, 0) = rotationY;
+			rotationVector.at<double>(2, 0) = rotationZ;
+
+			Extrinsics* extrinsics = new Extrinsics(translationVector, rotationVector, reprojectionError);
+			return extrinsics;
+		}
+	}
+
+	return nullptr;
+}
+
 void FileController::saveIntrinsics(map<int, Intrinsics*> calibrationResults)
 {
 	string intrinsicsFile = dataFolder + "/intrinsics.json";

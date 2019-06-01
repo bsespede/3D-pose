@@ -28,7 +28,7 @@ private:
 	bool calculateExtrinsics(Scene scene, Operation operation);
 	bool detectCharucoCorners(Mat& inputImage, Mat& outputImage, vector<int>& charucoIds, vector<Point2f>& charucoCorners);
 	bool detectCharucoPose(Mat& inputImage, Mat& outputImage, Mat& cameraMatrix, Mat& distortionCoefficients, Mat& rotationVector, Mat& translationVector);
-
+	void renderCalibration(Scene scene);
 	FileController* fileController;
 	Ptr<aruco::Dictionary> dictionary;
 	Ptr<aruco::CharucoBoard> board;

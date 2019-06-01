@@ -1,4 +1,4 @@
-#include "CalibrationController.h"
+﻿#include "CalibrationController.h"
 
 CalibrationController::CalibrationController(FileController* fileController)
 {
@@ -97,7 +97,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 	int capturedFrames = fileController->getCapturedFrames(scene, operation);
 	vector<int> capturedCameras = fileController->getCapturedCameras(scene, operation);
 	
-	int originCamera = 0;	
+	/*int originCamera = 0;	
 	Mat originFrame = fileController->getCapturedFrame(scene, operation, originCamera, capturedFrames - 1);
 	Mat originFrameResult = originFrame.clone();
 
@@ -115,7 +115,13 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 	else
 	{
 		BOOST_LOG_TRIVIAL(warning) << "Could not find board in reference frame";
-	}	
+	}*/
+
+	int originCamera = 0;
+	Mat originTranslationVector = Mat::zeros(3, 1, CV_64F);
+	Mat originRotationVector = Mat::zeros(3, 1, CV_64F);
+	originRotationVector.at<double>(1, 0) = 1.0;
+	calibrationResults[originCamera] = new Extrinsics(originTranslationVector, originRotationVector, 0.0);
 
 	#pragma omp parallel for
 	for (int cameraIndex = 1; cameraIndex < (int)capturedCameras.size(); cameraIndex++)
@@ -217,8 +223,10 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 		cv::composeRT(previousRotationVector, previousTranslationVector, currentRotationVector, currentTranslationVector, composedRotationVector, composedTranslationVector);
 		calibrationResults[cameraNumber] = new Extrinsics(composedTranslationVector, composedRotationVector, calibrationResults[cameraNumber]->getReprojectionError());
 	}
-	
+
 	fileController->saveExtrinsics(scene, calibrationResults);
+	renderCalibration(scene);
+
 	return true;
 }
 
@@ -229,16 +237,17 @@ bool CalibrationController::detectCharucoCorners(Mat& inputImage, Mat& outputIma
 
 	vector<int> arucoIds;
 	vector<vector<Point2f>> arucoCorners;
+	vector<vector<Point2f>> arucoRejections;
 	aruco::detectMarkers(inputImage, dictionary, arucoCorners, arucoIds, params);
 
 	if (arucoIds.size() > 0)
 	{
 		aruco::interpolateCornersCharuco(arucoCorners, arucoIds, inputImage, board, charucoCorners, charucoIds);
 
-		if (charucoIds.size() >= 4)
+		if (charucoIds.size() > 4)
 		{
 			aruco::drawDetectedMarkers(outputImage, arucoCorners);
-			aruco::drawDetectedCornersCharuco(outputImage, charucoCorners, charucoIds, Scalar(255, 0, 0));
+			aruco::drawDetectedCornersCharuco(outputImage, charucoCorners, charucoIds, Scalar(255, 255, 255));
 			return true;
 		}
 	}
@@ -248,12 +257,12 @@ bool CalibrationController::detectCharucoCorners(Mat& inputImage, Mat& outputIma
 
 bool CalibrationController::detectCharucoPose(Mat& inputImage, Mat& outputImage, Mat& cameraMatrix, Mat& distortionCoefficients, Mat& rotationVector, Mat& translationVector)
 {
-	vector<int> arucoIds;
-	vector<vector<Point2f>> arucoCorners;
-	vector<vector<Point2f>> arucoRejections;
 	Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
 	params->cornerRefinementMethod = aruco::CORNER_REFINE_NONE;
 
+	vector<int> arucoIds;
+	vector<vector<Point2f>> arucoCorners;
+	vector<vector<Point2f>> arucoRejections;
 	aruco::detectMarkers(inputImage, dictionary, arucoCorners, arucoIds, params, arucoRejections, cameraMatrix, distortionCoefficients);
 
 	if (arucoIds.size() > 0)
@@ -262,15 +271,81 @@ bool CalibrationController::detectCharucoPose(Mat& inputImage, Mat& outputImage,
 		vector<Point2f> charucoCorners;
 		aruco::interpolateCornersCharuco(arucoCorners, arucoIds, inputImage, board, charucoCorners, charucoIds, cameraMatrix, distortionCoefficients);
 
-		if (charucoIds.size() > 0)
+		if (charucoIds.size() > 4)
 		{
-			aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distortionCoefficients, rotationVector, translationVector);
+			aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distortionCoefficients, rotationVector, translationVector);			
 			aruco::drawDetectedMarkers(outputImage, arucoCorners);
 			aruco::drawDetectedCornersCharuco(outputImage, charucoCorners, charucoIds, Scalar(255, 255, 255));
-			aruco::drawAxis(outputImage, cameraMatrix, distortionCoefficients, rotationVector, translationVector, 10.0);
+			aruco::drawAxis(outputImage, cameraMatrix, distortionCoefficients, rotationVector, translationVector, 10.0);			
 			return true;
 		}
 	}
 
 	return false;
+}
+
+void CalibrationController::renderCalibration(Scene scene)
+{
+	viz::Viz3d visualizer = viz::Viz3d("3DPose");
+	visualizer.setBackgroundColor(viz::Color(0.15f, 0.15f, 0.15f), viz::Color(0.25f, 0.25f, 0.25f));
+	vector<int> capturedCameras = fileController->getCapturedCameras(scene, Operation::EXTRINSICS);
+
+	for (int cameraNumber : capturedCameras)
+	{
+		Extrinsics* cameraExtrinsics = fileController->getExtrinsics(scene, cameraNumber);
+		Intrinsics* cameraIntrinsics = fileController->getIntrinsics(cameraNumber);
+		Mat cameraImage = fileController->getCapturedFrame(scene, Operation::EXTRINSICS, cameraNumber, 0);
+
+		Mat cameraMatrix = cameraIntrinsics->getCameraMatrix();
+		Matx33d convertedMatrix = Matx33d((double*)cameraMatrix.clone().ptr());
+		viz::WCameraPosition cameraWidget = viz::WCameraPosition(convertedMatrix, cameraImage);
+		visualizer.showWidget("camera-" + to_string(cameraNumber), cameraWidget);
+
+		Mat rotationMatrix;
+		Mat rotationVector = cameraExtrinsics->getRotationVector();
+		Rodrigues(rotationVector, rotationMatrix);
+		Mat translationVector = cameraExtrinsics->getTranslationVector();
+		Affine3d cameraPose = Affine3d(rotationMatrix, translationVector);
+
+		visualizer.setWidgetPose("camera-" + to_string(cameraNumber), cameraPose);
+	}
+
+	int totalSquares = 20;
+	int squareLength = 1000;
+	int halfPlaneLength = (totalSquares / 2) * squareLength;
+
+	for (int row = 0; row < totalSquares; row++)
+	{
+		for (int col = 0; col < totalSquares; col++)
+		{
+			int id = row * col + col;
+
+			viz::WLine squareLineTop = viz::WLine(Point3f(col * squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength), Point3f(col * squareLength + squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength));
+			squareLineTop.setRenderingProperty(viz::LINE_WIDTH, 1.0);
+			visualizer.showWidget("top-" + to_string(id), squareLineTop);
+
+			viz::WLine squareLineLeft = viz::WLine(Point3f(col * squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength), Point3f(col * squareLength - halfPlaneLength, 0, row * squareLength + squareLength - halfPlaneLength));
+			squareLineLeft.setRenderingProperty(viz::LINE_WIDTH, 1.0);
+			visualizer.showWidget("left-" + to_string(id), squareLineLeft);
+
+			if (col == totalSquares - 1)
+			{
+				viz::WLine squareLineBottom = viz::WLine(Point3f(col * squareLength + squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength), Point3f(col * squareLength + squareLength * 2 - halfPlaneLength, 0, row * squareLength - halfPlaneLength));
+				squareLineBottom.setRenderingProperty(viz::LINE_WIDTH, 1.0);
+				visualizer.showWidget("bottom-" + to_string(id), squareLineBottom);
+			}
+
+			if (row == totalSquares - 1)
+			{
+				viz::WLine squareLineRight = viz::WLine(Point3f(col * squareLength - halfPlaneLength, 0, row * squareLength + squareLength - halfPlaneLength), Point3f(col * squareLength - halfPlaneLength, 0, row * squareLength + squareLength * 2 - halfPlaneLength));
+				squareLineRight.setRenderingProperty(viz::LINE_WIDTH, 1.0);
+				visualizer.showWidget("right-" + to_string(id), squareLineRight);
+			}
+		}
+	}
+
+	while (!visualizer.wasStopped())
+	{
+		visualizer.spinOnce(1, true);
+	}
 }
