@@ -31,7 +31,7 @@ void Console::showMenu()
 		printf("\nChoose an action from the following:\n");
 		printf("(1) Create scene\n");
 		printf("(2) Load scene\n");
-		printf("(3) Preview cameras\n");
+		printf("(3) Test cameras\n");
 		printf("(4) Exit\n");
 
 		char input = _getch();
@@ -137,7 +137,8 @@ void Console::showOperationOptions(Scene scene, Operation operation)
 		printf("\nChoose an action from the following:\n");
 		printf("(1) Capture %s\n", operation.toString().c_str());
 		printf("(2) Process %s\n", operation.toString().c_str());
-		printf("(3) Back\n");
+		printf("(3) View results\n");
+		printf("(4) Back\n");
 
 		int input = _getch();
 
@@ -150,6 +151,10 @@ void Console::showOperationOptions(Scene scene, Operation operation)
 			return showProcess(scene, operation);
 		}
 		else if (input == '3')
+		{
+			return showResults(scene, operation);
+		}
+		else if (input == '4')
 		{
 			return;
 		}
@@ -242,6 +247,22 @@ void Console::showProcess(Scene scene, Operation operation)
 	}
 
 	showOperations(scene);
+}
+
+void Console::showResults(Scene scene, Operation operation)
+{
+	/*Results* results = appController->getResults(scene, operation);
+
+	if (results == nullptr)
+	{
+		showStatusMessage("No results found\n", RED);
+	}
+
+	for (int cameraNumber : results->capturedCameras())
+	{
+		Extrinsics* extrinsics = results->getExtrinsics(cameraNumber);
+		Extrinsics* intrinsics = results->getExtrinsics(cameraNumber);
+	}*/
 }
 
 void Console::showPreview()

@@ -19,12 +19,11 @@ class OptitrackCamera
 {
 public:
 	OptitrackCamera(ConfigController* configController);
-	bool startCameras();
+	bool startCameras(int cameraFps);
 	void stopCameras();
 	void shutdownCameras();
 	Packet* getPacket();
 private:
-	int cameraFps;
 	int cameraWidth;
 	int cameraHeight;
 	map<int, int> cameraOrder;

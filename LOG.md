@@ -105,5 +105,5 @@ __31-4-2019 (9hs)__:
 	- Enfocar camaras
 	
 _1-5-2019 (3hs)__:
-- Super refactor
+- Super refactor!!!
 - Rendereo 3D de camaras

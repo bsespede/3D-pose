@@ -31,6 +31,7 @@ private:
 	void showOperationOptions(Scene scene, Operation operation);
 	void showCapture(Scene scene, Operation operation);
 	void showProcess(Scene scene, Operation operation);
+	void showResults(Scene scene, Operation operation);
 	void showPreview();
 	void showPreviewLoop();
 	void showStatusMessage(string message, int fontColor);

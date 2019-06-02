@@ -12,10 +12,10 @@ bool SceneController::hasScene(string name)
 
 Scene SceneController::getScene(string name)
 {
-	string scenePath = dataFolder + "/" + name;
+	string sceneFolder = dataFolder + "/" + name;
 
 	property_tree::ptree root;
-	property_tree::read_json(scenePath + "/scene.json", root);
+	property_tree::read_json(sceneFolder + "/scene.json", root);
 	
 	string sceneName = root.get<string>("scene.name");
 	string sceneDate = root.get<string>("scene.date");
@@ -25,10 +25,10 @@ Scene SceneController::getScene(string name)
 
 Scene SceneController::saveScene(string name)
 {
-	string scenePath = dataFolder + "/" + name;
-	filesystem::create_directory(scenePath);
+	string sceneFolder = dataFolder + "/" + name;
+	filesystem::create_directory(sceneFolder);
 
-	string configFile = scenePath + "/scene.json";
+	string configFile = sceneFolder + "/scene.json";
 	property_tree::ptree root;
 
 	string date = getDateString();
@@ -41,50 +41,47 @@ Scene SceneController::saveScene(string name)
 
 bool SceneController::hasCapture(Scene scene, Operation operation)
 {
-	string operationPath = dataFolder + "/" + scene.getName() + "/" + operation.toString();
-	return filesystem::exists(operationPath + "/capture.json");
+	string operationFolder = dataFolder + "/" + scene.getName() + "/" + operation.toString();
+	return filesystem::exists(operationFolder + "/capture.json");
 }
 
 void SceneController::saveCapture(Scene scene, Operation operation, Capture* capture)
 {
-	string operationPath = dataFolder + "/" + scene.getName() + "/" + operation.toString();
-	filesystem::create_directory(operationPath);
+	string operationFolder = dataFolder + "/" + scene.getName() + "/" + operation.toString();
+	string captureFile = operationFolder + "/capture.json";
+	property_tree::ptree root;
+
+	int frameNumber;
+	set<int> cameraSet;
+	if (filesystem::exists(captureFile))
+	{
+		property_tree::ptree previousRoot;
+		property_tree::read_json(captureFile, previousRoot);
+		frameNumber = root.get<int>("capture.frames");
+	}
+	else
+	{
+		filesystem::create_directory(operationFolder);
+		frameNumber = 0;
+	}
 
 	list<Packet*> packets = capture->getPackets();
-	int frameNumber = 0;
-	set<int> cameraSet;
-
 	for (Packet* packet: packets)
 	{
 		for (pair<int, Mat> pair: packet->getData())
 		{
 			cameraSet.insert(pair.first);
-			string camPath = operationPath + "/cam-" + to_string(pair.first);
-			filesystem::create_directory(camPath);
+			string camFolder = operationFolder + "/cam-" + to_string(pair.first);
+			filesystem::create_directory(camFolder);
 
-			string framePath = camPath + "/" + to_string(frameNumber) + ".png";
-			imwrite(framePath, pair.second);			
+			string frameFolder = camFolder + "/" + to_string(frameNumber) + ".png";
+			imwrite(frameFolder, pair.second);			
 		}
 
 		frameNumber++;
 	}
 
 	delete capture;
-
-	string recordFile = operationPath + "/capture.json";
-	property_tree::ptree root;
-
-	if (filesystem::exists(recordFile))
-	{
-		property_tree::ptree previousRoot;
-		property_tree::read_json(recordFile, previousRoot);	
-
-		for (property_tree::ptree::value_type &camera: previousRoot.get_child("capture.cameras"))
-		{
-			int cameraNumber = camera.second.get_value<int>();
-			cameraSet.insert(cameraNumber);
-		}
-	}
 
 	property_tree::ptree camerasNode;
 	for (int cameraIndex: cameraSet)
@@ -100,16 +97,16 @@ void SceneController::saveCapture(Scene scene, Operation operation, Capture* cap
 	string date = getDateString();
 	root.put("capture.date", date);
 
-	property_tree::write_json(recordFile, root);
+	property_tree::write_json(captureFile, root);
 }
 
 vector<int> SceneController::getCapturedCameras(Scene scene, Operation operation)
 {
 	vector<int> capturedCameras;
 
-	string capturePath = dataFolder + "/" + scene.getName() + "/" + operation.toString();
+	string captureFolder = dataFolder + "/" + scene.getName() + "/" + operation.toString();
 	property_tree::ptree root;
-	property_tree::read_json(capturePath + "/capture.json", root);	
+	property_tree::read_json(captureFolder + "/capture.json", root);	
 
 	for (property_tree::ptree::value_type &camera: root.get_child("capture.cameras"))
 	{
@@ -121,9 +118,9 @@ vector<int> SceneController::getCapturedCameras(Scene scene, Operation operation
 
 int SceneController::getCapturedFrameNumber(Scene scene, Operation operation)
 {
-	string capturePath = dataFolder + "/" + scene.getName() + "/" + operation.toString();
+	string captureFolder = dataFolder + "/" + scene.getName() + "/" + operation.toString();
 	property_tree::ptree root;
-	property_tree::read_json(capturePath + "/capture.json", root);
+	property_tree::read_json(captureFolder + "/capture.json", root);
 
 	return root.get<int>("capture.frames");
 }
@@ -148,12 +145,18 @@ Mat SceneController::getCapturedFrame(Scene scene, Operation operation, int came
 	}	
 }
 
-Intrinsics* SceneController::getIntrinsics(int cameraNumber)
+Intrinsics* SceneController::getIntrinsics(Scene scene, int cameraNumber)
 {
-	string intrinsicsFile = dataFolder + "/intrinsics.json";
+	string captureFolder = dataFolder + "/" + scene.getName();
+
+	string intrinsicsFile = captureFolder + "/intrinsics.json"; 
+	if (!filesystem::exists(intrinsicsFile))
+	{
+		intrinsicsFile = dataFolder + "/default.json";
+	}
+
 	property_tree::ptree root;
 	property_tree::read_json(intrinsicsFile, root);	
-
 	for (property_tree::ptree::value_type& cameraNode: root.get_child("calibration.cameras"))
 	{
 		if (cameraNumber == cameraNode.second.get<int>("cameraId")) 
@@ -229,9 +232,9 @@ Extrinsics* SceneController::getExtrinsics(Scene scene, int cameraNumber)
 	return nullptr;
 }
 
-void SceneController::saveIntrinsics(map<int, Intrinsics*> calibrationResults)
+void SceneController::saveIntrinsics(Scene scene, map<int, Intrinsics*> calibrationResults)
 {
-	string intrinsicsFile = dataFolder + "/intrinsics.json";
+	string intrinsicsFile = dataFolder + "/" + scene.getName() + "/intrinsics.json";
 	property_tree::ptree root;
 
 	string date = getDateString();

@@ -2,13 +2,12 @@
 
 OptitrackCamera::OptitrackCamera(ConfigController* configController)
 {
-	this->cameraFps = configController->getCameraFps();
 	this->cameraWidth = configController->getCameraWidth();
 	this->cameraHeight = configController->getCameraHeight();
 	this->cameraOrder = configController->getCameraOrder();
 }
 
-bool OptitrackCamera::startCameras()
+bool OptitrackCamera::startCameras(int cameraFps)
 {
 	CameraLibrary_EnableDevelopment();
 	CameraManager::X();

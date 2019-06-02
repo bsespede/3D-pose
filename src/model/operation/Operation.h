@@ -30,7 +30,7 @@ public:
 
 	string toString() const
 	{ 
-		return value == INTRINSICS ? "intrinsics" : value == EXTRINSICS ? "extrinsics" : "scene";
+		return value == SCENE ? "scene" : "calibration";
 	}
 
 private:
