@@ -1,14 +1,15 @@
 #pragma once
 
 #include <windows.h>
+#include <stdlib.h>
 #include <conio.h>
 #include <iostream>
 #include <atomic>
 #include <thread>
 
 #include "enum/Input.h"
-#include "controller/AppController.h"
-#include "view/CameraRenderer.h"
+#include "model/AppController.h"
+#include "view/rendering/Renderer2D.h"
 
 #define RED 0x0C
 #define BLUE 0x09
@@ -20,26 +21,21 @@ using namespace std;
 class Console
 {
 public:
-	Console(FileController* fileController);
-	void start();
+	Console(ConfigController* configController);
+	void loopUI();
+private:
+	void showLogo();
 	void showMenu();	
 	void showSceneInput(Input input);
 	void showOperations(Scene scene);
 	void showOperationOptions(Scene scene, Operation operation);
 	void showCapture(Scene scene, Operation operation);
-	void showCaptureIntrinsics(Scene scene);
-	void showCaptureExtrinsics(Scene scene);
-	void showCaptureScene(Scene scene);
 	void showProcess(Scene scene, Operation operation);
-	void showProcessIntrinsics(Scene scene);
-	void showProcessExtrinsics(Scene scene);
-	void showProcessScene(Scene scene);
 	void showPreview();
-	void showPreviewGUI();
+	void showPreviewLoop();
 	void showStatusMessage(string message, int fontColor);
-private:
-	FileController* fileController;
+	ConfigController* configController;
 	AppController* appController;
-	CameraRenderer* cameraRenderer;
+	Renderer2D* renderer2D;
 	atomic<bool> showCamera;
 };

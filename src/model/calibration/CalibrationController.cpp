@@ -1,32 +1,32 @@
 ﻿#include "CalibrationController.h"
 
-CalibrationController::CalibrationController(FileController* fileController)
+CalibrationController::CalibrationController(ConfigController* configController, SceneController* sceneController)
 {
-	int checkboardCols = fileController->getCheckboardCols();
-	int checkboardRows = fileController->getCheckboardRows();
-	double checkboardSquareLength = fileController->getCheckboardSquareLength();
-	double checkboardMarkerLength = fileController->getCheckboardMarkerLength();
+	int charucoCols = configController->getCharucoCols();
+	int charucoRows = configController->getCharucoRows();
+	float charucoSquareLength = configController->getCharucoSquareLength();
+	float charucoMarkerLength = configController->getCharucoMarkerLength();
 
-	this->fileController = fileController;
+	this->configController = configController;
+	this->sceneController = sceneController;
 	this->dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
-	this->board = aruco::CharucoBoard::create(checkboardCols, checkboardRows, checkboardSquareLength, checkboardMarkerLength, dictionary);
+	this->board = aruco::CharucoBoard::create(charucoCols, charucoRows, charucoSquareLength, charucoMarkerLength, dictionary);
 }
 
 void CalibrationController::generateCheckboard()
 {
-	Mat boardImage;
-	string dataFolder = fileController->getDataFolder();
-	int checkboardWidth = fileController->getCheckboardWidth();
-	int checkboardHeight = fileController->getCheckboardHeight();
-	int checkboardMargin = fileController->getCheckboardMargin();
+	int charucoWidth = configController->getCharucoWidth();
+	int charucoHeight = configController->getCharucoHeight();
+	int charucoMargin = configController->getCharucoMargin();
 
-	board->draw(Size(checkboardWidth, checkboardHeight), boardImage, checkboardMargin, 1);
-	imwrite(dataFolder + "/board.png", boardImage);
+	Mat boardImage;
+	board->draw(Size(charucoWidth, charucoHeight), boardImage, charucoMargin, 1);
+	imwrite("board.png", boardImage);
 }
 
 bool CalibrationController::calibrate(Scene scene, Operation operation)
 {
-	if (!fileController->hasCapture(scene, operation))
+	if (!sceneController->hasCapture(scene, operation))
 	{
 		BOOST_LOG_TRIVIAL(warning) << "Cannot calibrate scene " << scene.getName() << " since it has no " << operation.toString() << " capture or it is corrupted";
 		return false;
@@ -49,26 +49,26 @@ bool CalibrationController::calibrate(Scene scene, Operation operation)
 bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation)
 {
 	map<int, Intrinsics*> calibrationResults;
-	vector<int> capturedCameras = fileController->getCapturedCameras(scene, operation);
+	int capturedFrames = sceneController->getCapturedFrameNumber(scene, operation);
+	vector<int> capturedCameras = sceneController->getCapturedCameras(scene, operation);
 
 	#pragma omp parallel for
 	for (int cameraIndex = 0; cameraIndex < (int)capturedCameras.size(); cameraIndex++)
 	{
 		Size frameSize;
 		int cameraNumber = capturedCameras[cameraIndex];
-		int maxCheckboards = fileController->getMaxCheckboards();
 		
 		vector<vector<int>> allCharucoIds;
 		vector<vector<Point2f>> allCharucoCorners;
-		for (int frameNumber = 0; frameNumber < maxCheckboards; frameNumber++)
+		for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber++)
 		{
 			vector<int> charucoIds = vector<int>();
 			vector<Point2f> charucoCorners = vector<Point2f>();
-			Mat frame = fileController->getCapturedFrame(scene, operation, cameraNumber, frameNumber);
+			Mat frame = sceneController->getCapturedFrame(scene, operation, cameraNumber, frameNumber);
 			Mat result = frame.clone();
 			frameSize = frame.size();
 			
-			if (detectCharucoCorners(frame, result, 4, charucoIds, charucoCorners))
+			if (detectCharucoCorners(frame, result, 5, charucoIds, charucoCorners))
 			{
 				allCharucoIds.push_back(charucoIds);
 				allCharucoCorners.push_back(charucoCorners);		
@@ -77,21 +77,30 @@ bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation
 
 		Mat cameraMatrix = Mat::eye(3, 3, CV_64F);
 		Mat distortionCoeffs = Mat::zeros(1, 5, CV_64F);
-		int calibrationFlags = CALIB_FIX_ASPECT_RATIO;
+		int calibrationFlags = CALIB_FIX_ASPECT_RATIO | CALIB_FIX_PRINCIPAL_POINT | CALIB_ZERO_TANGENT_DIST;
 		
 		double reprojectionError = aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, frameSize, cameraMatrix, distortionCoeffs, noArray(), noArray(), calibrationFlags);
 		calibrationResults[cameraNumber] = new Intrinsics(cameraMatrix, distortionCoeffs, reprojectionError);		
 	}
 
-	fileController->saveIntrinsics(calibrationResults);
+	sceneController->saveIntrinsics(calibrationResults);
 	return true;
 }
 
 bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation)
 {
-	map<int, Extrinsics*> calibrationResults;
-	int capturedFrames = fileController->getCapturedFrames(scene, operation);
-	vector<int> capturedCameras = fileController->getCapturedCameras(scene, operation);
+	renderCalibration(scene);
+
+	int capturedFrames = sceneController->getCapturedFrameNumber(scene, operation);
+	vector<int> capturedCameras = sceneController->getCapturedCameras(scene, operation);
+
+	map<int, Extrinsics*> poseResults;
+	map<int, Intrinsics*> calibrationResults;
+
+	for (int cameraNumber : capturedCameras)
+	{
+		calibrationResults[cameraNumber] = sceneController->getIntrinsics(cameraNumber);
+	}	
 
 	#pragma omp parallel for
 	for (int cameraIndex = 0; cameraIndex < (int)capturedCameras.size(); cameraIndex++)
@@ -100,10 +109,10 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 
 		vector<int> charucoIds;
 		vector<Point2f> charucoCorners;
-		Mat frame = fileController->getCapturedFrame(scene, operation, cameraNumber, capturedFrames - 1);
+		Mat frame = sceneController->getCapturedFrame(scene, operation, cameraNumber, capturedFrames - 1);
 		Mat frameResult = frame.clone();
 
-		Intrinsics * intrinsics = fileController->getIntrinsics(cameraNumber);
+		Intrinsics * intrinsics = calibrationResults[cameraNumber];
 		Mat cameraMatrix = intrinsics->getCameraMatrix();
 		Mat distortionCoefficients = intrinsics->getDistortionCoefficients();
 
@@ -116,18 +125,18 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 			aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distortionCoefficients, originRotationVector, originTranslationVector);
 
 			aruco::drawAxis(frameResult, cameraMatrix, distortionCoefficients, originRotationVector, originTranslationVector, 10.0);
-			calibrationResults[cameraNumber] = new Extrinsics(originTranslationVector, originRotationVector, intrinsics->getReprojectionError());
+			poseResults[cameraNumber] = new Extrinsics(originTranslationVector, originRotationVector, intrinsics->getReprojectionError());
 		}
 
-		fileController->saveCalibrationDetections(frameResult, scene, operation, cameraNumber, capturedFrames - 1);
+		sceneController->saveCalibrationDetections(frameResult, scene, operation, cameraNumber, capturedFrames - 1);
 	}
 
 	int originCamera = 0;
-	if (!calibrationResults.count(originCamera))
+	if (!poseResults.count(originCamera))
 	{
 		Mat originTranslationVector = Mat::zeros(3, 1, CV_64F);
 		Mat originRotationVector = Mat::zeros(3, 1, CV_64F);
-		calibrationResults[originCamera] = new Extrinsics(originTranslationVector, originRotationVector, 0.0);
+		poseResults[originCamera] = new Extrinsics(originTranslationVector, originRotationVector, 0.0);
 	}
 
 	#pragma omp parallel for
@@ -138,7 +147,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 
 		BOOST_LOG_TRIVIAL(warning) << "Calibrating for pair " << cameraLeft << "->" << cameraRight;
 
-		if (calibrationResults.count(cameraRight))
+		if (poseResults.count(cameraRight))
 		{
 			break;
 		}
@@ -146,22 +155,22 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 		int totalSamples = 0;		
 		Size cameraSize;
 		
-		Intrinsics* intrinsicsLeft = fileController->getIntrinsics(cameraLeft);
+		Intrinsics* intrinsicsLeft = calibrationResults[cameraLeft];
 		Mat cameraMatrixLeft = intrinsicsLeft->getCameraMatrix();
 		Mat distortionCoefficientsLeft = intrinsicsLeft->getDistortionCoefficients();
 
-		Intrinsics* intrinsicsRight = fileController->getIntrinsics(cameraRight);
+		Intrinsics* intrinsicsRight = calibrationResults[cameraRight];
 		Mat cameraMatrixRight = intrinsicsRight->getCameraMatrix();
 		Mat distortionCoefficientsRight = intrinsicsRight->getDistortionCoefficients();		
 
 		vector<vector<Point3f>> allObjects;
 		vector<vector<Point2f>> allCornersLeft;
 		vector<vector<Point2f>> allCornersRight;		
-		for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber += 5)
+		for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber++)
 		{
 			vector<int> idsLeft;
 			vector<Point2f> cornersLeft;
-			Mat frameLeft = fileController->getCapturedFrame(scene, operation, cameraLeft, frameNumber);
+			Mat frameLeft = sceneController->getCapturedFrame(scene, operation, cameraLeft, frameNumber);
 			Mat frameLeftResult = frameLeft.clone();
 			cameraSize = frameLeft.size();
 
@@ -172,7 +181,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 
 			vector<int> idsRight;
 			vector<Point2f> cornersRight;
-			Mat frameRight = fileController->getCapturedFrame(scene, operation, cameraRight, frameNumber);
+			Mat frameRight = sceneController->getCapturedFrame(scene, operation, cameraRight, frameNumber);
 			Mat frameRightResult = frameRight.clone();
 
 			if (!detectCharucoCorners(frameRight, frameRightResult, 4, cameraMatrixLeft, distortionCoefficientsRight, idsRight, cornersRight))
@@ -212,7 +221,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 				allObjects.push_back(finalObjects);
 				allCornersLeft.push_back(finalCornersLeft);
 				allCornersRight.push_back(finalCornersRight);
-				totalSamples += finalObjects.size();
+				totalSamples += (int)finalObjects.size();
 			}
 		}
 
@@ -222,30 +231,32 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 		Mat rotationVector;
 		Mat essentialMatrix;
 		Mat fundamentalMatrix;
-		int flags = CALIB_FIX_ASPECT_RATIO;
 
 		double reprojectionError = cv::stereoCalibrate(allObjects, allCornersLeft, allCornersRight, cameraMatrixLeft, distortionCoefficientsLeft, cameraMatrixRight, distortionCoefficientsRight, cameraSize, rotationVector, translationVector, essentialMatrix, fundamentalMatrix);
 		cv::Rodrigues(rotationVector, rotationVector);
 
-		calibrationResults[cameraRight] = new Extrinsics(translationVector, rotationVector, reprojectionError);
+		calibrationResults[cameraLeft] = new Intrinsics(cameraMatrixLeft, distortionCoefficientsLeft, reprojectionError);
+		calibrationResults[cameraRight] = new Intrinsics(cameraMatrixRight, distortionCoefficientsRight, reprojectionError);
+		poseResults[cameraRight] = new Extrinsics(translationVector, rotationVector, reprojectionError);
+
 		BOOST_LOG_TRIVIAL(warning) << "Finished calibrating for pair " << cameraLeft << "->" << cameraRight;
 	}
 
-	for (int cameraNumber = 1; cameraNumber < (int)calibrationResults.size(); cameraNumber++)
+	for (int cameraNumber = 1; cameraNumber < (int)poseResults.size(); cameraNumber++)
 	{
 		Mat composedTranslationVector;
 		Mat composedRotationVector;
-		Mat currentTranslationVector = calibrationResults[cameraNumber]->getTranslationVector();
-		Mat currentRotationVector = calibrationResults[cameraNumber]->getRotationVector();
-		Mat previousTranslationVector = calibrationResults[cameraNumber - 1]->getTranslationVector();
-		Mat previousRotationVector = calibrationResults[cameraNumber - 1]->getRotationVector();
+		Mat currentTranslationVector = poseResults[cameraNumber]->getTranslationVector();
+		Mat currentRotationVector = poseResults[cameraNumber]->getRotationVector();
+		Mat previousTranslationVector = poseResults[cameraNumber - 1]->getTranslationVector();
+		Mat previousRotationVector = poseResults[cameraNumber - 1]->getRotationVector();
 
 		cv::composeRT(previousRotationVector, previousTranslationVector, currentRotationVector, currentTranslationVector, composedRotationVector, composedTranslationVector);
-		calibrationResults[cameraNumber] = new Extrinsics(composedTranslationVector, composedRotationVector, calibrationResults[cameraNumber]->getReprojectionError());
+		poseResults[cameraNumber] = new Extrinsics(composedTranslationVector, composedRotationVector, poseResults[cameraNumber]->getReprojectionError());
 	}
 
-	fileController->saveExtrinsics(scene, calibrationResults);
-	renderCalibration(scene);
+	sceneController->saveIntrinsics(calibrationResults);
+	sceneController->saveExtrinsics(scene, poseResults);
 	return true;
 }
 
@@ -255,8 +266,9 @@ bool CalibrationController::detectCharucoCorners(Mat& inputImage, Mat& outputIma
 	params->cornerRefinementMethod = aruco::CORNER_REFINE_NONE;
 
 	vector<int> arucoIds;
-	vector<vector<Point2f>> arucoCorners;	
+	vector<vector<Point2f>> arucoCorners, arucoRejections;	
 	aruco::detectMarkers(inputImage, dictionary, arucoCorners, arucoIds, params);
+	aruco::refineDetectedMarkers(inputImage, board, arucoCorners, arucoIds, arucoRejections);
 
 	if (arucoIds.size() > 0)
 	{
@@ -301,17 +313,16 @@ void CalibrationController::renderCalibration(Scene scene)
 {
 	viz::Viz3d visualizer = viz::Viz3d("3DPose");
 	visualizer.setBackgroundColor(viz::Color(25.0f, 25.0f, 25.0f), viz::Color(50.0f, 50.0f, 50.0f));
-	vector<int> capturedCameras = fileController->getCapturedCameras(scene, Operation::EXTRINSICS);
+	vector<int> capturedCameras = sceneController->getCapturedCameras(scene, Operation::EXTRINSICS);
 
 	for (int cameraNumber : capturedCameras)
 	{
-		Extrinsics* cameraExtrinsics = fileController->getExtrinsics(scene, cameraNumber);
-		Intrinsics* cameraIntrinsics = fileController->getIntrinsics(cameraNumber);
-		Mat cameraImage = fileController->getCapturedFrame(scene, Operation::EXTRINSICS, cameraNumber, 0);
-
+		Extrinsics* cameraExtrinsics = sceneController->getExtrinsics(scene, cameraNumber);
+		Intrinsics* cameraIntrinsics = sceneController->getIntrinsics(cameraNumber);
 		Mat cameraMatrix = cameraIntrinsics->getCameraMatrix();
 		Matx33d convertedMatrix = Matx33d((double*)cameraMatrix.clone().ptr());
-		viz::WCameraPosition cameraWidget = viz::WCameraPosition(convertedMatrix, 500.0);
+		Mat cameraImage = sceneController->getCapturedFrame(scene, Operation::EXTRINSICS, cameraNumber, 0);		
+		viz::WCameraPosition cameraWidget = viz::WCameraPosition(convertedMatrix, cameraImage, 1000.0);
 		visualizer.showWidget("camera-" + to_string(cameraNumber), cameraWidget);
 
 		Mat rotationMatrix;
@@ -321,7 +332,7 @@ void CalibrationController::renderCalibration(Scene scene)
 		Affine3d cameraPose = Affine3d(rotationMatrix, translationVector);
 		visualizer.setWidgetPose("camera-" + to_string(cameraNumber), cameraPose);
 		
-		viz::WText3D cameraNumberWidget = viz::WText3D("   " +to_string(cameraNumber), Point3d(translationVector), 400.0, true);
+		viz::WText3D cameraNumberWidget = viz::WText3D(to_string(cameraNumber), Point3d(translationVector), 400.0, true);
 		visualizer.showWidget("text-" + to_string(cameraNumber), cameraNumberWidget);		
 	}
 
@@ -335,31 +346,37 @@ void CalibrationController::renderCalibration(Scene scene)
 		{
 			int id = row * totalSquares + col;
 
-			viz::WLine squareLineTop = viz::WLine(Point3f(col * squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength), Point3f(col * squareLength + squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength), viz::Color(100.0f, 100.0f, 100.0f));
+			viz::WLine squareLineTop = viz::WLine(Point3d(col * squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength), Point3d(col * squareLength + squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength), viz::Color(100.0f, 100.0f, 100.0f));
 			visualizer.showWidget("top-" + to_string(id), squareLineTop);
 
-			viz::WLine squareLineLeft = viz::WLine(Point3f(col * squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength), Point3f(col * squareLength - halfPlaneLength, 0, row * squareLength + squareLength - halfPlaneLength), viz::Color(100.0f, 100.0f, 100.0f));
+			viz::WLine squareLineLeft = viz::WLine(Point3d(col * squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength), Point3d(col * squareLength - halfPlaneLength, 0, row * squareLength + squareLength - halfPlaneLength), viz::Color(100.0f, 100.0f, 100.0f));
 			visualizer.showWidget("left-" + to_string(id), squareLineLeft);
 
-			viz::WLine squareLineBottom = viz::WLine(Point3f(col * squareLength - halfPlaneLength, 0, (row + 1) * squareLength - halfPlaneLength), Point3f(col * squareLength + squareLength - halfPlaneLength, 0, (row + 1) * squareLength - halfPlaneLength), viz::Color(100.0f, 100.0f, 100.0f));
+			viz::WLine squareLineBottom = viz::WLine(Point3d(col * squareLength - halfPlaneLength, 0, (row + 1) * squareLength - halfPlaneLength), Point3d(col * squareLength + squareLength - halfPlaneLength, 0, (row + 1) * squareLength - halfPlaneLength), viz::Color(100.0f, 100.0f, 100.0f));
 			visualizer.showWidget("bottom-" + to_string(id), squareLineBottom);
 			
-			viz::WLine squareLineRight = viz::WLine(Point3f((col + 1) * squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength), Point3f((col + 1) * squareLength - halfPlaneLength, 0, row * squareLength + squareLength - halfPlaneLength), viz::Color(100.0f, 100.0f, 100.0f));
+			viz::WLine squareLineRight = viz::WLine(Point3d((col + 1) * squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength), Point3d((col + 1) * squareLength - halfPlaneLength, 0, row * squareLength + squareLength - halfPlaneLength), viz::Color(100.0f, 100.0f, 100.0f));
 			visualizer.showWidget("right-" + to_string(id), squareLineRight);
 		}
 	}
 
-	viz::WLine xAxis = viz::WLine(Point3f(-halfPlaneLength, 0, -halfPlaneLength), Point3f(-halfPlaneLength + squareLength, 0, -halfPlaneLength), viz::Color::red());
-	visualizer.showWidget("x", xAxis);
-	visualizer.setRenderingProperty("x", viz::LINE_WIDTH, 3.0);
+	viz::WLine xAxis = viz::WLine(Point3d(-halfPlaneLength, 0, -halfPlaneLength), Point3d(-halfPlaneLength + squareLength, 0, -halfPlaneLength), viz::Color(59.0f, 85.0f, 237.0f));
+	viz::WText3D xAxisText = viz::WText3D("X", Point3d(-halfPlaneLength + squareLength + 500, 0, -halfPlaneLength), 400.0, true);
+	visualizer.showWidget("axis-x", xAxis);
+	visualizer.showWidget("axis-x-text", xAxisText);
+	visualizer.setRenderingProperty("axis-x", viz::LINE_WIDTH, 2.0);	
 	
-	viz::WLine yAxis = viz::WLine(Point3f(-halfPlaneLength, 0, -halfPlaneLength), Point3f(-halfPlaneLength, squareLength, -halfPlaneLength), viz::Color::green());
-	visualizer.showWidget("y", yAxis);
-	visualizer.setRenderingProperty("y", viz::LINE_WIDTH, 3.0);
+	viz::WLine yAxis = viz::WLine(Point3d(-halfPlaneLength, 0, -halfPlaneLength), Point3d(-halfPlaneLength, squareLength, -halfPlaneLength), viz::Color(106.0f, 174.0f, 60.0f));
+	viz::WText3D yAxisText = viz::WText3D("Y", Point3d(-halfPlaneLength, squareLength + 500, -halfPlaneLength), 400.0, true);
+	visualizer.showWidget("axis-y", yAxis);
+	visualizer.showWidget("axis-y-text", yAxisText);
+	visualizer.setRenderingProperty("axis-y", viz::LINE_WIDTH, 2.0);
 
-	viz::WLine zAxis = viz::WLine(Point3f(-halfPlaneLength, 0, -halfPlaneLength), Point3f(-halfPlaneLength, 0, -halfPlaneLength + squareLength), viz::Color::blue());
-	visualizer.showWidget("z", zAxis);	
-	visualizer.setRenderingProperty("z", viz::LINE_WIDTH, 3.0);
+	viz::WLine zAxis = viz::WLine(Point3d(-halfPlaneLength, 0, -halfPlaneLength), Point3d(-halfPlaneLength, 0, -halfPlaneLength + squareLength), viz::Color(155.0f, 99.0f, 32.0f));
+	viz::WText3D zAxisText = viz::WText3D("Z", Point3d(-halfPlaneLength, 0, -halfPlaneLength + squareLength + 500), 400.0, true);
+	visualizer.showWidget("axis-z", zAxis);	
+	visualizer.showWidget("axis-z-text", zAxisText);
+	visualizer.setRenderingProperty("axis-z", viz::LINE_WIDTH, 2.0);	
 
 	visualizer.resetCamera();
 

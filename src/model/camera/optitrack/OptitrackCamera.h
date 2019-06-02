@@ -6,8 +6,8 @@
 #include <opencv2/opencv.hpp>
 #include <boost/log/trivial.hpp>
 #include <cameralibrary.h>
-#include "model/camera/FramesPacket.h"
-#include "controller/files/FileController.h"
+#include "model/camera/capture/Packet.h"
+#include "model/config/ConfigController.h"
 
 #define MAX_CAMERAS 16
 
@@ -18,16 +18,17 @@ using namespace CameraLibrary;
 class OptitrackCamera
 {
 public:
-	OptitrackCamera(FileController* fileController);
-	bool startCameras(Core::eVideoMode mode);
-	FramesPacket* captureFramesPacket();
+	OptitrackCamera(ConfigController* configController);
+	bool startCameras();
 	void stopCameras();
 	void shutdownCameras();
+	Packet* getPacket();
 private:
-	map<int, int> camerasOrder;
-	int camerasFps;
+	int cameraFps;
+	int cameraWidth;
+	int cameraHeight;
+	map<int, int> cameraOrder;
 	int cameraCount;
-	atomic<int> frameCount;
 	CameraList list;
 	Camera* camera[MAX_CAMERAS];
 	cModuleSync* sync;	

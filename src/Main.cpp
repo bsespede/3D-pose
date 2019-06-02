@@ -1,12 +1,13 @@
 #include "view/Console.h"
-#include "controller/AppController.h"
+#include "model/AppController.h"
+#include "model/config/ConfigController.h"
 
 int main(int argc, char **argv)
 {
-	FileController* fileController = new FileController();
-	AppController* appController = new AppController(fileController);
-	Console* console = new Console(fileController);
-	console->start();
+	ConfigController* configController = new ConfigController();
+	AppController* appController = new AppController(configController);
+	Console* console = new Console(configController);
+	console->loopUI();
 
 	return 0;
 }

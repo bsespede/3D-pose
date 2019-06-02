@@ -1,20 +1,18 @@
 #pragma once
 
 #include <opencv2/opencv.hpp>
-#include "model/camera/FramesPacket.h"
-#include "controller/files/FileController.h"
+#include "model/config/ConfigController.h"
+#include "model/camera/capture/Packet.h"
 
 using namespace cv;
 
-class CameraRenderer
+class Renderer2D
 {
 public:
-	CameraRenderer(FileController* fileController);
+	Renderer2D(ConfigController* configController);
 	void calculateProportions(float prop, int cameraWidth, int cameraHeight, int maxWidth, int maxHeight, int camerasNumber, int barHeight);
-	void render(FramesPacket* framesPacket);
+	void render(Packet* Packet);
 private:
-	FileController* fileController;
-	bool shouldUpdateProportions;
 	int barHeight;
 	int cameraWidth;
 	int cameraHeight;

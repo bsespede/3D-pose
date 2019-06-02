@@ -1,17 +1,18 @@
-#include "CameraRenderer.h"
+#include "Renderer2D.h"
 
-CameraRenderer::CameraRenderer(FileController* fileController)
+Renderer2D::Renderer2D(ConfigController* configController)
 {
-	this->fileController = fileController;
-	this->shouldUpdateProportions = true;
-	this->barHeight = -1;
-	this->cameraWidth = -1;
-	this->cameraHeight = -1;
-	this->rows = -1;
-	this->cols = -1;
+	int cameraWidth = configController->getCameraWidth();
+	int cameraHeight = configController->getCameraHeight();
+	int maxWidth = configController->getMaxWidth();
+	int maxHeight = configController->getMaxHeight();
+	int cameraNumber = configController->getCameraNumber();
+	int barHeight = configController->getBarHeight();	
+
+	calculateProportions(1.0, cameraWidth, cameraHeight, maxWidth, maxHeight, cameraNumber, barHeight);
 }
 
-void CameraRenderer::calculateProportions(float prop, int cameraWidth, int cameraHeight, int maxWidth, int maxHeight, int camerasNumber, int barHeight)
+void Renderer2D::calculateProportions(float prop, int cameraWidth, int cameraHeight, int maxWidth, int maxHeight, int camerasNumber, int barHeight)
 {
 	int curWidth = (int)(cameraWidth * prop) + 2;
 	int curHeight = (int)(cameraHeight * prop) + barHeight + 4;
@@ -23,29 +24,20 @@ void CameraRenderer::calculateProportions(float prop, int cameraWidth, int camer
 
 	if (maxCameras < camerasNumber)
 	{
-		calculateProportions(prop - 0.01, cameraWidth, cameraHeight, maxWidth, maxHeight, camerasNumber, barHeight);
+		calculateProportions(prop - 0.05f, cameraWidth, cameraHeight, maxWidth, maxHeight, camerasNumber, barHeight);
 	}
 	else
 	{
 		this->barHeight = barHeight;
-		this->cameraWidth = prop * cameraWidth;
-		this->cameraHeight = prop * cameraHeight;
+		this->cameraWidth = (int)(prop * cameraWidth);
+		this->cameraHeight = (int)(prop * cameraHeight);
 		this->rows = numberHeight;
 		this->cols = numberWidth;
 	}
 }
 
-void CameraRenderer::render(FramesPacket* framesPacket)
+void Renderer2D::render(Packet* packet)
 {
-	int configCameraWidth = fileController->getCameraWidth();
-	int configCameraHeight = fileController->getCameraHeight();
-	int configMaxWidth = fileController->getMaxWidth();
-	int configMaxHeight = fileController->getMaxHeight();
-	int configBarHeight = fileController->getBarHeight();
-	int configCamerasNumber = framesPacket->getFrames().size();
-
-	calculateProportions(1.0, configCameraWidth, configCameraHeight, configMaxWidth, configMaxHeight, 16, configBarHeight);
-
 	int totalWidth = cols * (cameraWidth + 2) + 1;
 	int totalHeight = rows * (cameraHeight + barHeight + 4) + 1;
 
@@ -72,7 +64,7 @@ void CameraRenderer::render(FramesPacket* framesPacket)
 		}
 	}
 
-	for (pair<int, Mat> pair : framesPacket->getFrames())
+	for (pair<int, Mat> pair : packet->getData())
 	{
 		int u = pair.first % cols;
 		int v = pair.first / cols;

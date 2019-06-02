@@ -1,12 +1,14 @@
 #include "OptitrackCamera.h"
 
-OptitrackCamera::OptitrackCamera(FileController* fileController)
+OptitrackCamera::OptitrackCamera(ConfigController* configController)
 {
-	this->camerasFps = fileController->getCamerasFps();
-	this->camerasOrder = fileController->getCamerasOrder();
+	this->cameraFps = configController->getCameraFps();
+	this->cameraWidth = configController->getCameraWidth();
+	this->cameraHeight = configController->getCameraHeight();
+	this->cameraOrder = configController->getCameraOrder();
 }
 
-bool OptitrackCamera::startCameras(Core::eVideoMode mode)
+bool OptitrackCamera::startCameras()
 {
 	CameraLibrary_EnableDevelopment();
 	CameraManager::X();
@@ -17,12 +19,11 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 	{
 		camera[i] = CameraManager::X().GetCamera(list[i].UID());
 		int cameraSerial = list[i].Serial();
-		int cameraNumber = camerasOrder[cameraSerial];
+		int cameraNumber = cameraOrder[cameraSerial];
 		
-
 		if (camera[i] == nullptr)
 		{
-			BOOST_LOG_TRIVIAL(warning) << "Couldn't connect to camera #" << cameraNumber << " (" << cameraSerial << ")";
+			BOOST_LOG_TRIVIAL(warning) << "Couldn't connect to camera #" << cameraNumber << ": ";
 		}
 		else
 		{
@@ -58,26 +59,23 @@ bool OptitrackCamera::startCameras(Core::eVideoMode mode)
 
 	for (int i = 0; i < cameraCount; i++)
 	{
-		camera[i]->SetMJPEGQuality(1);
-		camera[i]->SetVideoType(mode);		
-		camera[i]->SetExposure(camera[i]->MaximumExposureValue() * 0.25);
-		camera[i]->SetFrameRate(camerasFps);
-		camera[i]->SetFrameDecimation(camerasFps);
-		camera[i]->SetNumeric(true, camerasOrder[camera[i]->Serial()]);
+		camera[i]->SetNumeric(true, cameraOrder[camera[i]->Serial()]);
+		camera[i]->SetVideoType(Core::eVideoMode::MJPEGMode);
+		camera[i]->SetMJPEGQuality(0);		
+		camera[i]->SetFrameRate(cameraFps);
+		camera[i]->SetLateDecompression(false);
 		camera[i]->Start();	
 	}
 
 	return true;
 }
 
-FramesPacket* OptitrackCamera::captureFramesPacket()
+Packet* OptitrackCamera::getPacket()
 {
 	FrameGroup* frameGroup = sync->GetFrameGroup();
 	
 	if (frameGroup)
 	{
-		FramesPacket* framesPacket = new FramesPacket();
-
 		if (frameGroup->Count() != cameraCount)
 		{			
 			frameGroup->Release();
@@ -85,24 +83,24 @@ FramesPacket* OptitrackCamera::captureFramesPacket()
 			return nullptr;
 		}
 
+		Packet* packet = new Packet();
+
 		for (int i = 0; i < frameGroup->Count(); i++)
 		{
 			Frame* frame = frameGroup->GetFrame(i);
 			Camera* camera = frame->GetCamera();
 
-			int cameraId = camerasOrder[camera->Serial()];
-			int cameraWidth = camera->Width();
-			int cameraHeight = camera->Height();
+			int cameraId = cameraOrder[camera->Serial()];
 
 			Mat frameMat = Mat(Size(cameraWidth, cameraHeight), CV_8UC1);
-			frame->Rasterize(cameraWidth, cameraHeight, frameMat.step, 8, frameMat.data);
+			frame->Rasterize(cameraWidth, cameraHeight, (unsigned int)frameMat.step, 8, frameMat.data);
 
-			framesPacket->addFrame(cameraId, frameMat);
+			packet->addData(cameraId, frameMat);
 			frame->Release();
 		}
 
 		frameGroup->Release();
-		return framesPacket;
+		return packet;
 	}
 	else
 	{
@@ -127,7 +125,7 @@ void OptitrackCamera::stopCameras()
 
 void OptitrackCamera::shutdownCameras()
 {
-	for (int i = 0; i < list.Count(); i++)
+	for (int i = 0; i < cameraCount; i++)
 	{
 		if (camera[i] != nullptr)
 		{
@@ -136,11 +134,4 @@ void OptitrackCamera::shutdownCameras()
 	}
 
 	CameraManager::X().Shutdown();
-
-	while (!CameraManager::X().AreCamerasShutdown())
-	{
-		this_thread::sleep_for(std::chrono::milliseconds(500));
-	}
-
-	CameraManager::X().DestroyInstance();
 }

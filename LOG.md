@@ -104,3 +104,6 @@ __31-4-2019 (9hs)__:
 	- Pensar tema de calibracion con error de reproyeccion alto
 	- Enfocar camaras
 	
+_1-5-2019 (3hs)__:
+- Super refactor
+- Rendereo 3D de camaras

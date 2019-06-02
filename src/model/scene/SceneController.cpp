@@ -1,48 +1,16 @@
-#include "FileController.h"
+#include "SceneController.h"
 
-FileController::FileController()
+SceneController::SceneController(string dataFolder)
 {
-	property_tree::ptree root;
-	property_tree::read_json("app-config.json", root);
-
-	this->dataFolder = root.get<string>("config.dataFolder");
-
-	this->maxWidth = root.get<int>("config.gui.maxWidth");
-	this->maxHeight = root.get<int>("config.gui.maxHeight");
-	this->cameraHeight = root.get<int>("config.gui.cameraHeight");
-	this->cameraWidth = root.get<int>("config.gui.cameraWidth");
-	this->barHeight = root.get<int>("config.gui.barHeight");
-	this->guiFps = root.get<int>("config.gui.fps");
-	this->showPreviewOnCapture = root.get<bool>("config.gui.showCapturePreview");
-
-	int cameraNumber = 0;
-	this->camerasOrder = std::map<int, int>();
-	this->camerasFps = root.get<int>("config.cameras.fps");
-	for (property_tree::ptree::value_type& cameraId : root.get_child("config.cameras.order"))
-	{
-		int serial = cameraId.second.get_value<int>();
-		camerasOrder[serial] = cameraNumber;
-		cameraNumber++;
-	}
-
-	this->maxCheckboards = root.get<int>("config.calibration.checkboardIntrinsics.frames");
-	this->checkboardTimer = root.get<int>("config.calibration.checkboardIntrinsics.timer");
-
-	this->checkboardCols = root.get<int>("config.calibration.checkboardIntrinsics.cols");
-	this->checkboardRows = root.get<int>("config.calibration.checkboardIntrinsics.rows");
-	this->checkboardSquareLength = root.get<float>("config.calibration.checkboardIntrinsics.squareLength");
-	this->checkboardMarkerLength = root.get<float>("config.calibration.checkboardIntrinsics.markerLength");
-	this->checkboardWidth = root.get<int>("config.calibration.checkboardImage.width");
-	this->checkboardHeight = root.get<int>("config.calibration.checkboardImage.height");
-	this->checkboardMargin = root.get<int>("config.calibration.checkboardImage.margin");
+	this->dataFolder = dataFolder;
 }
 
-bool FileController::sceneExists(string name)
+bool SceneController::hasScene(string name)
 {
 	return filesystem::exists(dataFolder + "/" + name + "/scene.json");
 }
 
-Scene FileController::loadScene(string name)
+Scene SceneController::getScene(string name)
 {
 	string scenePath = dataFolder + "/" + name;
 
@@ -55,18 +23,15 @@ Scene FileController::loadScene(string name)
 	return Scene(sceneName, sceneDate);
 }
 
-Scene FileController::createScene(string name)
+Scene SceneController::saveScene(string name)
 {
 	string scenePath = dataFolder + "/" + name;
 	filesystem::create_directory(scenePath);
 
-	time_t _tm = time(NULL);
-	struct tm * curtime = localtime(&_tm);
-	string date = asctime(curtime);
-
 	string configFile = scenePath + "/scene.json";
 	property_tree::ptree root;
 
+	string date = getDateString();
 	root.put("scene.name", name);
 	root.put("scene.date", date);
 
@@ -74,24 +39,24 @@ Scene FileController::createScene(string name)
 	return Scene(name, date);
 }
 
-bool FileController::hasCapture(Scene scene, Operation operation)
+bool SceneController::hasCapture(Scene scene, Operation operation)
 {
 	string operationPath = dataFolder + "/" + scene.getName() + "/" + operation.toString();
 	return filesystem::exists(operationPath + "/capture.json");
 }
 
-void FileController::saveCapture(Scene scene, Operation operation, Capture* capture)
+void SceneController::saveCapture(Scene scene, Operation operation, Capture* capture)
 {
 	string operationPath = dataFolder + "/" + scene.getName() + "/" + operation.toString();
 	filesystem::create_directory(operationPath);
 
-	list<FramesPacket*> frames = capture->getFrames();
+	list<Packet*> packets = capture->getPackets();
 	int frameNumber = 0;
 	set<int> cameraSet;
 
-	for (FramesPacket* framePacket: frames)
+	for (Packet* packet: packets)
 	{
-		for (pair<int, Mat> pair: framePacket->getFrames())
+		for (pair<int, Mat> pair: packet->getData())
 		{
 			cameraSet.insert(pair.first);
 			string camPath = operationPath + "/cam-" + to_string(pair.first);
@@ -119,12 +84,7 @@ void FileController::saveCapture(Scene scene, Operation operation, Capture* capt
 			int cameraNumber = camera.second.get_value<int>();
 			cameraSet.insert(cameraNumber);
 		}
-	}	
-
-	time_t _tm = time(NULL);
-	struct tm* curtime = localtime(&_tm);
-	string date = asctime(curtime);
-	root.put("capture.date", date);
+	}
 
 	property_tree::ptree camerasNode;
 	for (int cameraIndex: cameraSet)
@@ -137,10 +97,13 @@ void FileController::saveCapture(Scene scene, Operation operation, Capture* capt
 	root.add_child("capture.cameras", camerasNode);
 	root.put("capture.frames", frameNumber);
 
+	string date = getDateString();
+	root.put("capture.date", date);
+
 	property_tree::write_json(recordFile, root);
 }
 
-vector<int> FileController::getCapturedCameras(Scene scene, Operation operation)
+vector<int> SceneController::getCapturedCameras(Scene scene, Operation operation)
 {
 	vector<int> capturedCameras;
 
@@ -156,7 +119,7 @@ vector<int> FileController::getCapturedCameras(Scene scene, Operation operation)
 	return capturedCameras;
 }
 
-int FileController::getCapturedFrames(Scene scene, Operation operation)
+int SceneController::getCapturedFrameNumber(Scene scene, Operation operation)
 {
 	string capturePath = dataFolder + "/" + scene.getName() + "/" + operation.toString();
 	property_tree::ptree root;
@@ -165,13 +128,13 @@ int FileController::getCapturedFrames(Scene scene, Operation operation)
 	return root.get<int>("capture.frames");
 }
 
-bool FileController::hasCapturedFrame(Scene scene, Operation operation, int cameraNumber, int frameNumber)
+bool SceneController::hasCapturedFrame(Scene scene, Operation operation, int cameraNumber, int frameNumber)
 {
 	string frameFile = dataFolder + "/" + scene.getName() + "/" + operation.toString() + "/cam-" + to_string(cameraNumber) + "/" + to_string(frameNumber) + ".png";
 	return filesystem::exists(frameFile);
 }
 
-Mat FileController::getCapturedFrame(Scene scene, Operation operation, int cameraNumber, int frameNumber)
+Mat SceneController::getCapturedFrame(Scene scene, Operation operation, int cameraNumber, int frameNumber)
 {
 	if (hasCapturedFrame(scene, operation, cameraNumber, frameNumber))
 	{
@@ -185,7 +148,7 @@ Mat FileController::getCapturedFrame(Scene scene, Operation operation, int camer
 	}	
 }
 
-Intrinsics* FileController::getIntrinsics(int cameraNumber) 
+Intrinsics* SceneController::getIntrinsics(int cameraNumber)
 {
 	string intrinsicsFile = dataFolder + "/intrinsics.json";
 	property_tree::ptree root;
@@ -228,7 +191,7 @@ Intrinsics* FileController::getIntrinsics(int cameraNumber)
 	return nullptr;
 }
 
-Extrinsics* FileController::getExtrinsics(Scene scene, int cameraNumber)
+Extrinsics* SceneController::getExtrinsics(Scene scene, int cameraNumber)
 {
 	string extrinsicsFile = dataFolder + "/" + scene.getName() + "/extrinsics.json";
 	property_tree::ptree root;
@@ -266,14 +229,12 @@ Extrinsics* FileController::getExtrinsics(Scene scene, int cameraNumber)
 	return nullptr;
 }
 
-void FileController::saveIntrinsics(map<int, Intrinsics*> calibrationResults)
+void SceneController::saveIntrinsics(map<int, Intrinsics*> calibrationResults)
 {
 	string intrinsicsFile = dataFolder + "/intrinsics.json";
 	property_tree::ptree root;
 
-	time_t _tm = time(NULL);
-	struct tm* curtime = localtime(&_tm);
-	string date = asctime(curtime);
+	string date = getDateString();
 	root.put("calibration.date", date);
 
 	property_tree::ptree camerasNode;
@@ -307,14 +268,12 @@ void FileController::saveIntrinsics(map<int, Intrinsics*> calibrationResults)
 	property_tree::write_json(intrinsicsFile, root);
 }
 
-void FileController::saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsicMatrices) 
+void SceneController::saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsicMatrices)
 {
 	string extrinsicsFile = dataFolder + "/" + scene.getName() + "/extrinsics.json";
 	property_tree::ptree root;
 
-	time_t _tm = time(NULL);
-	struct tm* curtime = localtime(&_tm);
-	string date = asctime(curtime);
+	string date = getDateString();
 	root.put("calibration.date", date);
 
 	property_tree::ptree camerasNode;
@@ -345,7 +304,7 @@ void FileController::saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsic
 	property_tree::write_json(extrinsicsFile, root);
 }
 
-void FileController::saveCalibrationDetections(Mat detection, Scene scene, Operation operation, int cameraNumber, int frameNumber)
+void SceneController::saveCalibrationDetections(Mat detection, Scene scene, Operation operation, int cameraNumber, int frameNumber)
 {
 	string cameraFolder = dataFolder + "/" + scene.getName() + "/" + operation.toString() + "/cam-" + to_string(cameraNumber);
 
@@ -359,102 +318,13 @@ void FileController::saveCalibrationDetections(Mat detection, Scene scene, Opera
 	}
 }
 
-string FileController::getDataFolder()
+string SceneController::getDateString()
 {
-	return dataFolder;
-}
+	time_t rawTime = time(NULL);
+	char buffer[26];
+	ctime_s(buffer, sizeof(buffer), &rawTime);
+	string date = string(buffer);
+	date.erase(std::remove(date.begin(), date.end(), '\n'), date.end());
 
-int FileController::getMaxWidth()
-{
-	return maxWidth;
-}
-
-int FileController::getMaxHeight()
-{
-	return maxHeight;
-}
-
-int FileController::getCameraHeight()
-{
-	return cameraHeight;
-}
-
-int FileController::getCameraWidth()
-{
-	return cameraWidth;
-}
-
-int FileController::getBarHeight()
-{
-	return barHeight;
-}
-
-int FileController::getGuiFps()
-{
-	return guiFps;
-}
-
-bool FileController::getShowPreviewOnCapture()
-{
-	return showPreviewOnCapture;
-}
-
-map<int, int> FileController::getCamerasOrder()
-{
-	return camerasOrder;
-}
-
-int FileController::getCamerasNumber()
-{
-	return camerasOrder.size();
-}
-
-int FileController::getCamerasFps()
-{
-	return camerasFps;
-}
-
-int FileController::getMaxCheckboards()
-{
-	return maxCheckboards;
-}
-
-int FileController::getCheckboardTimer()
-{
-	return checkboardTimer;
-}
-
-int FileController::getCheckboardCols()
-{
-	return checkboardCols;
-}
-
-int FileController::getCheckboardRows()
-{
-	return checkboardRows;
-}
-
-double FileController::getCheckboardSquareLength()
-{
-	return checkboardSquareLength;
-}
-
-double FileController::getCheckboardMarkerLength()
-{
-	return checkboardMarkerLength;
-}
-
-int FileController::getCheckboardWidth()
-{
-	return checkboardWidth;
-}
-
-int FileController::getCheckboardHeight()
-{
-	return checkboardHeight;
-}
-
-int FileController::getCheckboardMargin()
-{
-	return checkboardMargin;
+	return date;
 }

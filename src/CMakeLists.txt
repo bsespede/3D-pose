@@ -31,21 +31,21 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 # Add source to this project's executable.
 add_executable (${PROJECT_NAME} "Main.cpp" 
-								"view/Console.cpp" "view/Console.h"
-								"view/CameraRenderer.cpp" "view/CameraRenderer.h"
 								"view/enum/Input.h"
-								"model/scene/Scene.cpp" "model/scene/Scene.h" 
-								"model/scene/enum/Operation.h"
-								"model/camera/FramesPacket.cpp" "model/camera/FramesPacket.h"
-								"model/calibration/Intrinsics.cpp" "model/calibration/Intrinsics.h"
-								"model/calibration/Extrinsics.cpp" "model/calibration/Extrinsics.h"
-								"model/capture/Capture.cpp" "model/capture/Capture.h"
-								"model/camera/enum/CaptureMode.h"
-								"controller/AppController.cpp" "controller/AppController.h"
-								"controller/files/FileController.cpp" "controller/files/FileController.h"
-								"controller/camera/CameraController.cpp" "controller/camera/CameraController.h"
-								"controller/calibration/CalibrationController.cpp" "controller/calibration/CalibrationController.h"
-								"controller/camera/optitrack/OptitrackCamera.cpp" "controller/camera/optitrack/OptitrackCamera.h")
+								"view/Console.cpp" "view/Console.h"
+								"view/rendering/Renderer2D.cpp" "view/rendering/Renderer2D.h"
+								"model/AppController.cpp" "model/AppController.h"		
+								"model/operation/Operation.h"
+								"model/scene/Scene.cpp" "model/scene/Scene.h"
+								"model/scene/SceneController.cpp" "model/scene/SceneController.h"
+								"model/camera/capture/Capture.cpp" "model/camera/capture/Capture.h"								
+								"model/camera/capture/Packet.cpp" "model/camera/capture/Packet.h"
+								"model/camera/optitrack/OptitrackCamera.cpp" "model/camera/optitrack/OptitrackCamera.h"
+								"model/camera/CameraController.cpp" "model/camera/CameraController.h"
+								"model/config/ConfigController.cpp" "model/config/ConfigController.h"
+ 								"model/calibration/parameters/Intrinsics.cpp" "model/calibration/parameters/Intrinsics.h"
+								"model/calibration/parameters/Extrinsics.cpp" "model/calibration/parameters/Extrinsics.h"								
+								"model/calibration/CalibrationController.cpp" "model/calibration/CalibrationController.h")
 
 # Link it all together
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} Boost::boost OptiTrack::CameraLibrary2015x64S)
