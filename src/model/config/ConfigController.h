@@ -19,7 +19,8 @@ public:
 	int getBarHeight();	
 	bool getShowPreviewOnCapture();
 	int getCameraNumber();
-	int getCameraFps();
+	int getCameraLowFps();
+	int getCameraHighFps();
 	int getCameraHeight();
 	int getCameraWidth();
 	map<int, int> getCameraOrder();	
@@ -29,9 +30,6 @@ public:
 	int getCharucoRows();	
 	float getCharucoSquareLength();
 	float getCharucoMarkerLength();
-	int getCharucoWidth();
-	int getCharucoHeight();
-	int getCharucoMargin();
 private:
 	string dataFolder;
 	int guiFps;
@@ -39,7 +37,8 @@ private:
 	int maxHeight;	
 	int barHeight;	
 	bool showPreviewOnCapture;
-	int cameraFps;
+	int cameraHighFps;
+	int cameraLowFps;
 	int cameraHeight;
 	int cameraWidth;
 	map<int, int> cameraOrder;	
@@ -49,7 +48,4 @@ private:
 	int charucoRows;
 	float charucoSquareLength;
 	float charucoMarkerLength;
-	int charucoWidth;
-	int charucoHeight;
-	int charucoMargin;
 };

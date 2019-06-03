@@ -2,13 +2,13 @@
 
 Console::Console(ConfigController* configController)
 {
-	this->configController = configController;
+	this->showPreviewOnCapture = configController->getShowPreviewOnCapture();
+	this->showPreviewUI = false;
 	this->appController = new AppController(configController);
 	this->renderer2D = new Renderer2D(configController);
-	this->showCamera = false;
 }
 
-void Console::loopUI()
+void Console::start()
 {
 	showLogo();
 	showMenu();
@@ -29,9 +29,9 @@ void Console::showMenu()
 	while (true)
 	{
 		printf("\nChoose an action from the following:\n");
-		printf("(1) Create scene\n");
-		printf("(2) Load scene\n");
-		printf("(3) Test cameras\n");
+		printf("(1) Scene creation\n");
+		printf("(2) Scene loading\n");
+		printf("(3) Preview cameras\n");
 		printf("(4) Exit\n");
 
 		char input = _getch();
@@ -46,7 +46,7 @@ void Console::showMenu()
 		}
 		else if (input == '3')
 		{
-			showPreview();
+			showCameraPreview();
 		}
 		else if (input == '4')
 		{
@@ -73,7 +73,7 @@ void Console::showSceneInput(Input input)
 		{
 			Scene scene = appController->saveScene(name);
 			showStatusMessage("Scene created succesfully\n", GREEN);
-			showOperations(scene);
+			showSceneOptions(scene);
 		}
 		else
 		{
@@ -86,7 +86,7 @@ void Console::showSceneInput(Input input)
 		{
 			Scene scene = appController->getScene(name);
 			showStatusMessage("Scene loaded succesfully\n", GREEN);
-			showOperations(scene);
+			showSceneOptions(scene);
 		}
 		else
 		{
@@ -95,29 +95,99 @@ void Console::showSceneInput(Input input)
 	}
 }
 
-void Console::showOperations(Scene scene)
+void Console::showSceneOptions(Scene scene)
 {
 	while (true)
 	{
 		printf("\nChoose an action from the following:\n");
-		printf("(1) Intrinsics\n");
-		printf("(2) Extrinsics\n");
-		printf("(3) Scene\n");
+		printf("(1) Camera calibration\n");
+		printf("(2) Motion capture\n");
+		printf("(3) Back\n");
+
+		int input = _getch();
+
+		if (input == '1')
+		{
+			showCalibrationOptions(scene);
+		}
+		else if (input == '2')
+		{
+			showMocapOptions(scene);
+		}
+		else if (input == '3')
+		{
+			return;
+		}
+		else
+		{
+			showStatusMessage("Choose a valid option\n", RED);
+		}
+	}
+}
+
+void Console::showCalibrationOptions(Scene scene)
+{
+	while (true)
+	{
+		printf("\nChoose an action from the following:\n");
+		printf("(1) Capture calibration\n");
+		printf("(2) Process intrinsics\n");
+		printf("(3) Process extrinsics\n");
+		printf("(4) Preview result\n");
+		printf("(5) Back\n");
+
+		int input = _getch();
+
+		if (input == '1')
+		{
+			return showCapture(scene, CaptureType::CALIBRATION);
+		}
+		else if (input == '2')
+		{
+			return showProcessCalibration(scene, CalibrationType::INTRINSICS);
+		}
+		else if (input == '3')
+		{
+			return showProcessCalibration(scene, CalibrationType::EXTRINSICS);
+		}
+		else if (input == '4')
+		{
+			return showResultPreview(scene, CaptureType::CALIBRATION);
+		}
+		else if (input == '5')
+		{
+			return;
+		}
+		else
+		{
+			showStatusMessage("Choose a valid option\n", RED);
+		}
+	}
+}
+
+void Console::showMocapOptions(Scene scene)
+{
+	while (true)
+	{
+		printf("\nChoose an action from the following:\n");
+		printf("(1) Capture scene\n");
+		printf("(2) Process scene\n");
+		printf("(3) Preview result\n");
 		printf("(4) Back\n");
 
 		int input = _getch();
 
 		if (input == '1')
 		{
-			showOperationOptions(scene, Operation::INTRINSICS);
+			return showCapture(scene, CaptureType::MOCAP);
 		}
 		else if (input == '2')
 		{
-			showOperationOptions(scene, Operation::EXTRINSICS);
+			return showProcessMocap(scene);
 		}
 		else if (input == '3')
 		{
-			showOperationOptions(scene, Operation::SCENE);
+			return showResultPreview(scene, CaptureType::MOCAP);
 		}
 		else if (input == '4')
 		{
@@ -130,126 +200,81 @@ void Console::showOperations(Scene scene)
 	}
 }
 
-void Console::showOperationOptions(Scene scene, Operation operation)
+
+void Console::showCapture(Scene scene, CaptureType captureType)
 {
-	while (true)
+	if (appController->hasCapture(scene, captureType))
 	{
-		printf("\nChoose an action from the following:\n");
-		printf("(1) Capture %s\n", operation.toString().c_str());
-		printf("(2) Process %s\n", operation.toString().c_str());
-		printf("(3) View results\n");
-		printf("(4) Back\n");
-
-		int input = _getch();
-
-		if (input == '1')
-		{
-			return showCapture(scene, operation);
-		}
-		else if (input == '2')
-		{
-			return showProcess(scene, operation);
-		}
-		else if (input == '3')
-		{
-			return showResults(scene, operation);
-		}
-		else if (input == '4')
-		{
-			return;
-		}
-		else
-		{
-			showStatusMessage("Choose a valid option\n", RED);
-		}
-	}
-}
-
-void Console::showCapture(Scene scene, Operation operation)
-{
-	if (appController->hasCapture(scene, operation))
-	{
-		showStatusMessage("Scene already has a capture\n", RED);
+		showStatusMessage("There is already a capture\n", RED);
 		return;
 	}
 
 	printf("\nInitializing cameras...\n");
-	if (!appController->startCameras())
+	if (!appController->startCameras(captureType))
 	{
 		showStatusMessage("Camera initialization failed\n", RED);
 		return;
 	}
 
-	if (configController->getShowPreviewOnCapture())
+	if (showPreviewOnCapture)
 	{
-		showCamera = true;
-		thread camerasThread = thread(&Console::showPreviewLoop, this);
+		showPreviewUI = true;
+		thread camerasThread = thread(&Console::showCameraPreviewLoop, this);
 		camerasThread.detach();
 	}	
 
-	printf("Prepare for capture (press any key to start)...\n");
+	printf("Press any key to start capturing...\n");
 	_getch();
 	appController->startCapturingVideo();
 
-	printf("Recording scene (press any key to stop)...\n");
+	printf("Press any key to stop capturing...\n");
 	_getch();
 	appController->stopCapturingVideo();
 
-	if (configController->getShowPreviewOnCapture())
+	if (showPreviewOnCapture)
 	{
-		showCamera = false;
+		showPreviewUI = false;
 	}
 	
-	printf("Dumping captures to disk...\n");
+	printf("Dumping capture to disk, please wait...\n");
 	appController->stopCameras();	
-	appController->saveCapture(scene, operation);
+	appController->saveCapture(scene, captureType);
 
 	showStatusMessage("Scene captured succesfully\n", GREEN);
 }
 
-void Console::showProcess(Scene scene, Operation operation)
+void Console::showProcessCalibration(Scene scene, CalibrationType calibrationType)
 {
-	if (!appController->hasCapture(scene, operation))
+	if (!appController->hasCapture(scene, CaptureType::CALIBRATION))
 	{
-		showStatusMessage("There is no capture to process\n", RED);
+		showStatusMessage("There is no calibration capture to process\n", RED);
 		return;
 	}
 
-	if (operation == Operation::INTRINSICS)
-	{
-		printf("\nCalculating cameras intrinsics...\n");
+	printf("\nCalculating camera %s, please wait...\n", calibrationType.toString());
 
-		if (!appController->calibrate(scene, Operation::INTRINSICS))
-		{
-			showStatusMessage("Intrinsic calibration failed\n", RED);
-		}
-		else
-		{
-			showStatusMessage("Intrinsic calibration was succesfull\n", GREEN);
-		}
-	}
-	else if (operation == Operation::EXTRINSICS)
+	if (!appController->calibrate(scene, calibrationType))
 	{
-		printf("\nCalculating cameras extrinsics...\n");
-
-		if (!appController->calibrate(scene, Operation::EXTRINSICS))
-		{
-			showStatusMessage("Extrinsic calibration failed\n", RED);
-		}
-		else
-		{
-			showStatusMessage("Intrinsic calibration was succesfull\n", GREEN);
-		}
+		showStatusMessage("Calibration processing failed\n", RED);
 	}
 	else
 	{
-		showStatusMessage("3D pose reconstruction not implemented yet\n", RED);
+		showStatusMessage("Calibration processing was succesfull\n", GREEN);
 	}
-
-	showOperations(scene);
 }
 
-void Console::showResults(Scene scene, Operation operation)
+void Console::showProcessMocap(Scene scene)
+{
+	if (!appController->hasCapture(scene, CaptureType::MOCAP))
+	{
+		showStatusMessage("There is no mocap capture to process\n", RED);
+		return;
+	}
+
+	showStatusMessage("Mocap processing not implemented yet\n", RED);
+}
+
+void Console::showResultPreview(Scene scene, CaptureType)
 {
 	/*Results* results = appController->getResults(scene, operation);
 
@@ -265,31 +290,31 @@ void Console::showResults(Scene scene, Operation operation)
 	}*/
 }
 
-void Console::showPreview()
+void Console::showCameraPreview()
 {
 	printf("\nInitializing cameras...\n");
-	if (!appController->startCameras())
+	if (!appController->startCameras(CaptureType::MOCAP))
 	{
 		showStatusMessage("Camera initialization failed\n", RED);
 		showMenu();
 	}
 
-	showCamera = true;
-	thread camerasThread = thread(&Console::showPreviewLoop, this);
+	showPreviewUI = true;
+	thread camerasThread = thread(&Console::showCameraPreviewLoop, this);
 	camerasThread.detach();
 
 	printf("Previewing cameras (press any key to stop)...\n");
 	_getch();
 
-	showCamera = false;
+	showPreviewUI = false;
 	appController->stopCameras();
 
 	showStatusMessage("Camera testing finished\n", GREEN);
 }
 
-void Console::showPreviewLoop()
+void Console::showCameraPreviewLoop()
 {
-	while (showCamera)
+	while (showPreviewUI)
 	{
 		Packet* safeImage = appController->getSafeImage();
 
@@ -300,7 +325,7 @@ void Console::showPreviewLoop()
 
 		appController->updateSafeImage();	
 
-		int milisecondsToSleep = (int)(1.0 / configController->getGuiFps() * 1000);
+		int milisecondsToSleep = (int)(1.0 / renderer2D->getGuiFps() * 1000);
 		this_thread::sleep_for(chrono::milliseconds(milisecondsToSleep));
 	}
 }

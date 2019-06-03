@@ -6,10 +6,12 @@
 #include <iostream>
 #include <atomic>
 #include <thread>
-
 #include "enum/Input.h"
+#include "model/enum/CalibrationType.h"
+#include "model/enum/CaptureType.h"
 #include "model/AppController.h"
 #include "view/rendering/Renderer2D.h"
+#include "view/rendering/Renderer3D.h"
 
 #define RED 0x0C
 #define BLUE 0x09
@@ -22,21 +24,23 @@ class Console
 {
 public:
 	Console(ConfigController* configController);
-	void loopUI();
+	void start();
 private:
 	void showLogo();
 	void showMenu();	
 	void showSceneInput(Input input);
-	void showOperations(Scene scene);
-	void showOperationOptions(Scene scene, Operation operation);
-	void showCapture(Scene scene, Operation operation);
-	void showProcess(Scene scene, Operation operation);
-	void showResults(Scene scene, Operation operation);
-	void showPreview();
-	void showPreviewLoop();
+	void showSceneOptions(Scene scene);
+	void showCalibrationOptions(Scene scene);
+	void showMocapOptions(Scene scene);
+	void showCapture(Scene scene, CaptureType captureType);
+	void showProcessCalibration(Scene scene, CalibrationType calibrationType);
+	void showProcessMocap(Scene scene);
+	void showResultPreview(Scene scene, CaptureType captureType);
+	void showCameraPreview();
+	void showCameraPreviewLoop();
 	void showStatusMessage(string message, int fontColor);
-	ConfigController* configController;
+	bool showPreviewOnCapture;
+	atomic<bool> showPreviewUI;
 	AppController* appController;
 	Renderer2D* renderer2D;
-	atomic<bool> showCamera;
 };

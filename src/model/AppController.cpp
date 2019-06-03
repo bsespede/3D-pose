@@ -22,19 +22,14 @@ Scene AppController::getScene(string name)
 	return sceneController->getScene(name);
 }
 
-bool AppController::startCameras()
+bool AppController::startCameras(CaptureType captureType)
 {
-	return cameraController->startCameras();
+	return cameraController->startCameras(captureType);
 }
 
 void AppController::stopCameras()
 {
 	cameraController->stopCameras();
-}
-
-void AppController::startCapturingImage()
-{
-	cameraController->startCapturingImage();
 }
 
 void AppController::startCapturingVideo()
@@ -47,19 +42,19 @@ void AppController::stopCapturingVideo()
 	cameraController->stopCapturingVideo();
 }
 
-bool AppController::hasCapture(Scene scene, Operation operation)
+bool AppController::hasCapture(Scene scene, CaptureType captureType)
 {
-	return sceneController->hasCapture(scene, operation);
+	return sceneController->hasCapture(scene, captureType);
 }
 
-void AppController::saveCapture(Scene scene, Operation operation)
+void AppController::saveCapture(Scene scene, CaptureType captureType)
 {
-	sceneController->saveCapture(scene, operation, cameraController->getCapture());
+	sceneController->saveCapture(scene, captureType, cameraController->getCapture());
 }
 
-bool AppController::calibrate(Scene scene, Operation operation)
+bool AppController::calibrate(Scene scene, CalibrationType calibrationType)
 {
-	return calibrationController->calibrate(scene, operation);
+	return calibrationController->calibrate(scene, calibrationType);
 }
 
 Packet* AppController::getSafeImage()

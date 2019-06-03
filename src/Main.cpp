@@ -7,7 +7,7 @@ int main(int argc, char **argv)
 	ConfigController* configController = new ConfigController();
 	AppController* appController = new AppController(configController);
 	Console* console = new Console(configController);
-	console->loopUI();
+	console->start();
 
 	return 0;
 }

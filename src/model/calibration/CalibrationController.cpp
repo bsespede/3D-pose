@@ -7,50 +7,39 @@ CalibrationController::CalibrationController(ConfigController* configController,
 	float charucoSquareLength = configController->getCharucoSquareLength();
 	float charucoMarkerLength = configController->getCharucoMarkerLength();
 
-	this->configController = configController;
 	this->sceneController = sceneController;
 	this->dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
 	this->board = aruco::CharucoBoard::create(charucoCols, charucoRows, charucoSquareLength, charucoMarkerLength, dictionary);
 }
 
-void CalibrationController::generateCheckboard()
+void CalibrationController::generateCheckboard(int charucoWidth, int charucoHeight, int charucoMargin)
 {
-	int charucoWidth = configController->getCharucoWidth();
-	int charucoHeight = configController->getCharucoHeight();
-	int charucoMargin = configController->getCharucoMargin();
-
 	Mat boardImage;
 	board->draw(Size(charucoWidth, charucoHeight), boardImage, charucoMargin, 1);
 	imwrite("board.png", boardImage);
 }
 
-bool CalibrationController::calibrate(Scene scene, Operation operation)
+bool CalibrationController::calibrate(Scene scene, CalibrationType calibrationType)
 {
-	if (!sceneController->hasCapture(scene, operation))
-	{
-		BOOST_LOG_TRIVIAL(warning) << "Cannot calibrate scene " << scene.getName() << " since it has no capture";
-		return false;
-	}
-
 	bool calibrationSuccess = false;
 
-	if (operation == Operation::INTRINSICS)
+	if (calibrationType == CalibrationType::INTRINSICS)
 	{
-		calibrationSuccess = calculateIntrinsics(scene, operation);
+		calibrationSuccess = calculateIntrinsics(scene, CaptureType::CALIBRATION);
 	} 
-	else if (operation == Operation::EXTRINSICS)
+	else if (calibrationType == CalibrationType::EXTRINSICS)
 	{
-		calibrationSuccess = calculateExtrinsics(scene, operation);
+		calibrationSuccess = calculateExtrinsics(scene, CaptureType::CALIBRATION);
 	}
 
 	return calibrationSuccess;
 }
 
-bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation)
+bool CalibrationController::calculateIntrinsics(Scene scene, CaptureType captureType)
 {
-	map<int, Intrinsics*> calibrationResults;
-	int capturedFrames = sceneController->getCapturedFrameNumber(scene, operation);
-	vector<int> capturedCameras = sceneController->getCapturedCameras(scene, operation);
+	map<int, Intrinsics*> intrinsics;
+	int capturedFrames = sceneController->getCapturedFrameNumber(scene, captureType);
+	vector<int> capturedCameras = sceneController->getCapturedCameras(scene, captureType);
 
 	#pragma omp parallel for
 	for (int cameraIndex = 0; cameraIndex < (int)capturedCameras.size(); cameraIndex++)
@@ -64,7 +53,7 @@ bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation
 		{
 			vector<int> charucoIds = vector<int>();
 			vector<Point2f> charucoCorners = vector<Point2f>();
-			Mat frame = sceneController->getCapturedFrame(scene, operation, cameraNumber, frameNumber);
+			Mat frame = sceneController->getCapturedFrame(scene, captureType, cameraNumber, frameNumber);
 			frameSize = frame.size();
 			
 			if (detectCharucoCorners(frame, 5, charucoIds, charucoCorners))
@@ -79,17 +68,17 @@ bool CalibrationController::calculateIntrinsics(Scene scene, Operation operation
 		int calibrationFlags = CALIB_FIX_ASPECT_RATIO | CALIB_FIX_PRINCIPAL_POINT | CALIB_ZERO_TANGENT_DIST;
 		
 		double reprojectionError = aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, frameSize, cameraMatrix, distortionCoeffs, noArray(), noArray(), calibrationFlags);
-		calibrationResults[cameraNumber] = new Intrinsics(cameraMatrix, distortionCoeffs, reprojectionError);		
+		intrinsics[cameraNumber] = new Intrinsics(cameraMatrix, distortionCoeffs, reprojectionError);
 	}
 
-	sceneController->saveIntrinsics(scene, calibrationResults);
+	sceneController->saveIntrinsics(scene, intrinsics);
 	return true;
 }
 
-bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation)
+bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType captureType)
 {
-	int capturedFrames = sceneController->getCapturedFrameNumber(scene, operation);
-	vector<int> capturedCameras = sceneController->getCapturedCameras(scene, operation);
+	int capturedFrames = sceneController->getCapturedFrameNumber(scene, captureType);
+	vector<int> capturedCameras = sceneController->getCapturedCameras(scene, captureType);
 
 	map<int, Extrinsics*> extrinsics;
 	map<int, Intrinsics*> intrinsics;
@@ -104,7 +93,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 
 	vector<int> charucoIds;
 	vector<Point2f> charucoCorners;
-	Mat frame = sceneController->getCapturedFrame(scene, operation, originCamera, capturedFrames - 1);
+	Mat frame = sceneController->getCapturedFrame(scene, captureType, originCamera, capturedFrames - 1);
 	Mat frameResult = frame.clone();
 	if (detectCharucoCorners(frame, 1, originCameraMatrix, originDistortionCoefficients, charucoIds, charucoCorners))
 	{
@@ -133,7 +122,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 		BOOST_LOG_TRIVIAL(warning) << "Calibrating for pair " << cameraLeft << "->" << cameraRight;
 
 		int totalSamples = 0;		
-		Size cameraSize = sceneController->getCapturedFrame(scene, operation, cameraLeft, 0).size();
+		Size cameraSize = sceneController->getCapturedFrame(scene, captureType, cameraLeft, 0).size();
 		Mat cameraMatrixLeft = intrinsics[cameraLeft]->getCameraMatrix();
 		Mat cameraMatrixRight = intrinsics[cameraRight]->getCameraMatrix();
 		Mat distortionCoefficientsLeft = intrinsics[cameraLeft]->getDistortionCoefficients();		
@@ -146,7 +135,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 		{
 			vector<int> idsLeft;
 			vector<Point2f> cornersLeft;
-			Mat frameLeft = sceneController->getCapturedFrame(scene, operation, cameraLeft, frameNumber);
+			Mat frameLeft = sceneController->getCapturedFrame(scene, captureType, cameraLeft, frameNumber);
 			if (!detectCharucoCorners(frameLeft, 4, cameraMatrixLeft, distortionCoefficientsLeft, idsLeft, cornersLeft))
 			{
 				continue;
@@ -154,7 +143,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, Operation operation
 
 			vector<int> idsRight;
 			vector<Point2f> cornersRight;
-			Mat frameRight = sceneController->getCapturedFrame(scene, operation, cameraRight, frameNumber);
+			Mat frameRight = sceneController->getCapturedFrame(scene, captureType, cameraRight, frameNumber);
 			if (!detectCharucoCorners(frameRight, 4, cameraMatrixLeft, distortionCoefficientsRight, idsRight, cornersRight))
 			{
 				continue;

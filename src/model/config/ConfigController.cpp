@@ -13,7 +13,8 @@ ConfigController::ConfigController()
 	this->barHeight = root.get<int>("config.gui.barHeight");	
 	this->showPreviewOnCapture = root.get<bool>("config.gui.showCapturePreview");
 	
-	this->cameraFps = root.get<int>("config.cameras.fps");
+	this->cameraLowFps = root.get<int>("config.cameras.lowFps");
+	this->cameraHighFps = root.get<int>("config.cameras.highFps");
 	this->cameraHeight = root.get<int>("config.cameras.cameraHeight");
 	this->cameraWidth = root.get<int>("config.cameras.cameraWidth");
 
@@ -33,9 +34,6 @@ ConfigController::ConfigController()
 	this->charucoRows = root.get<int>("config.calibration.charucoBoard.rows");
 	this->charucoSquareLength = root.get<float>("config.calibration.charucoBoard.squareLength");
 	this->charucoMarkerLength = root.get<float>("config.calibration.charucoBoard.markerLength");
-	this->charucoWidth = root.get<int>("config.calibration.charucoBoard.width");
-	this->charucoHeight = root.get<int>("config.calibration.charucoBoard.height");
-	this->charucoMargin = root.get<int>("config.calibration.charucoBoard.margin");
 }
 
 string ConfigController::getDataFolder()
@@ -83,9 +81,14 @@ map<int, int> ConfigController::getCameraOrder()
 	return cameraOrder;
 }
 
-int ConfigController::getCameraFps()
+int ConfigController::getCameraHighFps()
 {
-	return cameraFps;
+	return cameraHighFps;
+}
+
+int ConfigController::getCameraLowFps()
+{
+	return cameraLowFps;
 }
 
 int ConfigController::getCameraNumber()
@@ -121,19 +124,4 @@ float ConfigController::getCharucoSquareLength()
 float ConfigController::getCharucoMarkerLength()
 {
 	return charucoMarkerLength;
-}
-
-int ConfigController::getCharucoWidth()
-{
-	return charucoWidth;
-}
-
-int ConfigController::getCharucoHeight()
-{
-	return charucoHeight;
-}
-
-int ConfigController::getCharucoMargin()
-{
-	return charucoMargin;
 }

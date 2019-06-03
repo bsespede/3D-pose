@@ -2,19 +2,21 @@
 
 CameraController::CameraController(ConfigController* configController)
 {
-	this->cameraFps = configController->getCameraFps();
+	this->cameraHighFps = configController->getCameraHighFps();
+	this->cameraLowFps = configController->getCameraLowFps();
 	this->optitrackCamera = new OptitrackCamera(configController);
 	this->capture = new Capture();
 	this->safeImage = nullptr;
 	this->shouldLoopThread = false;
 	this->shouldCaptureVideo = false;
-	this->shouldCaptureImage = false;
 	this->shouldUpdateSafeImage = false;
 }
 
-bool CameraController::startCameras()
+bool CameraController::startCameras(CaptureType captureType)
 {
-	if (optitrackCamera->startCameras())
+	int cameraFps = (captureType == CaptureType::CALIBRATION)? cameraLowFps : cameraHighFps;
+
+	if (optitrackCamera->startCameras(cameraFps))
 	{
 		if (capture != nullptr)
 		{
@@ -24,7 +26,7 @@ bool CameraController::startCameras()
 		capture = new Capture();
 
 		shouldLoopThread = true;
-		thread camerasThread = thread(&CameraController::cameraLoop, this);
+		thread camerasThread = thread(&CameraController::cameraLoop, this, cameraFps);
 		camerasThread.detach();
 		return true;
 	}
@@ -32,7 +34,7 @@ bool CameraController::startCameras()
 	return false;
 }
 
-void CameraController::cameraLoop()
+void CameraController::cameraLoop(int cameraFps)
 {
 	bool shouldKeepPacket = true;
 	Packet* currentPacket = nullptr;
@@ -50,17 +52,11 @@ void CameraController::cameraLoop()
 		if (packet != nullptr)
 		{
 			currentPacket = packet;
-			shouldKeepPacket = shouldCaptureVideo || shouldCaptureImage;
+			shouldKeepPacket = shouldCaptureVideo;
 
 			if (shouldCaptureVideo)
 			{
 				capture->addPacket(currentPacket);
-			}
-
-			if (shouldCaptureImage)
-			{
-				capture->addPacket(currentPacket);
-				shouldCaptureImage = false;
 			}
 
 			if (shouldUpdateSafeImage)
@@ -82,7 +78,7 @@ void CameraController::cameraLoop()
 
 void CameraController::stopCameras()
 {
-	while (shouldCaptureImage || shouldCaptureVideo)
+	while (shouldCaptureVideo)
 	{
 		this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
@@ -99,11 +95,6 @@ void CameraController::startCapturingVideo()
 void CameraController::stopCapturingVideo()
 {
 	shouldCaptureVideo = false;
-}
-
-void CameraController::startCapturingImage()
-{
-	shouldCaptureImage = true;
 }
 
 void CameraController::updateSafeImage()
