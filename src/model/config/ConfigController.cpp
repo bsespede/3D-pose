@@ -12,6 +12,9 @@ ConfigController::ConfigController()
 	this->maxHeight = root.get<int>("config.gui.maxHeight");	
 	this->barHeight = root.get<int>("config.gui.barHeight");	
 	this->showPreviewOnCapture = root.get<bool>("config.gui.showCapturePreview");
+
+	this->totalSquares = root.get<int>("config.gui.totalSquares");
+	this->squareLength = root.get<int>("config.gui.squareLength");
 	
 	this->cameraLowFps = root.get<int>("config.cameras.lowFps");
 	this->cameraHighFps = root.get<int>("config.cameras.highFps");
@@ -74,6 +77,16 @@ int ConfigController::getBarHeight()
 bool ConfigController::getShowPreviewOnCapture()
 {
 	return showPreviewOnCapture;
+}
+
+int ConfigController::getTotalSquares()
+{
+	return totalSquares;
+}
+
+int ConfigController::getSquareLength()
+{
+	return squareLength;
 }
 
 map<int, int> ConfigController::getCameraOrder()

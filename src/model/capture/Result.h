@@ -1,16 +1,23 @@
 #pragma once
 
-#include <list>
-#include "model/camera/capture/Packet.h"
+#include <map>
+#include <opencv2/opencv.hpp>
+#include "model/calibration/Intrinsics.h"
+#include "model/calibration/Extrinsics.h"
 
 using namespace std;
 
-class Capture
+class Result
 {
 public:
-	Capture();
-	void addPacket(Packet* packet);
-	std::list<Packet*> getPackets();
+	Result(vector<int> cameras, map<int, Intrinsics*> intrinsics, map<int, Extrinsics*> extrinsics, map<int, Mat> frustumImages);
+	vector<int> getCameras();
+	map<int, Intrinsics*> getIntrinsics();
+	map<int, Extrinsics*> getExtrinsics();
+	map<int, Mat> getFrustumImages();
 private:
-	std::list<Packet*> packets;
+	vector<int> cameras;
+	map<int, Intrinsics*> intrinsics;
+	map<int, Extrinsics*> extrinsics;
+	map<int, Mat> frustumImages;
 };

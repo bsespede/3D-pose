@@ -41,4 +41,5 @@ private:
 	atomic<bool> showPreviewUI;
 	AppController* appController;
 	Renderer2D* renderer2D;
+	Renderer3D* renderer3D;
 };

@@ -300,6 +300,31 @@ void SceneController::saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsi
 	property_tree::write_json(extrinsicsFile, root);
 }
 
+Result* SceneController::getResult(Scene scene, CaptureType captureType)
+{
+	vector<int> capturedCameras = getCapturedCameras(scene, captureType);
+	int capturedFrameNumber = getCapturedFrameNumber(scene, captureType);
+
+	map<int, Intrinsics*> intrinsics;
+	map<int, Extrinsics*> extrinsics;
+	map<int, Mat> frustumImages;
+
+	string extrinsicsFolder = dataFolder + "/" + scene.getName() + "/extrinsics.json";
+	if (!filesystem::exists(extrinsicsFolder))
+	{
+		return nullptr;
+	}
+	
+	for (int cameraNumber : capturedCameras)
+	{
+		intrinsics[cameraNumber] = getIntrinsics(scene, cameraNumber);
+		extrinsics[cameraNumber] = getExtrinsics(scene, cameraNumber);
+		frustumImages[cameraNumber] = getCapturedFrame(scene, captureType, cameraNumber, capturedFrameNumber - 1);
+	}
+	
+	return new Result(capturedCameras, intrinsics, extrinsics, frustumImages);
+}
+
 string SceneController::getDateString()
 {
 	time_t rawTime = time(NULL);

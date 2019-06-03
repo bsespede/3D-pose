@@ -20,6 +20,7 @@ public:
 	void stopCapturingVideo();
 	void updateSafeImage();
 	Packet* getSafeImage();
+	Result* getResult(Scene scene, CaptureType captureType);
 	bool hasCapture(Scene scene, CaptureType captureType);
 	void saveCapture(Scene scene, CaptureType captureType);
 	bool calibrate(Scene scene, CalibrationType calibrationType);

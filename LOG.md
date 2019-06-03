@@ -104,6 +104,12 @@ __31-4-2019 (9hs)__:
 	- Pensar tema de calibracion con error de reproyeccion alto
 	- Enfocar camaras
 	
-_1-5-2019 (3hs)__:
-- Super refactor!!!
-- Rendereo 3D de camaras
+_1-5-2019 (6hs)__:
+- Refactor del backend
+- Primera version del rendereo 3D de camaras
+
+_2-5-2019 (3hs)__:
+- Refactor del frontend
+- Mejoras al rendereo 3D
+- Faltaria:
+	- Renderear posiciones del board en 3D a traves del tiempo

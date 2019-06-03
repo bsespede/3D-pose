@@ -1,21 +1,21 @@
 #include "Renderer3D.h"
 
-Renderer3D::Renderer3D(int totalSquares, int squareLength)
+Renderer3D::Renderer3D(ConfigController* configController)
 {
-	this->totalSquares = totalSquares;
-	this->squareLength = squareLength;
+	this->totalSquares = configController->getTotalSquares();
+	this->squareLength = configController->getSquareLength();
 }
 
-void Renderer3D::render(vector<int> cameras, map<int, Intrinsics*> intrinsics, map<int, Extrinsics*> extrinsics, map<int, Mat> frustumImage)
+void Renderer3D::render(Result* result)
 {
 	viz::Viz3d visualizer = viz::Viz3d("3DPose");
 	visualizer.setBackgroundColor(viz::Color(25.0f, 25.0f, 25.0f), viz::Color(50.0f, 50.0f, 50.0f));
 
-	for (int cameraNumber : cameras)
+	for (int cameraNumber : result->getCameras())
 	{
-		Mat cameraImage = frustumImage[cameraNumber];
-		Extrinsics* cameraExtrinsics = extrinsics[cameraNumber];
-		Intrinsics* cameraIntrinsics = intrinsics[cameraNumber];
+		Mat cameraImage = result->getFrustumImages()[cameraNumber];
+		Extrinsics* cameraExtrinsics = result->getExtrinsics()[cameraNumber];
+		Intrinsics* cameraIntrinsics = result->getIntrinsics()[cameraNumber];
 		Mat cameraMatrix = cameraIntrinsics->getCameraMatrix();
 		Matx33d convertedMatrix = Matx33d((double*)cameraMatrix.clone().ptr());
 		

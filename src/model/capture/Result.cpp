@@ -1,16 +1,29 @@
-#include "Capture.h"
+#include "Result.h"
 
-Capture::Capture()
+Result::Result(vector<int> cameras, map<int, Intrinsics*> intrinsics, map<int, Extrinsics*> extrinsics, map<int, Mat> frustumImages)
 {
-	this->packets = list<Packet*>();
+	this->cameras = cameras;
+	this->intrinsics = intrinsics;
+	this->extrinsics = extrinsics;
+	this->frustumImages = frustumImages;
 }
 
-void Capture::addPacket(Packet* packet)
+vector<int> Result::getCameras()
 {
-	packets.push_back(packet);
+	return cameras;
 }
 
-list<Packet*> Capture::getPackets()
+map<int, Intrinsics*> Result::getIntrinsics()
 {
-	return packets;
+	return intrinsics;
+}
+
+map<int, Extrinsics*> Result::getExtrinsics()
+{
+	return extrinsics;
+}
+
+map<int, Mat> Result::getFrustumImages()
+{
+	return frustumImages;
 }

@@ -6,6 +6,7 @@ Console::Console(ConfigController* configController)
 	this->showPreviewUI = false;
 	this->appController = new AppController(configController);
 	this->renderer2D = new Renderer2D(configController);
+	this->renderer3D = new Renderer3D(configController);
 }
 
 void Console::start()
@@ -29,9 +30,9 @@ void Console::showMenu()
 	while (true)
 	{
 		printf("\nChoose an action from the following:\n");
-		printf("(1) Scene creation\n");
-		printf("(2) Scene loading\n");
-		printf("(3) Preview cameras\n");
+		printf("(1) Create scene\n");
+		printf("(2) Load scene\n");
+		printf("(3) Test cameras\n");
 		printf("(4) Exit\n");
 
 		char input = _getch();
@@ -274,20 +275,24 @@ void Console::showProcessMocap(Scene scene)
 	showStatusMessage("Mocap processing not implemented yet\n", RED);
 }
 
-void Console::showResultPreview(Scene scene, CaptureType)
+void Console::showResultPreview(Scene scene, CaptureType captureType)
 {
-	/*Results* results = appController->getResults(scene, operation);
-
-	if (results == nullptr)
+	if (!appController->hasCapture(scene, captureType))
 	{
-		showStatusMessage("No results found\n", RED);
+		showStatusMessage("There is no capture to preview\n", RED);
+		return;
 	}
 
-	for (int cameraNumber : results->capturedCameras())
+	Result* result = appController->getResult(scene, captureType);
+
+	if (result == nullptr)
 	{
-		Extrinsics* extrinsics = results->getExtrinsics(cameraNumber);
-		Extrinsics* intrinsics = results->getExtrinsics(cameraNumber);
-	}*/
+		showStatusMessage("Results are not available, process first\n", RED);
+		return;
+	}
+
+	renderer3D->render(result);
+	delete result;
 }
 
 void Console::showCameraPreview()

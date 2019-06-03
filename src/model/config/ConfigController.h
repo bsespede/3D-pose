@@ -18,6 +18,8 @@ public:
 	int getMaxHeight();
 	int getBarHeight();	
 	bool getShowPreviewOnCapture();
+	int getTotalSquares();
+	int getSquareLength();
 	int getCameraNumber();
 	int getCameraLowFps();
 	int getCameraHighFps();
@@ -37,6 +39,8 @@ private:
 	int maxHeight;	
 	int barHeight;	
 	bool showPreviewOnCapture;
+	int totalSquares;
+	int squareLength;
 	int cameraHighFps;
 	int cameraLowFps;
 	int cameraHeight;

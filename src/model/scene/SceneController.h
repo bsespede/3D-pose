@@ -8,6 +8,7 @@
 #include "model/scene/Scene.h"
 #include "model/capture/CaptureType.h"
 #include "model/capture/Capture.h"
+#include "model/capture/Result.h"
 #include "model/calibration/Intrinsics.h"
 #include "model/calibration/Extrinsics.h"
 
@@ -31,6 +32,7 @@ public:
 	Extrinsics* getExtrinsics(Scene scene, int cameraNumber);
 	void saveIntrinsics(Scene scene, map<int, Intrinsics*> intrinsics);
 	void saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsics);
+	Result* getResult(Scene scene, CaptureType captureType);
 private:
 	string getDateString();
 	string dataFolder;	

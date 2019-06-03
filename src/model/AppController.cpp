@@ -42,6 +42,11 @@ void AppController::stopCapturingVideo()
 	cameraController->stopCapturingVideo();
 }
 
+Result* AppController::getResult(Scene scene, CaptureType captureType)
+{
+	return sceneController->getResult(scene, captureType);
+}
+
 bool AppController::hasCapture(Scene scene, CaptureType captureType)
 {
 	return sceneController->hasCapture(scene, captureType);
