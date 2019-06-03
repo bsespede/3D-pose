@@ -91,6 +91,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 	Mat originCameraMatrix = intrinsics[originCamera]->getCameraMatrix();
 	Mat originDistortionCoefficients = intrinsics[originCamera]->getDistortionCoefficients();
 
+	bool foundPose = false;
 	vector<int> charucoIds;
 	vector<Point2f> charucoCorners;
 	Mat frame = sceneController->getCapturedFrame(scene, captureType, originCamera, capturedFrames - 1);
@@ -101,16 +102,26 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 
 		Mat originRotationVector;
 		Mat originTranslationVector;
-		aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, originCameraMatrix, originDistortionCoefficients, originRotationVector, originTranslationVector);
-		extrinsics[originCamera] = new Extrinsics(originTranslationVector, originRotationVector, intrinsics[originCamera]->getReprojectionError());
+		foundPose = aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, originCameraMatrix, originDistortionCoefficients, originRotationVector, originTranslationVector);
+
+		if (foundPose)
+		{
+			Mat originRotationMatrix;
+			cv::Rodrigues(originRotationVector, originRotationMatrix);
+			Mat cameraRotation = originRotationMatrix.t();
+			cv::Rodrigues(cameraRotation, cameraRotation);
+			Mat cameraTranslation = (originRotationMatrix.t() * originTranslationVector) * (-1);
+			extrinsics[originCamera] = new Extrinsics(cameraTranslation, cameraRotation, intrinsics[originCamera]->getReprojectionError());
+		}		
 	}
-	else
+
+	if (!foundPose)
 	{
 		BOOST_LOG_TRIVIAL(warning) << "Did not find board in the floor of camera " << originCamera;
 
 		Mat originTranslationVector = Mat::zeros(3, 1, CV_64F);
 		Mat originRotationVector = Mat::zeros(3, 1, CV_64F);
-		extrinsics[originCamera] = new Extrinsics(originTranslationVector, originRotationVector, 0.0);
+		extrinsics[originCamera] = new Extrinsics(originTranslationVector, originRotationVector, intrinsics[originCamera]->getReprojectionError());
 	}
 
 	#pragma omp parallel for
@@ -161,11 +172,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 
 					if (idLeft == idRight)
 					{
-						int row = idLeft / (board->getChessboardSize().width - 1);
-						int col = idLeft % (board->getChessboardSize().width - 1);
-						float squareSize = board->getSquareLength();
-
-						Point3f idPosition = Point3f((float)col * squareSize, (float)row * squareSize, 0);
+						Point3f idPosition = board->chessboardCorners[idLeft];
 						Point2f leftPosition = Point2f(cornersLeft[leftIdIndex].x, cornersLeft[leftIdIndex].y);
 						Point2f rightPosition = Point2f(cornersRight[rightIdIndex].x, cornersRight[rightIdIndex].y);
 

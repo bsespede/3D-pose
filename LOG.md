@@ -112,4 +112,10 @@ _2-5-2019 (3hs)__:
 - Refactor del frontend
 - Mejoras al rendereo 3D
 - Faltaria:
-	- Renderear posiciones del board en 3D a traves del tiempo
+	- Renderear point clouds en el tiempo
+	- Proyectar corners del board a 3D en "visualizacion":
+		- por cada frame
+			- armar lista vacia de ptos
+			- tomar los ptos del modelo del pattern y aplicar su affine transform con los valores del json para llevarlos a 3D
+			- agregar a la lista
+		-

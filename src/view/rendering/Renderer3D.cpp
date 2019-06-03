@@ -40,34 +40,34 @@ void Renderer3D::render(Result* result)
 		{
 			int id = row * totalSquares + col;
 
-			viz::WLine squareLineTop = viz::WLine(Point3d(col * squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength), Point3d(col * squareLength + squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength), viz::Color(100.0f, 100.0f, 100.0f));
+			viz::WLine squareLineTop = viz::WLine(Point3d(col * squareLength - halfPlaneLength, row * squareLength - halfPlaneLength, 0), Point3d(col * squareLength + squareLength - halfPlaneLength, row * squareLength - halfPlaneLength, 0), viz::Color(100.0f, 100.0f, 100.0f));
 			visualizer.showWidget("top-" + to_string(id), squareLineTop);
 
-			viz::WLine squareLineLeft = viz::WLine(Point3d(col * squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength), Point3d(col * squareLength - halfPlaneLength, 0, row * squareLength + squareLength - halfPlaneLength), viz::Color(100.0f, 100.0f, 100.0f));
+			viz::WLine squareLineLeft = viz::WLine(Point3d(col * squareLength - halfPlaneLength, row * squareLength - halfPlaneLength, 0), Point3d(col * squareLength - halfPlaneLength, row * squareLength + squareLength - halfPlaneLength, 0), viz::Color(100.0f, 100.0f, 100.0f));
 			visualizer.showWidget("left-" + to_string(id), squareLineLeft);
 
-			viz::WLine squareLineBottom = viz::WLine(Point3d(col * squareLength - halfPlaneLength, 0, (row + 1) * squareLength - halfPlaneLength), Point3d(col * squareLength + squareLength - halfPlaneLength, 0, (row + 1) * squareLength - halfPlaneLength), viz::Color(100.0f, 100.0f, 100.0f));
+			viz::WLine squareLineBottom = viz::WLine(Point3d(col * squareLength - halfPlaneLength, (row + 1) * squareLength - halfPlaneLength, 0), Point3d(col * squareLength + squareLength - halfPlaneLength, (row + 1) * squareLength - halfPlaneLength, 0), viz::Color(100.0f, 100.0f, 100.0f));
 			visualizer.showWidget("bottom-" + to_string(id), squareLineBottom);
 
-			viz::WLine squareLineRight = viz::WLine(Point3d((col + 1) * squareLength - halfPlaneLength, 0, row * squareLength - halfPlaneLength), Point3d((col + 1) * squareLength - halfPlaneLength, 0, row * squareLength + squareLength - halfPlaneLength), viz::Color(100.0f, 100.0f, 100.0f));
+			viz::WLine squareLineRight = viz::WLine(Point3d((col + 1) * squareLength - halfPlaneLength, row * squareLength - halfPlaneLength, 0), Point3d((col + 1) * squareLength - halfPlaneLength, row * squareLength + squareLength - halfPlaneLength, 0), viz::Color(100.0f, 100.0f, 100.0f));
 			visualizer.showWidget("right-" + to_string(id), squareLineRight);
 		}
 	}
 
-	viz::WLine xAxis = viz::WLine(Point3d(-halfPlaneLength, 0, -halfPlaneLength), Point3d(-halfPlaneLength + squareLength, 0, -halfPlaneLength), viz::Color(59.0f, 85.0f, 237.0f));
-	viz::WText3D xAxisText = viz::WText3D("X", Point3d(-halfPlaneLength + squareLength + 500, 0, -halfPlaneLength), 400.0, true);
+	viz::WLine xAxis = viz::WLine(Point3d(0, 0, 0), Point3d(squareLength, 0, 0), viz::Color(59.0f, 85.0f, 237.0f));
+	viz::WText3D xAxisText = viz::WText3D("X", Point3d(squareLength + 500, 0, 0), 400.0, true);
 	visualizer.showWidget("axis-x", xAxis);
 	visualizer.showWidget("axis-x-text", xAxisText);
 	visualizer.setRenderingProperty("axis-x", viz::LINE_WIDTH, 2.0);
 
-	viz::WLine yAxis = viz::WLine(Point3d(-halfPlaneLength, 0, -halfPlaneLength), Point3d(-halfPlaneLength, squareLength, -halfPlaneLength), viz::Color(106.0f, 174.0f, 60.0f));
-	viz::WText3D yAxisText = viz::WText3D("Y", Point3d(-halfPlaneLength, squareLength + 500, -halfPlaneLength), 400.0, true);
+	viz::WLine yAxis = viz::WLine(Point3d(0, 0, 0), Point3d(0, squareLength, 0), viz::Color(106.0f, 174.0f, 60.0f));
+	viz::WText3D yAxisText = viz::WText3D("Y", Point3d(0, squareLength + 500, 0), 400.0, true);
 	visualizer.showWidget("axis-y", yAxis);
 	visualizer.showWidget("axis-y-text", yAxisText);
 	visualizer.setRenderingProperty("axis-y", viz::LINE_WIDTH, 2.0);
 
-	viz::WLine zAxis = viz::WLine(Point3d(-halfPlaneLength, 0, -halfPlaneLength), Point3d(-halfPlaneLength, 0, -halfPlaneLength + squareLength), viz::Color(155.0f, 99.0f, 32.0f));
-	viz::WText3D zAxisText = viz::WText3D("Z", Point3d(-halfPlaneLength, 0, -halfPlaneLength + squareLength + 500), 400.0, true);
+	viz::WLine zAxis = viz::WLine(Point3d(0, 0, 0), Point3d(0, 0, squareLength), viz::Color(155.0f, 99.0f, 32.0f));
+	viz::WText3D zAxisText = viz::WText3D("Z", Point3d(0, 0, squareLength + 500), 400.0, true);
 	visualizer.showWidget("axis-z", zAxis);
 	visualizer.showWidget("axis-z-text", zAxisText);
 	visualizer.setRenderingProperty("axis-z", viz::LINE_WIDTH, 2.0);

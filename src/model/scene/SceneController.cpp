@@ -199,18 +199,18 @@ Extrinsics* SceneController::getExtrinsics(Scene scene, int cameraNumber)
 		{
 			double reprojectionError = cameraNode.second.get<double>("reprojectionError");
 
-			double translationX = cameraNode.second.get<double>("translationMatrix.x");
-			double translationY = cameraNode.second.get<double>("translationMatrix.y");
-			double translationZ = cameraNode.second.get<double>("translationMatrix.z");
+			double translationX = cameraNode.second.get<double>("translationVector.x");
+			double translationY = cameraNode.second.get<double>("translationVector.y");
+			double translationZ = cameraNode.second.get<double>("translationVector.z");
 
 			Mat translationVector = Mat(3, 1, CV_64F);
 			translationVector.at<double>(0, 0) = translationX;
 			translationVector.at<double>(1, 0) = translationY;
 			translationVector.at<double>(2, 0) = translationZ;
 
-			double rotationX = cameraNode.second.get<double>("rotationMatrix.x");
-			double rotationY = cameraNode.second.get<double>("rotationMatrix.y");
-			double rotationZ = cameraNode.second.get<double>("rotationMatrix.z");
+			double rotationX = cameraNode.second.get<double>("rotationVector.x");
+			double rotationY = cameraNode.second.get<double>("rotationVector.y");
+			double rotationZ = cameraNode.second.get<double>("rotationVector.z");
 
 			Mat rotationVector = Mat(3, 1, CV_64F);
 			rotationVector.at<double>(0, 0) = rotationX;
@@ -283,14 +283,14 @@ void SceneController::saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsi
 		cameraNode.put("reprojectionError", extrinsics->getReprojectionError());
 
 		Mat translationVector = extrinsics->getTranslationVector();
-		cameraNode.put("translationMatrix.x", translationVector.at<double>(0, 0));
-		cameraNode.put("translationMatrix.y", translationVector.at<double>(1, 0));
-		cameraNode.put("translationMatrix.z", translationVector.at<double>(2, 0));
+		cameraNode.put("translationVector.x", translationVector.at<double>(0, 0));
+		cameraNode.put("translationVector.y", translationVector.at<double>(1, 0));
+		cameraNode.put("translationVector.z", translationVector.at<double>(2, 0));
 
 		Mat rotationVector = extrinsics->getRotationVector();
-		cameraNode.put("rotationMatrix.x", rotationVector.at<double>(0, 0));
-		cameraNode.put("rotationMatrix.y", rotationVector.at<double>(1, 0));
-		cameraNode.put("rotationMatrix.z", rotationVector.at<double>(2, 0));
+		cameraNode.put("rotationVector.x", rotationVector.at<double>(0, 0));
+		cameraNode.put("rotationVector.y", rotationVector.at<double>(1, 0));
+		cameraNode.put("rotationVector.z", rotationVector.at<double>(2, 0));
 
 		camerasNode.push_back(make_pair("", cameraNode));
 		delete extrinsics;
