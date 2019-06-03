@@ -300,6 +300,55 @@ void SceneController::saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsi
 	property_tree::write_json(extrinsicsFile, root);
 }
 
+void SceneController::savePoses(Scene scene, vector<map<int, Extrinsics*>> poses)
+{
+	string extrinsicsFile = dataFolder + "/" + scene.getName() + "/poses.json";
+	property_tree::ptree root;
+
+	string date = getDateString();
+	root.put("poses.date", date);
+
+	property_tree::ptree framesNode;
+	for (int frameNumber = 0; frameNumber < poses.size(); frameNumber++)
+	{
+		int hasCameras = false;
+		property_tree::ptree camerasNode;
+		for (pair<int, Extrinsics*> framePoses : poses[frameNumber])
+		{
+			property_tree::ptree cameraNode;
+			int cameraNumber = framePoses.first;
+			Extrinsics* extrinsics = framePoses.second;
+			hasCameras = true;
+
+			cameraNode.put("cameraId", cameraNumber);
+
+			Mat translationVector = extrinsics->getTranslationVector();
+			cameraNode.put("translationVector.x", translationVector.at<double>(0, 0));
+			cameraNode.put("translationVector.y", translationVector.at<double>(1, 0));
+			cameraNode.put("translationVector.z", translationVector.at<double>(2, 0));
+
+			Mat rotationVector = extrinsics->getRotationVector();
+			cameraNode.put("rotationVector.x", rotationVector.at<double>(0, 0));
+			cameraNode.put("rotationVector.y", rotationVector.at<double>(1, 0));
+			cameraNode.put("rotationVector.z", rotationVector.at<double>(2, 0));
+
+			camerasNode.push_back(make_pair("", cameraNode));
+			delete extrinsics;
+		}
+
+		if (hasCameras)
+		{
+			property_tree::ptree frameNode;
+			frameNode.put("frameNumber", frameNumber);
+			frameNode.add_child("cameras", camerasNode);
+			framesNode.push_back(make_pair("", frameNode));
+		}		
+	}
+
+	root.add_child("poses.frames", framesNode);
+	property_tree::write_json(extrinsicsFile, root);
+}
+
 Result* SceneController::getResult(Scene scene, CaptureType captureType)
 {
 	vector<int> capturedCameras = getCapturedCameras(scene, captureType);

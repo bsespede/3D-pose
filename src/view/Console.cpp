@@ -134,8 +134,9 @@ void Console::showCalibrationOptions(Scene scene)
 		printf("(1) Capture calibration\n");
 		printf("(2) Process intrinsics\n");
 		printf("(3) Process extrinsics\n");
-		printf("(4) Preview result\n");
-		printf("(5) Back\n");
+		printf("(4) Process board pose\n");
+		printf("(5) Preview result\n");
+		printf("(6) Back\n");
 
 		int input = _getch();
 
@@ -153,9 +154,13 @@ void Console::showCalibrationOptions(Scene scene)
 		}
 		else if (input == '4')
 		{
-			return showResultPreview(scene, CaptureType::CALIBRATION);
+			return showProcessCalibration(scene, CalibrationType::POSES);
 		}
 		else if (input == '5')
+		{
+			return showResultPreview(scene, CaptureType::CALIBRATION);
+		}
+		else if (input == '6')
 		{
 			return;
 		}

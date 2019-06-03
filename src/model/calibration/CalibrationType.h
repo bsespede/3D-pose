@@ -10,7 +10,8 @@ public:
 	enum Value : unsigned int
 	{
 		INTRINSICS,
-		EXTRINSICS
+		EXTRINSICS,
+		POSES
 	};
 
 	CalibrationType() = default;
@@ -29,7 +30,7 @@ public:
 
 	string toString() const
 	{ 
-		return value == INTRINSICS ? "intrinsics" : "extrinsics";
+		return value == INTRINSICS ? "intrinsics" : value == EXTRINSICS? "extrinsics" : "poses";
 	}
 
 private:

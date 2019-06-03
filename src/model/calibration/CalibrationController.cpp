@@ -31,6 +31,10 @@ bool CalibrationController::calibrate(Scene scene, CalibrationType calibrationTy
 	{
 		calibrationSuccess = calculateExtrinsics(scene, CaptureType::CALIBRATION);
 	}
+	else
+	{
+		calibrationSuccess = calculatePoses(scene, CaptureType::CALIBRATION);
+	}
 
 	return calibrationSuccess;
 }
@@ -95,8 +99,8 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 	vector<int> charucoIds;
 	vector<Point2f> charucoCorners;
 	Mat frame = sceneController->getCapturedFrame(scene, captureType, originCamera, capturedFrames - 1);
-	Mat frameResult = frame.clone();
-	if (detectCharucoCorners(frame, 1, originCameraMatrix, originDistortionCoefficients, charucoIds, charucoCorners))
+
+	if (detectCharucoCorners(frame, 2, originCameraMatrix, originDistortionCoefficients, charucoIds, charucoCorners))
 	{
 		BOOST_LOG_TRIVIAL(warning) << "Found board in the floor of camera " << originCamera;
 
@@ -220,6 +224,56 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 	}
 
 	sceneController->saveExtrinsics(scene, extrinsics);
+	return true;
+}
+
+bool CalibrationController::calculatePoses(Scene scene, CaptureType captureType)
+{
+	int capturedFrames = sceneController->getCapturedFrameNumber(scene, captureType);
+	vector<int> capturedCameras = sceneController->getCapturedCameras(scene, captureType);
+
+	map<int, Intrinsics*> intrinsics;
+	for (int cameraNumber : capturedCameras)
+	{
+		intrinsics[cameraNumber] = sceneController->getIntrinsics(scene, cameraNumber);
+	}
+
+	vector<map<int, Extrinsics*>> allPoses;	
+	for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber++)
+	{
+		BOOST_LOG_TRIVIAL(warning) << "Calculating poses for cameras of frame " << frameNumber;
+
+		map<int, Extrinsics*> poses;
+		#pragma omp parallel for
+		for (int cameraIndex = 0; cameraIndex < capturedCameras.size(); cameraIndex++)
+		{
+			int cameraNumber = capturedCameras[cameraIndex];
+			Mat cameraMatrix = intrinsics[cameraNumber]->getCameraMatrix();
+			Mat distortionCoefficients = intrinsics[cameraNumber]->getDistortionCoefficients();
+			
+			bool foundPose = false;
+			vector<int> charucoIds;
+			vector<Point2f> charucoCorners;
+			Mat frame = sceneController->getCapturedFrame(scene, captureType, cameraNumber, frameNumber);
+
+			if (detectCharucoCorners(frame, 1, cameraMatrix, distortionCoefficients, charucoIds, charucoCorners))
+			{
+				Mat rotationVector;
+				Mat translationVector;
+				foundPose = aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distortionCoefficients, rotationVector, translationVector);
+
+				if (foundPose)
+				{
+					poses[cameraNumber] = new Extrinsics(translationVector, rotationVector, intrinsics[cameraNumber]->getReprojectionError());
+				}
+			}
+		}
+
+		allPoses.push_back(poses);
+	}
+
+	BOOST_LOG_TRIVIAL(warning) << "Dumping all the poses to disk";
+	sceneController->savePoses(scene, allPoses);
 	return true;
 }
 

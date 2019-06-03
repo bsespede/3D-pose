@@ -24,6 +24,7 @@ public:
 private:
 	bool calculateIntrinsics(Scene scene, CaptureType captureType);
 	bool calculateExtrinsics(Scene scene, CaptureType captureType);
+	bool calculatePoses(Scene scene, CaptureType captureType);
 	bool detectCharucoCorners(Mat& inputImage, int minCharucoCorners, vector<int>& charucoIds, vector<Point2f>& charucoCorners);
 	bool detectCharucoCorners(Mat& inputImage, int minCharucoCorners, Mat& cameraMatrix, Mat& distortionCoefficients, vector<int>& charucoIds, vector<Point2f>& charucoCorners);
 	SceneController* sceneController;

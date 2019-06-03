@@ -32,6 +32,7 @@ public:
 	Extrinsics* getExtrinsics(Scene scene, int cameraNumber);
 	void saveIntrinsics(Scene scene, map<int, Intrinsics*> intrinsics);
 	void saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsics);
+	void savePoses(Scene scene, vector<map<int, Extrinsics*>> poses);
 	Result* getResult(Scene scene, CaptureType captureType);
 private:
 	string getDateString();
