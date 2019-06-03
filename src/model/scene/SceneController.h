@@ -6,10 +6,10 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include "model/scene/Scene.h"
-#include "model/enum/CaptureType.h"
-#include "model/camera/capture/Capture.h"
-#include "model/calibration/parameters/Intrinsics.h"
-#include "model/calibration/parameters/Extrinsics.h"
+#include "model/capture/CaptureType.h"
+#include "model/capture/Capture.h"
+#include "model/calibration/Intrinsics.h"
+#include "model/calibration/Extrinsics.h"
 
 using namespace std;
 using namespace boost;

@@ -36,8 +36,8 @@ void Renderer2D::calculateProportions(float prop, int cameraWidth, int cameraHei
 
 void Renderer2D::render(Packet* packet)
 {
-	int resizedWidth = cameraWidth * prop;
-	int resizedHeight = cameraHeight * prop;
+	int resizedWidth = (int)(cameraWidth * prop);
+	int resizedHeight = (int)(cameraHeight * prop);
 	int totalWidth = cols * (resizedWidth + 2) + 1;
 	int totalHeight = rows * (resizedHeight + barHeight + 4) + 1;
 

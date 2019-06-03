@@ -7,8 +7,6 @@
 #include <atomic>
 #include <thread>
 #include "enum/Input.h"
-#include "model/enum/CalibrationType.h"
-#include "model/enum/CaptureType.h"
 #include "model/AppController.h"
 #include "view/rendering/Renderer2D.h"
 #include "view/rendering/Renderer3D.h"

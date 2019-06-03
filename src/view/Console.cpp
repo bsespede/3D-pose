@@ -251,7 +251,7 @@ void Console::showProcessCalibration(Scene scene, CalibrationType calibrationTyp
 		return;
 	}
 
-	printf("\nCalculating camera %s, please wait...\n", calibrationType.toString());
+	printf("\nCalculating camera %s, please wait...\n", calibrationType.toString().c_str());
 
 	if (!appController->calibrate(scene, calibrationType))
 	{

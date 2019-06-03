@@ -6,7 +6,7 @@
 #include <opencv2/opencv.hpp>
 #include <boost/log/trivial.hpp>
 #include <cameralibrary.h>
-#include "model/camera/capture/Packet.h"
+#include "model/camera/Packet.h"
 #include "model/config/ConfigController.h"
 
 #define MAX_CAMERAS 16

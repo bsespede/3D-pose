@@ -2,7 +2,7 @@
 
 #include <opencv2/opencv.hpp>
 #include "model/config/ConfigController.h"
-#include "model/camera/capture/Packet.h"
+#include "model/camera/Packet.h"
 
 using namespace cv;
 

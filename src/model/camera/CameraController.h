@@ -3,10 +3,10 @@
 #include <list>
 #include <thread>
 #include <atomic>
-#include "model/enum/CaptureType.h"
+#include "model/capture/CaptureType.h"
+#include "model/capture/Capture.h"
 #include "model/camera/optitrack/OptitrackCamera.h"
-#include "model/camera/capture/Packet.h"
-#include "model/camera/capture/Capture.h"
+#include "model/camera/Packet.h"
 #include "model/config/ConfigController.h"
 
 using namespace std;

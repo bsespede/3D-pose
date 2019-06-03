@@ -2,8 +2,8 @@
 
 #include <map>
 #include <opencv2/opencv.hpp>
-#include "model/calibration/parameters/Intrinsics.h"
-#include "model/calibration/parameters/Extrinsics.h"
+#include "model/calibration/Intrinsics.h"
+#include "model/calibration/Extrinsics.h"
 
 using namespace cv;
 using namespace std;

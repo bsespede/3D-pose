@@ -7,7 +7,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
-#include "model/enum/CalibrationType.h"
+#include "model/calibration/CalibrationType.h"
 #include "model/scene/SceneController.h"
 #include "model/config/ConfigController.h"
 
