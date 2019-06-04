@@ -106,16 +106,22 @@ __31-4-2019 (9hs)__:
 	
 _1-5-2019 (6hs)__:
 - Refactor del backend
-- Primera version del rendereo 3D de camaras
+- Primera version del rendereo 3D
 
 _2-5-2019 (3hs)__:
 - Refactor del frontend
-- Mejoras al rendereo 3D
+- Separacion del rendereo 3D del backend
+- Cambio de sistema de coordenadas en el renderer
+- Fix a pose de la camara en world coordinates
 - Faltaria:
-	- Renderear point clouds en el tiempo
+	- Renderear point clouds del board en el tiempo
 	- Proyectar corners del board a 3D en "visualizacion":
-		- por cada frame
-			- armar lista vacia de ptos
-			- tomar los ptos del modelo del pattern y aplicar su affine transform con los valores del json para llevarlos a 3D
-			- agregar a la lista
-		-
+		- Tomar los ptos del modelo del pattern y aplicar su affine transform con los valores del json para llevarlos a 3D
+
+__3-5-2019 (6hs)__:
+- Exportar poses del board a json
+- Cargar las poses en el renderer 3D y playback de video 3D!
+- Faltaria:
+	- Emprolijar clase video3D
+	- Arreglar sleep en camera/UI
+

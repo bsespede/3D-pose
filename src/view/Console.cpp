@@ -31,7 +31,7 @@ void Console::showMenu()
 	{
 		printf("\nChoose an action from the following:\n");
 		printf("(1) Create scene\n");
-		printf("(2) Load scene\n");
+		printf("(2) Import scene\n");
 		printf("(3) Test cameras\n");
 		printf("(4) Exit\n");
 
@@ -288,7 +288,7 @@ void Console::showResultPreview(Scene scene, CaptureType captureType)
 		return;
 	}
 
-	Result* result = appController->getResult(scene, captureType);
+	Video3D* result = appController->getResult(scene, captureType);
 
 	if (result == nullptr)
 	{

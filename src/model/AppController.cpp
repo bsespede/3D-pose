@@ -42,7 +42,7 @@ void AppController::stopCapturingVideo()
 	cameraController->stopCapturingVideo();
 }
 
-Result* AppController::getResult(Scene scene, CaptureType captureType)
+Video3D* AppController::getResult(Scene scene, CaptureType captureType)
 {
 	return sceneController->getResult(scene, captureType);
 }

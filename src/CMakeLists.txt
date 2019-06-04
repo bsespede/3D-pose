@@ -29,6 +29,10 @@ find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
+#Include VTK
+find_package(VTK REQUIRED)
+include(${VTK_USE_FILE})
+
 # Add source to this project's executable.
 add_executable (${PROJECT_NAME} "Main.cpp" 
 								"view/enum/Input.h"
@@ -40,7 +44,8 @@ add_executable (${PROJECT_NAME} "Main.cpp"
 								"model/scene/SceneController.cpp" "model/scene/SceneController.h"
 								"model/capture/CaptureType.h"
 								"model/capture/Capture.cpp" "model/capture/Capture.h"	
-								"model/capture/Result.cpp" "model/capture/Result.h"	
+								"model/video/Frame3D.cpp" "model/video/Frame3D.h"	
+								"model/video/Video3D.cpp" "model/video/Video3D.h"	
 								"model/camera/Packet.cpp" "model/camera/Packet.h"
 								"model/camera/optitrack/OptitrackCamera.cpp" "model/camera/optitrack/OptitrackCamera.h"
 								"model/camera/CameraController.cpp" "model/camera/CameraController.h"
@@ -51,4 +56,4 @@ add_executable (${PROJECT_NAME} "Main.cpp"
 								"model/calibration/CalibrationController.cpp" "model/calibration/CalibrationController.h")
 
 # Link it all together
-target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} Boost::boost OptiTrack::CameraLibrary2015x64S)
+target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} ${VTK_LIBRARIES} Boost::boost OptiTrack::CameraLibrary2015x64S)

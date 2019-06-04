@@ -8,9 +8,7 @@
 #include "model/scene/Scene.h"
 #include "model/capture/CaptureType.h"
 #include "model/capture/Capture.h"
-#include "model/capture/Result.h"
-#include "model/calibration/Intrinsics.h"
-#include "model/calibration/Extrinsics.h"
+#include "model/video/Video3D.h"
 
 using namespace std;
 using namespace boost;
@@ -25,15 +23,16 @@ public:
 	bool hasCapture(Scene scene, CaptureType captureType);
 	void saveCapture(Scene scene, CaptureType captureType, Capture* capture);
 	vector<int> getCapturedCameras(Scene scene, CaptureType captureType);
-	int getCapturedFrameNumber(Scene scene, CaptureType captureType);
-	bool hasCapturedFrame(Scene scene, CaptureType captureType, int cameraNumber, int frameNumber);
-	Mat getCapturedFrame(Scene scene, CaptureType captureType, int cameraNumber, int frameNumber);
-	Intrinsics* getIntrinsics(Scene scene, int cameraNumber);
-	Extrinsics* getExtrinsics(Scene scene, int cameraNumber);
+	int getCapturedFrames(Scene scene, CaptureType captureType);
+	bool hasFrame(Scene scene, CaptureType captureType, int cameraNumber, int frameNumber);
+	Mat getFrame(Scene scene, CaptureType captureType, int cameraNumber, int frameNumber);
 	void saveIntrinsics(Scene scene, map<int, Intrinsics*> intrinsics);
 	void saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsics);
-	void savePoses(Scene scene, vector<map<int, Extrinsics*>> poses);
-	Result* getResult(Scene scene, CaptureType captureType);
+	void savePoses(Scene scene, CaptureType captureType, vector<Frame3D*> poses);
+	map<int, Intrinsics*> getIntrinsics(Scene scene);	
+	map<int, Extrinsics*> getExtrinsics(Scene scene);	
+	vector<Frame3D*> getPoses(Scene scene, CaptureType captureType);
+	Video3D* getResult(Scene scene, CaptureType captureType);
 private:
 	string getDateString();
 	string dataFolder;	

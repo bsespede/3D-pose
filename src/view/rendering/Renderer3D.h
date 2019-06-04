@@ -2,7 +2,7 @@
 
 #include <map>
 #include <opencv2/opencv.hpp>
-#include "model/capture/Result.h"
+#include "model/video/Video3D.h"
 #include "model/config/ConfigController.h"
 
 using namespace cv;
@@ -12,8 +12,9 @@ class Renderer3D
 {
 public:
 	Renderer3D(ConfigController* configController);
-	void render(Result* result);
+	void render(Video3D* result);
 private:
+	int guiFps;
 	int totalSquares;
 	int squareLength;
 };

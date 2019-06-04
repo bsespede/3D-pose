@@ -48,29 +48,22 @@ bool SceneController::hasCapture(Scene scene, CaptureType captureType)
 void SceneController::saveCapture(Scene scene, CaptureType captureType, Capture* capture)
 {
 	string operationFolder = dataFolder + "/" + scene.getName() + "/" + captureType.toString();
+	filesystem::create_directory(operationFolder);
+
 	string captureFile = operationFolder + "/capture.json";
 	property_tree::ptree root;
 
-	int frameNumber;
-	set<int> cameraSet;
-	if (filesystem::exists(captureFile))
-	{
-		property_tree::ptree previousRoot;
-		property_tree::read_json(captureFile, previousRoot);
-		frameNumber = root.get<int>("capture.frames");
-	}
-	else
-	{
-		filesystem::create_directory(operationFolder);
-		frameNumber = 0;
-	}
+	string date = getDateString();
+	root.put("capture.date", date);
 
+	int frameNumber = 0;
+	set<int> cameras;
 	list<Packet*> packets = capture->getPackets();
 	for (Packet* packet: packets)
 	{
 		for (pair<int, Mat> pair: packet->getData())
 		{
-			cameraSet.insert(pair.first);
+			cameras.insert(pair.first);
 			string camFolder = operationFolder + "/cam-" + to_string(pair.first);
 			filesystem::create_directory(camFolder);
 
@@ -84,7 +77,7 @@ void SceneController::saveCapture(Scene scene, CaptureType captureType, Capture*
 	delete capture;
 
 	property_tree::ptree camerasNode;
-	for (int cameraIndex: cameraSet)
+	for (int cameraIndex: cameras)
 	{
 		property_tree::ptree cameraNode;
 		cameraNode.put("", cameraIndex);
@@ -93,9 +86,6 @@ void SceneController::saveCapture(Scene scene, CaptureType captureType, Capture*
 
 	root.add_child("capture.cameras", camerasNode);
 	root.put("capture.frames", frameNumber);
-
-	string date = getDateString();
-	root.put("capture.date", date);
 
 	property_tree::write_json(captureFile, root);
 }
@@ -116,7 +106,7 @@ vector<int> SceneController::getCapturedCameras(Scene scene, CaptureType capture
 	return capturedCameras;
 }
 
-int SceneController::getCapturedFrameNumber(Scene scene, CaptureType captureType)
+int SceneController::getCapturedFrames(Scene scene, CaptureType captureType)
 {
 	string captureFolder = dataFolder + "/" + scene.getName() + "/" + captureType.toString();
 	property_tree::ptree root;
@@ -125,122 +115,35 @@ int SceneController::getCapturedFrameNumber(Scene scene, CaptureType captureType
 	return root.get<int>("capture.frames");
 }
 
-bool SceneController::hasCapturedFrame(Scene scene, CaptureType captureType, int cameraNumber, int frameNumber)
+bool SceneController::hasFrame(Scene scene, CaptureType captureType, int cameraNumber, int frameNumber)
 {
 	string frameFile = dataFolder + "/" + scene.getName() + "/" + captureType.toString() + "/cam-" + to_string(cameraNumber) + "/" + to_string(frameNumber) + ".png";
 	return filesystem::exists(frameFile);
 }
 
-Mat SceneController::getCapturedFrame(Scene scene, CaptureType captureType, int cameraNumber, int frameNumber)
+Mat SceneController::getFrame(Scene scene, CaptureType captureType, int cameraNumber, int frameNumber)
 {
 	string frameFile = dataFolder + "/" + scene.getName() + "/" + captureType.toString() + "/cam-" + to_string(cameraNumber) + "/" + to_string(frameNumber) + ".png";
-	Mat frame = imread(frameFile);
-	return frame;	
-}
-
-Intrinsics* SceneController::getIntrinsics(Scene scene, int cameraNumber)
-{
-	string captureFolder = dataFolder + "/" + scene.getName();
-
-	string intrinsicsFile = captureFolder + "/intrinsics.json"; 
-	if (!filesystem::exists(intrinsicsFile))
-	{
-		intrinsicsFile = dataFolder + "/default.json";
-	}
-
-	property_tree::ptree root;
-	property_tree::read_json(intrinsicsFile, root);	
-	for (property_tree::ptree::value_type& cameraNode: root.get_child("calibration.cameras"))
-	{
-		if (cameraNumber == cameraNode.second.get<int>("cameraId")) 
-		{
-			double reprojectionError = cameraNode.second.get<double>("reprojectionError");
-			double fx = cameraNode.second.get<double>("calibrationMatrix.fx");
-			double fy = cameraNode.second.get<double>("calibrationMatrix.fy");
-			double cx = cameraNode.second.get<double>("calibrationMatrix.cx");
-			double cy = cameraNode.second.get<double>("calibrationMatrix.cy");
-
-			Mat calibrationMatrix = Mat(3, 3, CV_64F);
-			calibrationMatrix.at<double>(0, 0) = fx;
-			calibrationMatrix.at<double>(1, 1) = fy;
-			calibrationMatrix.at<double>(0, 2) = cx;
-			calibrationMatrix.at<double>(1, 2) = cy;
-
-			double k1 = cameraNode.second.get<double>("distortionCoefficients.k1");
-			double k2 = cameraNode.second.get<double>("distortionCoefficients.k2");
-			double p1 = cameraNode.second.get<double>("distortionCoefficients.p1");
-			double p2 = cameraNode.second.get<double>("distortionCoefficients.p2");
-			double k3 = cameraNode.second.get<double>("distortionCoefficients.k3");
-
-			Mat distortionCoefficients = Mat(1, 5, CV_64F);
-			distortionCoefficients.at<double>(0, 0) = k1;
-			distortionCoefficients.at<double>(0, 1) = k2;
-			distortionCoefficients.at<double>(0, 2) = p1;
-			distortionCoefficients.at<double>(0, 3) = p2;
-			distortionCoefficients.at<double>(0, 4) = k3;
-
-			Intrinsics* intrinsics = new Intrinsics(calibrationMatrix, distortionCoefficients, reprojectionError);
-			return intrinsics;
-		}
-	}
-
-	return nullptr;
-}
-
-Extrinsics* SceneController::getExtrinsics(Scene scene, int cameraNumber)
-{
-	string extrinsicsFile = dataFolder + "/" + scene.getName() + "/extrinsics.json";
-	property_tree::ptree root;
-	property_tree::read_json(extrinsicsFile, root);
-
-	for (property_tree::ptree::value_type& cameraNode : root.get_child("calibration.cameras"))
-	{
-		if (cameraNumber == cameraNode.second.get<int>("cameraId"))
-		{
-			double reprojectionError = cameraNode.second.get<double>("reprojectionError");
-
-			double translationX = cameraNode.second.get<double>("translationVector.x");
-			double translationY = cameraNode.second.get<double>("translationVector.y");
-			double translationZ = cameraNode.second.get<double>("translationVector.z");
-
-			Mat translationVector = Mat(3, 1, CV_64F);
-			translationVector.at<double>(0, 0) = translationX;
-			translationVector.at<double>(1, 0) = translationY;
-			translationVector.at<double>(2, 0) = translationZ;
-
-			double rotationX = cameraNode.second.get<double>("rotationVector.x");
-			double rotationY = cameraNode.second.get<double>("rotationVector.y");
-			double rotationZ = cameraNode.second.get<double>("rotationVector.z");
-
-			Mat rotationVector = Mat(3, 1, CV_64F);
-			rotationVector.at<double>(0, 0) = rotationX;
-			rotationVector.at<double>(1, 0) = rotationY;
-			rotationVector.at<double>(2, 0) = rotationZ;
-
-			Extrinsics* extrinsics = new Extrinsics(translationVector, rotationVector, reprojectionError);
-			return extrinsics;
-		}
-	}
-
-	return nullptr;
+	return imread(frameFile);
 }
 
 void SceneController::saveIntrinsics(Scene scene, map<int, Intrinsics*> intrinsics)
 {
 	string intrinsicsFile = dataFolder + "/" + scene.getName() + "/intrinsics.json";
+
 	property_tree::ptree root;
+	property_tree::ptree camerasNode;
 
 	string date = getDateString();
 	root.put("calibration.date", date);
 
-	property_tree::ptree camerasNode;
-	for (pair<int, Intrinsics*> calibrationResult: intrinsics)
+	for (pair<int, Intrinsics*> calibrationResult : intrinsics)
 	{
 		property_tree::ptree cameraNode;
 		int cameraNumber = calibrationResult.first;
 		Intrinsics* intrinsics = calibrationResult.second;
-		
-		cameraNode.put("cameraId", cameraNumber);
+
+		cameraNode.put("cameraNumber", cameraNumber);
 		cameraNode.put("reprojectionError", intrinsics->getReprojectionError());
 
 		Mat cameraMatrix = intrinsics->getCameraMatrix();
@@ -260,26 +163,27 @@ void SceneController::saveIntrinsics(Scene scene, map<int, Intrinsics*> intrinsi
 		delete intrinsics;
 	}
 
-	root.add_child("calibration.cameras", camerasNode);	
+	root.add_child("calibration.cameras", camerasNode);
 	property_tree::write_json(intrinsicsFile, root);
 }
 
 void SceneController::saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsics)
 {
 	string extrinsicsFile = dataFolder + "/" + scene.getName() + "/extrinsics.json";
+
 	property_tree::ptree root;
+	property_tree::ptree camerasNode;
 
 	string date = getDateString();
 	root.put("calibration.date", date);
 
-	property_tree::ptree camerasNode;
-	for (pair<int, Extrinsics*> calibrationResult: extrinsics)
+	for (pair<int, Extrinsics*> calibrationResult : extrinsics)
 	{
 		property_tree::ptree cameraNode;
 		int cameraNumber = calibrationResult.first;
 		Extrinsics* extrinsics = calibrationResult.second;
-		
-		cameraNode.put("cameraId", cameraNumber);
+
+		cameraNode.put("cameraNumber", cameraNumber);
 		cameraNode.put("reprojectionError", extrinsics->getReprojectionError());
 
 		Mat translationVector = extrinsics->getTranslationVector();
@@ -296,11 +200,12 @@ void SceneController::saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsi
 		delete extrinsics;
 	}
 
-	root.add_child("calibration.cameras", camerasNode);	
+	root.add_child("calibration.cameras", camerasNode);
 	property_tree::write_json(extrinsicsFile, root);
 }
 
-void SceneController::savePoses(Scene scene, vector<map<int, Extrinsics*>> poses)
+
+void SceneController::savePoses(Scene scene, CaptureType captureType, vector<Frame3D*> poses)
 {
 	string extrinsicsFile = dataFolder + "/" + scene.getName() + "/poses.json";
 	property_tree::ptree root;
@@ -308,54 +213,160 @@ void SceneController::savePoses(Scene scene, vector<map<int, Extrinsics*>> poses
 	string date = getDateString();
 	root.put("poses.date", date);
 
-	property_tree::ptree framesNode;
+	property_tree::ptree allFramesNode;
 	for (int frameNumber = 0; frameNumber < poses.size(); frameNumber++)
 	{
-		int hasCameras = false;
-		property_tree::ptree camerasNode;
-		for (pair<int, Extrinsics*> framePoses : poses[frameNumber])
+		Frame3D* frame = poses[frameNumber];
+
+		if (frame != nullptr)
 		{
-			property_tree::ptree cameraNode;
-			int cameraNumber = framePoses.first;
-			Extrinsics* extrinsics = framePoses.second;
-			hasCameras = true;
+			property_tree::ptree frameDataNode;
+			for (pair<int, list<Point3d>> frameData : frame->getData())
+			{
+				property_tree::ptree cameraNode;
+				cameraNode.put("cameraNumber", frameData.first);
 
-			cameraNode.put("cameraId", cameraNumber);
+				property_tree::ptree cameraPosesNode;
+				for (Point3d point : frameData.second)
+				{
+					property_tree::ptree cameraPoseNode;
+					cameraPoseNode.put("x", point.x);
+					cameraPoseNode.put("y", point.y);
+					cameraPoseNode.put("z", point.z);
+					cameraPosesNode.push_back(make_pair("", cameraPoseNode));
+				}
+				cameraNode.add_child("points", cameraPosesNode);
 
-			Mat translationVector = extrinsics->getTranslationVector();
-			cameraNode.put("translationVector.x", translationVector.at<double>(0, 0));
-			cameraNode.put("translationVector.y", translationVector.at<double>(1, 0));
-			cameraNode.put("translationVector.z", translationVector.at<double>(2, 0));
+				frameDataNode.push_back(make_pair("", cameraNode));
+			}
 
-			Mat rotationVector = extrinsics->getRotationVector();
-			cameraNode.put("rotationVector.x", rotationVector.at<double>(0, 0));
-			cameraNode.put("rotationVector.y", rotationVector.at<double>(1, 0));
-			cameraNode.put("rotationVector.z", rotationVector.at<double>(2, 0));
-
-			camerasNode.push_back(make_pair("", cameraNode));
-			delete extrinsics;
-		}
-
-		if (hasCameras)
-		{
 			property_tree::ptree frameNode;
 			frameNode.put("frameNumber", frameNumber);
-			frameNode.add_child("cameras", camerasNode);
-			framesNode.push_back(make_pair("", frameNode));
-		}		
+			frameNode.add_child("frameData", frameDataNode);
+			allFramesNode.push_back(make_pair("", frameNode));
+		}
 	}
 
-	root.add_child("poses.frames", framesNode);
+	root.add_child("poses.frames", allFramesNode);
 	property_tree::write_json(extrinsicsFile, root);
 }
 
-Result* SceneController::getResult(Scene scene, CaptureType captureType)
+map<int, Intrinsics*> SceneController::getIntrinsics(Scene scene)
+{
+	map<int, Intrinsics*> intrinsics;
+	string captureFolder = dataFolder + "/" + scene.getName();
+	string intrinsicsFile = captureFolder + "/intrinsics.json"; 
+	if (!filesystem::exists(intrinsicsFile))
+	{
+		intrinsicsFile = dataFolder + "/default.json";
+	}
+
+	property_tree::ptree root;
+	property_tree::read_json(intrinsicsFile, root);		
+	for (property_tree::ptree::value_type& cameraNode: root.get_child("calibration.cameras"))
+	{
+		int cameraNumber = cameraNode.second.get<int>("cameraNumber");
+		double reprojectionError = cameraNode.second.get<double>("reprojectionError");
+
+		Mat calibrationMatrix = Mat(3, 3, CV_64F);
+		calibrationMatrix.at<double>(0, 0) = cameraNode.second.get<double>("calibrationMatrix.fx");
+		calibrationMatrix.at<double>(1, 1) = cameraNode.second.get<double>("calibrationMatrix.fy");
+		calibrationMatrix.at<double>(0, 2) = cameraNode.second.get<double>("calibrationMatrix.cx");
+		calibrationMatrix.at<double>(1, 2) = cameraNode.second.get<double>("calibrationMatrix.cy");
+
+		Mat distortionCoefficients = Mat(1, 5, CV_64F);
+		distortionCoefficients.at<double>(0, 0) = cameraNode.second.get<double>("distortionCoefficients.k1");
+		distortionCoefficients.at<double>(0, 1) = cameraNode.second.get<double>("distortionCoefficients.k2");
+		distortionCoefficients.at<double>(0, 2) = cameraNode.second.get<double>("distortionCoefficients.p1");
+		distortionCoefficients.at<double>(0, 3) = cameraNode.second.get<double>("distortionCoefficients.p2");
+		distortionCoefficients.at<double>(0, 4) = cameraNode.second.get<double>("distortionCoefficients.k3");
+
+		intrinsics[cameraNumber] = new Intrinsics(calibrationMatrix, distortionCoefficients, reprojectionError);
+	}
+
+	return intrinsics;
+}
+
+map<int, Extrinsics*> SceneController::getExtrinsics(Scene scene)
+{
+	map<int, Extrinsics*> extrinsics;
+	string extrinsicsFile = dataFolder + "/" + scene.getName() + "/extrinsics.json";
+
+	property_tree::ptree root;
+	property_tree::read_json(extrinsicsFile, root);
+
+	for (property_tree::ptree::value_type& cameraNode : root.get_child("calibration.cameras"))
+	{
+		int cameraNumber = cameraNode.second.get<int>("cameraNumber");
+
+		double reprojectionError = cameraNode.second.get<double>("reprojectionError");
+
+		Mat translationVector = Mat(3, 1, CV_64F);
+		translationVector.at<double>(0, 0) = cameraNode.second.get<double>("translationVector.x");
+		translationVector.at<double>(1, 0) = cameraNode.second.get<double>("translationVector.y");
+		translationVector.at<double>(2, 0) = cameraNode.second.get<double>("translationVector.z");
+
+		Mat rotationVector = Mat(3, 1, CV_64F);
+		rotationVector.at<double>(0, 0) = cameraNode.second.get<double>("rotationVector.x");
+		rotationVector.at<double>(1, 0) = cameraNode.second.get<double>("rotationVector.y");
+		rotationVector.at<double>(2, 0) = cameraNode.second.get<double>("rotationVector.z");
+
+		extrinsics[cameraNumber] = new Extrinsics(translationVector, rotationVector, reprojectionError);
+	}
+
+	return extrinsics;
+}
+
+vector<Frame3D*> SceneController::getPoses(Scene scene, CaptureType captureType)
+{
+	int capturedFrames = getCapturedFrames(scene, captureType);
+	vector<Frame3D*> allFrames = vector<Frame3D*>(capturedFrames, nullptr);
+
+	string posesFile = dataFolder + "/" + scene.getName() + "/poses.json";
+
+	property_tree::ptree root;
+	property_tree::read_json(posesFile, root);
+	if (!filesystem::exists(posesFile))
+	{
+		return allFrames;
+	}	
+
+	for (property_tree::ptree::value_type& frameNode : root.get_child("poses.frames"))
+	{
+		Frame3D* frame = new Frame3D();
+		int frameNumber = frameNode.second.get<int>("frameNumber");
+
+		for (property_tree::ptree::value_type& dataNode : frameNode.second.get_child("frameData"))
+		{
+			list<Point3d> reconstructions;
+			int cameraNumber = dataNode.second.get<int>("cameraNumber");
+
+			for (property_tree::ptree::value_type& pointNode : dataNode.second.get_child("points"))
+			{
+				Point3d point;
+				point.x = pointNode.second.get<double>("x");
+				point.y = pointNode.second.get<double>("y");
+				point.z = pointNode.second.get<double>("z");
+
+				reconstructions.push_back(point);
+			}
+
+			frame->addData(cameraNumber, reconstructions);
+		}
+
+		allFrames[frameNumber] = frame;
+	}
+
+	return allFrames;
+}
+
+Video3D* SceneController::getResult(Scene scene, CaptureType captureType)
 {
 	vector<int> capturedCameras = getCapturedCameras(scene, captureType);
-	int capturedFrameNumber = getCapturedFrameNumber(scene, captureType);
+	int capturedFrames = getCapturedFrames(scene, captureType);
 
-	map<int, Intrinsics*> intrinsics;
-	map<int, Extrinsics*> extrinsics;
+	map<int, Intrinsics*> intrinsics = getIntrinsics(scene);
+	map<int, Extrinsics*> extrinsics = getExtrinsics(scene);
 	map<int, Mat> frustumImages;
 
 	string extrinsicsFolder = dataFolder + "/" + scene.getName() + "/extrinsics.json";
@@ -366,12 +377,12 @@ Result* SceneController::getResult(Scene scene, CaptureType captureType)
 	
 	for (int cameraNumber : capturedCameras)
 	{
-		intrinsics[cameraNumber] = getIntrinsics(scene, cameraNumber);
-		extrinsics[cameraNumber] = getExtrinsics(scene, cameraNumber);
-		frustumImages[cameraNumber] = getCapturedFrame(scene, captureType, cameraNumber, capturedFrameNumber - 1);
+		frustumImages[cameraNumber] = getFrame(scene, captureType, cameraNumber, capturedFrames - 1);
 	}
+
+	vector<Frame3D*> poses = getPoses(scene, captureType);
 	
-	return new Result(capturedCameras, intrinsics, extrinsics, frustumImages);
+	return new Video3D(capturedCameras, intrinsics, extrinsics, frustumImages);
 }
 
 string SceneController::getDateString()

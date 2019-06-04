@@ -4,11 +4,12 @@ Renderer3D::Renderer3D(ConfigController* configController)
 {
 	this->totalSquares = configController->getTotalSquares();
 	this->squareLength = configController->getSquareLength();
+	this->guiFps = configController->getGuiFps();
 }
 
-void Renderer3D::render(Result* result)
+void Renderer3D::render(Video3D* result)
 {
-	viz::Viz3d visualizer = viz::Viz3d("3DPose");
+	/*viz::Viz3d visualizer = viz::Viz3d("3DPose");
 	visualizer.setBackgroundColor(viz::Color(25.0f, 25.0f, 25.0f), viz::Color(50.0f, 50.0f, 50.0f));
 
 	for (int cameraNumber : result->getCameras())
@@ -74,8 +75,40 @@ void Renderer3D::render(Result* result)
 
 	visualizer.resetCamera();
 
+	int frameNumber = 0;
+	vector<map<int, Mat>> posesVideo = result->getPoses();
+
+	visualizer.spinOnce(1, true);
+	visualizer
 	while (!visualizer.wasStopped())
 	{
-		visualizer.spinOnce(1, true);
+		printf("Priting frame %d\n", frameNumber);
+
+		if (frameNumber == posesVideo.size())
+		{
+			frameNumber = 0;
+		}
+
+		for (pair<int, Mat> cameraPoses : posesVideo[frameNumber])
+		{
+			int cameraNumber = cameraPoses.first;
+			Mat poses = cameraPoses.second;				
+			viz::WCloud cameraCloud = viz::WCloud(poses);
+			cameraCloud.setRenderingProperty(cv::viz::POINT_SIZE, 5);
+			visualizer.showWidget("cloud-" + to_string(cameraNumber), cameraCloud);
+		}
+			
+		int milisecondsToSleep = (int)(1.0 / guiFps * 1000);
+		this_thread::sleep_for(chrono::milliseconds(milisecondsToSleep));
+
+		for (pair<int, Mat> cameraPoses : posesVideo[frameNumber])
+		{
+			int cameraNumber = cameraPoses.first;
+			visualizer.removeWidget("cloud-" + to_string(cameraNumber));
+		}
+
+		frameNumber++;		
 	}
+
+	delete result;*/
 }
