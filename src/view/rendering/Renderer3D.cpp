@@ -3,8 +3,8 @@
 Renderer3D::Renderer3D(ConfigController* configController)
 {
 	this->renderer = vtkSmartPointer<vtkRenderer>::New();	
-	this->totalSquares = configController->getTotalSquares();
-	this->squareLength = configController->getSquareLength();
+	this->totalSquares = 20;
+	this->squareLength = 800.0;
 	this->guiFps = configController->getGuiFps();
 }
 

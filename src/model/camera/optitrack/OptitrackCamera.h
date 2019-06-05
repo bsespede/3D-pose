@@ -20,9 +20,9 @@ public:
 	void shutdownCameras();
 	Packet* getPacket();
 private:
-	int cameraWidth;
-	int cameraHeight;
 	std::map<int, int> cameraOrder;
+	std::map<int, int> camerasWidth;
+	std::map<int, int> camerasHeight;
 	int cameraCount;
 	CameraLibrary::CameraList list;
 	CameraLibrary::Camera* camera[MAX_CAMERAS];

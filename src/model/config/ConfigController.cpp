@@ -6,22 +6,12 @@ ConfigController::ConfigController()
 	boost::property_tree::read_json("app-config.json", root);
 
 	this->dataFolder = root.get<std::string>("config.dataFolder");
-
 	this->guiFps = root.get<int>("config.gui.fps");
-	this->maxWidth = root.get<int>("config.gui.maxWidth");
-	this->maxHeight = root.get<int>("config.gui.maxHeight");	
-	this->barHeight = root.get<int>("config.gui.barHeight");	
-	this->showPreviewOnCapture = root.get<bool>("config.gui.showCapturePreview");
-
-	this->totalSquares = root.get<int>("config.gui.totalSquares");
-	this->squareLength = root.get<double>("config.gui.squareLength");
-	
+	this->showPreviewOnCapture = root.get<bool>("config.gui.showCapturePreview");	
 	this->cameraLowFps = root.get<int>("config.cameras.lowFps");
 	this->cameraHighFps = root.get<int>("config.cameras.highFps");
-	this->cameraHeight = root.get<int>("config.cameras.cameraHeight");
-	this->cameraWidth = root.get<int>("config.cameras.cameraWidth");
-
 	int cameraNumber = 0;
+
 	this->cameraOrder = std::map<int, int>();
 	for (boost::property_tree::ptree::value_type& cameraId : root.get_child("config.cameras.order"))
 	{
@@ -29,14 +19,11 @@ ConfigController::ConfigController()
 		cameraOrder[serial] = cameraNumber;
 		cameraNumber++;
 	}
-	
-	this->minCalibrationSamples = root.get<int>("config.calibration.minSamples");
-	this->maxCalibrationSamples = root.get<int>("config.calibration.maxSamples");
 
-	this->charucoCols = root.get<int>("config.calibration.charucoBoard.cols");
-	this->charucoRows = root.get<int>("config.calibration.charucoBoard.rows");
-	this->charucoSquareLength = root.get<float>("config.calibration.charucoBoard.squareLength");
-	this->charucoMarkerLength = root.get<float>("config.calibration.charucoBoard.markerLength");
+	this->charucoCols = root.get<int>("config.calibration.charucoCols");
+	this->charucoRows = root.get<int>("config.calibration.charucoRows");
+	this->charucoSquareLength = root.get<float>("config.calibration.charucoSquareLength");
+	this->charucoMarkerLength = root.get<float>("config.calibration.charucoMarkerLength");
 }
 
 std::string ConfigController::getDataFolder()
@@ -49,44 +36,9 @@ int ConfigController::getGuiFps()
 	return guiFps;
 }
 
-int ConfigController::getMaxWidth()
-{
-	return maxWidth;
-}
-
-int ConfigController::getMaxHeight()
-{
-	return maxHeight;
-}
-
-int ConfigController::getCameraHeight()
-{
-	return cameraHeight;
-}
-
-int ConfigController::getCameraWidth()
-{
-	return cameraWidth;
-}
-
-int ConfigController::getBarHeight()
-{
-	return barHeight;
-}
-
 bool ConfigController::getShowPreviewOnCapture()
 {
 	return showPreviewOnCapture;
-}
-
-int ConfigController::getTotalSquares()
-{
-	return totalSquares;
-}
-
-double ConfigController::getSquareLength()
-{
-	return squareLength;
 }
 
 std::map<int, int> ConfigController::getCameraOrder()
@@ -107,16 +59,6 @@ int ConfigController::getCameraLowFps()
 int ConfigController::getCameraNumber()
 {
 	return (int)cameraOrder.size();
-}
-
-int ConfigController::getMinCalibrationSamples()
-{
-	return minCalibrationSamples;
-}
-
-int ConfigController::getMaxCalibrationSamples()
-{
-	return maxCalibrationSamples;
 }
 
 int ConfigController::getCharucoCols()

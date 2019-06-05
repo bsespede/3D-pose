@@ -3,32 +3,35 @@
 Renderer2D::Renderer2D(ConfigController* configController)
 {
 	this->guiFps = configController->getGuiFps();
-	this->cameraWidth = configController->getCameraWidth();
-	this->cameraHeight = configController->getCameraHeight();
-	this->maxWidth = configController->getMaxWidth();
-	this->maxHeight = configController->getMaxHeight();
 	this->cameraNumber = configController->getCameraNumber();
-	this->barHeight = configController->getBarHeight();	
+	this->barHeight = 20;	
 	this->prop = 1.0f;
 
-	calculateProportions(prop, cameraWidth, cameraHeight, maxWidth, maxHeight, cameraNumber, barHeight);
+	RECT desktop;
+	const HWND hDesktop = GetDesktopWindow();
+	GetWindowRect(hDesktop, &desktop);
+	this->maxWidth = desktop.right;
+	this->maxHeight = desktop.bottom;
+
+	calculateProportions(prop);
 }
 
-void Renderer2D::calculateProportions(float prop, int cameraWidth, int cameraHeight, int maxWidth, int maxHeight, int camerasNumber, int barHeight)
+void Renderer2D::calculateProportions(float prop)
 {
-	int curWidth = (int)(cameraWidth * prop) + 2;
-	int curHeight = (int)(cameraHeight * prop) + barHeight + 4;
+	int curWidth = (int)(maxWidth * prop) + 2;
+	int curHeight = (int)(maxHeight * prop) + barHeight + 4;
 	int numberWidth = (int)((float)maxWidth / (curWidth + 1));
 	int numberHeight = (int)((float)maxHeight / (curHeight + 1));
 	int maxCameras = numberWidth * numberHeight;
 
-	if (maxCameras < camerasNumber)
+	if (maxCameras < cameraNumber)
 	{
-		calculateProportions(prop - 0.05f, cameraWidth, cameraHeight, maxWidth, maxHeight, camerasNumber, barHeight);
+		calculateProportions(prop - 0.1f);
 	}
 	else
 	{
-		this->prop = prop;
+		this->cameraWidth = (int)(maxWidth * prop);
+		this->cameraHeight = (int)(maxHeight * prop);
 		this->rows = numberHeight;
 		this->cols = numberWidth;
 	}

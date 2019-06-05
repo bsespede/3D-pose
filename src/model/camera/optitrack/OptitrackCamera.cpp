@@ -2,8 +2,8 @@
 
 OptitrackCamera::OptitrackCamera(ConfigController* configController)
 {
-	this->cameraWidth = configController->getCameraWidth();
-	this->cameraHeight = configController->getCameraHeight();
+	this->camerasWidth = std::map<int, int>();
+	this->camerasHeight = std::map<int, int>();
 	this->cameraOrder = configController->getCameraOrder();
 }
 
@@ -58,7 +58,10 @@ bool OptitrackCamera::startCameras(int cameraFps)
 
 	for (int i = 0; i < cameraCount; i++)
 	{
-		camera[i]->SetNumeric(true, cameraOrder[camera[i]->Serial()]);
+		int cameraId = cameraOrder[camera[i]->Serial()];
+		camerasWidth[cameraId] = camera[i]->Width();
+		camerasHeight[cameraId] = camera[i]->Height();
+		camera[i]->SetNumeric(true, cameraId);
 		camera[i]->SetVideoType(Core::eVideoMode::MJPEGMode);
 		camera[i]->SetMJPEGQuality(0);		
 		camera[i]->SetFrameRate(cameraFps);
@@ -90,6 +93,8 @@ Packet* OptitrackCamera::getPacket()
 			CameraLibrary::Camera* camera = frame->GetCamera();
 
 			int cameraId = cameraOrder[camera->Serial()];
+			int cameraWidth = camerasWidth[cameraId];
+			int cameraHeight= camerasHeight[cameraId];
 
 			cv::Mat frameMat = cv::Mat(cv::Size(cameraWidth, cameraHeight), CV_8UC1);
 			frame->Rasterize(cameraWidth, cameraHeight, (unsigned int)frameMat.step, 8, frameMat.data);

@@ -6,6 +6,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include "model/scene/Scene.h"
+#include "model/calibration/CalibrationType.h"
 #include "model/capture/CaptureType.h"
 #include "model/capture/Capture.h"
 #include "model/video/Video3D.h"
@@ -26,6 +27,7 @@ public:
 	void saveIntrinsics(Scene scene, std::map<int, Intrinsics*> intrinsics);
 	void saveExtrinsics(Scene scene, std::map<int, Extrinsics*> extrinsics);
 	void savePoses(Scene scene, CaptureType captureType, std::vector<Frame3D*> poses);
+	void saveDetections(cv::Mat output, Scene scene, CaptureType captureType, int frameNumber, CalibrationType calibrationType);
 	std::map<int, Intrinsics*> getIntrinsics(Scene scene);
 	std::map<int, Extrinsics*> getExtrinsics(Scene scene);
 	std::vector<Frame3D*> getPoses(Scene scene, CaptureType captureType);

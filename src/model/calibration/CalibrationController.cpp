@@ -46,26 +46,32 @@ bool CalibrationController::calculateIntrinsics(Scene scene, CaptureType capture
 	std::vector<int> capturedCameras = sceneController->getCapturedCameras(scene, captureType);
 
 	#pragma omp parallel for
-	for (int cameraIndex = 0; cameraIndex < (int)capturedCameras.size(); cameraIndex++)
+	for (int cameraIndex = 0; cameraIndex < capturedCameras.size(); cameraIndex++)
 	{
-		cv::Size frameSize;
 		int cameraNumber = capturedCameras[cameraIndex];
-		
+		int totalSamples = 0;
+
+		BOOST_LOG_TRIVIAL(warning) << "Calculating intrincs camera " << cameraNumber;
+
+		cv::Size frameSize = sceneController->getFrame(scene, captureType, cameraNumber, 0).size();
 		std::vector<std::vector<int>> allCharucoIds;
 		std::vector<std::vector<cv::Point2f>> allCharucoCorners;
+		
 		for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber++)
 		{
 			std::vector<int> charucoIds = std::vector<int>();
 			std::vector<cv::Point2f> charucoCorners = std::vector<cv::Point2f>();
 			cv::Mat frame = sceneController->getFrame(scene, captureType, cameraNumber, frameNumber);
-			frameSize = frame.size();
 			
 			if (detectCharucoCorners(frame, 5, charucoIds, charucoCorners))
 			{
 				allCharucoIds.push_back(charucoIds);
-				allCharucoCorners.push_back(charucoCorners);		
+				allCharucoCorners.push_back(charucoCorners);	
+				totalSamples += (int)allCharucoCorners.size();
 			}			
 		}
+
+		BOOST_LOG_TRIVIAL(warning) << "Samples intrinsics camera " << cameraNumber << ": " << totalSamples;
 
 		cv::Mat cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
 		cv::Mat distortionCoeffs = cv::Mat::zeros(1, 5, CV_64F);
@@ -73,6 +79,8 @@ bool CalibrationController::calculateIntrinsics(Scene scene, CaptureType capture
 		
 		double reprojectionError = cv::aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, frameSize, cameraMatrix, distortionCoeffs, cv::noArray(), cv::noArray(), calibrationFlags);
 		intrinsics[cameraNumber] = new Intrinsics(cameraMatrix, distortionCoeffs, reprojectionError);
+
+		BOOST_LOG_TRIVIAL(warning) << "Found intrincs for camera " << cameraNumber;
 	}
 
 	sceneController->saveIntrinsics(scene, intrinsics);
@@ -96,7 +104,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 	std::vector<cv::Point2f> charucoCorners;
 	cv::Mat frame = sceneController->getFrame(scene, captureType, originCamera, capturedFrames - 1);
 
-	if (detectCharucoCorners(frame, 2, originCameraMatrix, originDistortionCoefficients, charucoIds, charucoCorners))
+	if (detectCharucoCorners(frame, 4, originCameraMatrix, originDistortionCoefficients, charucoIds, charucoCorners))
 	{
 		BOOST_LOG_TRIVIAL(warning) << "Found board in the floor of camera " << originCamera;
 
@@ -130,10 +138,10 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 	{
 		int cameraLeft = capturedCameras[cameraIndex - 1];
 		int cameraRight = capturedCameras[cameraIndex];
-
-		BOOST_LOG_TRIVIAL(warning) << "Calibrating for pair " << cameraLeft << "->" << cameraRight;
-
 		int totalSamples = 0;		
+
+		BOOST_LOG_TRIVIAL(warning) << "Calculating extrinsics pair " << cameraLeft << "->" << cameraRight;
+
 		cv::Size cameraSize = sceneController->getFrame(scene, captureType, cameraLeft, 0).size();
 		cv::Mat cameraMatrixLeft = intrinsics[cameraLeft]->getCameraMatrix();
 		cv::Mat cameraMatrixRight = intrinsics[cameraRight]->getCameraMatrix();
@@ -143,6 +151,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 		std::vector<std::vector<cv::Point3f>> allObjects;
 		std::vector<std::vector<cv::Point2f>> allCornersLeft;
 		std::vector<std::vector<cv::Point2f>> allCornersRight;
+		
 		for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber++)
 		{
 			std::vector<int> idsLeft;
@@ -193,7 +202,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 			}
 		}
 
-		BOOST_LOG_TRIVIAL(warning) << "Samples for pair " << cameraLeft << "->" << cameraRight << ": " << totalSamples;
+		BOOST_LOG_TRIVIAL(warning) << "Samples extrinsics pair " << cameraLeft << "->" << cameraRight << ": " << totalSamples;
 
 		cv::Mat translationVector;
 		cv::Mat rotationVector;
@@ -204,7 +213,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 		cv::Rodrigues(rotationVector, rotationVector);
 		extrinsics[cameraRight] = new Extrinsics(translationVector, rotationVector, reprojectionError);
 
-		BOOST_LOG_TRIVIAL(warning) << "Finished calibrating for pair " << cameraLeft << "->" << cameraRight;
+		BOOST_LOG_TRIVIAL(warning) << "Found extrinsics pair " << cameraLeft << "->" << cameraRight;
 	}
 
 	for (int cameraNumber = 1; cameraNumber < (int)extrinsics.size(); cameraNumber++)
@@ -236,6 +245,7 @@ bool CalibrationController::calculatePoses(Scene scene, CaptureType captureType)
 	for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber++)
 	{
 		BOOST_LOG_TRIVIAL(warning) << "Calculating poses for cameras of frame " << frameNumber;
+
 		Frame3D* framePoses = new Frame3D();
 		bool foundPoses = false;
 
@@ -331,6 +341,7 @@ bool CalibrationController::detectCharucoCorners(cv::Mat& inputImage, int minCha
 
 	std::vector<int> arucoIds;
 	std::vector<std::vector<cv::Point2f>> arucoCorners;
+	std::vector<std::vector<cv::Point2f>> arucoRejections;
 	cv::aruco::detectMarkers(inputImage, dictionary, arucoCorners, arucoIds, params, cv::noArray(), cameraMatrix, distortionCoefficients);
 
 	if (arucoIds.size() > 0)
