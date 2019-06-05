@@ -10,6 +10,7 @@ CalibrationController::CalibrationController(ConfigController* configController,
 	this->sceneController = sceneController;
 	this->dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 	this->board = cv::aruco::CharucoBoard::create(charucoCols, charucoRows, charucoSquareLength, charucoMarkerLength, dictionary);
+	this->outputDetections = configController->getOutputDetections();
 }
 
 void CalibrationController::generateCheckboard(int charucoWidth, int charucoHeight, int charucoMargin)
@@ -170,9 +171,10 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 				continue;
 			}
 
-			std::vector<cv::Point3f> finalObjects;
+			std::vector<int> finalIds;
 			std::vector<cv::Point2f> finalCornersRight;
 			std::vector<cv::Point2f> finalCornersLeft;
+			std::vector<cv::Point3f> finalObjects;			
 			for (int leftIdIndex = 0; leftIdIndex < (int)idsLeft.size(); leftIdIndex++)
 			{
 				for (int rightIdIndex = 0; rightIdIndex < (int)idsRight.size(); rightIdIndex++)
@@ -186,6 +188,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 						cv::Point2f leftPosition = cv::Point2f(cornersLeft[leftIdIndex].x, cornersLeft[leftIdIndex].y);
 						cv::Point2f rightPosition = cv::Point2f(cornersRight[rightIdIndex].x, cornersRight[rightIdIndex].y);
 
+						finalIds.push_back(idLeft);
 						finalObjects.push_back(idPosition);
 						finalCornersLeft.push_back(leftPosition);
 						finalCornersRight.push_back(rightPosition);
@@ -193,12 +196,22 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 				}
 			}
 
-			if (finalObjects.size() > 3) 
+			if (finalObjects.size() >= 4) 
 			{
 				allObjects.push_back(finalObjects);
 				allCornersLeft.push_back(finalCornersLeft);
 				allCornersRight.push_back(finalCornersRight);
 				totalSamples += (int)finalObjects.size();
+
+				if (outputDetections)
+				{
+					cv::Mat finalFrameLeft = frameLeft.clone();
+					cv::Mat finalFrameRight = frameRight.clone();
+					cv::aruco::drawDetectedCornersCharuco(finalFrameLeft, finalCornersLeft, finalIds, cv::Scalar(255, 255, 255));
+					cv::aruco::drawDetectedCornersCharuco(finalFrameRight, finalCornersRight, finalIds, cv::Scalar(255, 255, 255));
+					sceneController->saveDetections(finalFrameLeft, scene, captureType, cameraLeft, frameNumber, CalibrationType::EXTRINSICS);
+					sceneController->saveDetections(finalFrameRight, scene, captureType, cameraRight, frameNumber, CalibrationType::EXTRINSICS);
+				}
 			}
 		}
 
@@ -342,7 +355,8 @@ bool CalibrationController::detectCharucoCorners(cv::Mat& inputImage, int minCha
 	std::vector<int> arucoIds;
 	std::vector<std::vector<cv::Point2f>> arucoCorners;
 	std::vector<std::vector<cv::Point2f>> arucoRejections;
-	cv::aruco::detectMarkers(inputImage, dictionary, arucoCorners, arucoIds, params, cv::noArray(), cameraMatrix, distortionCoefficients);
+	cv::aruco::detectMarkers(inputImage, dictionary, arucoCorners, arucoIds, params, arucoRejections, cameraMatrix, distortionCoefficients);
+	cv::aruco::refineDetectedMarkers(inputImage, board, arucoCorners, arucoIds, arucoRejections, cameraMatrix, distortionCoefficients);
 
 	if (arucoIds.size() > 0)
 	{

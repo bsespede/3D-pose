@@ -2,7 +2,7 @@
 
 Video3D::Video3D(std::vector<int> cameras, std::map<int, Intrinsics*> intrinsics, std::map<int, Extrinsics*> extrinsics)
 {
-	this->currentFrame = 0;
+	this->frameNumber = 0;
 	this->cameras = cameras;
 	this->intrinsics = intrinsics;
 	this->extrinsics = extrinsics;
@@ -24,16 +24,21 @@ std::map<int, Extrinsics*> Video3D::getExtrinsics()
 	return extrinsics;
 }
 
+int Video3D::getFrameNumber()
+{
+	return frameNumber;
+}
+
 Frame3D* Video3D::getNextFrame()
 {
-	currentFrame++;
+	frameNumber++;
 
-	if (currentFrame == frames.size())
+	if (frameNumber == frames.size())
 	{
-		currentFrame = 0;
+		frameNumber = 0;
 	}
 
-	return frames[currentFrame];
+	return frames[frameNumber];
 }
 
 void Video3D::addFrame(Frame3D* frame)

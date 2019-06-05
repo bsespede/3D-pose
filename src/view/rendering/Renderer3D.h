@@ -26,6 +26,8 @@
 #include <vtkProperty.h>
 #include <vtkCallbackCommand.h>
 #include <vtkVertexGlyphFilter.h>
+#include <vtkTextActor.h>
+#include <vtkTextProperty.h>
 #include "model/video/Video3D.h"
 #include "model/config/ConfigController.h"
 
@@ -40,7 +42,6 @@ private:
 	void renderAxesActor();
 	void renderTextActor(std::string text, cv::Point3d position);
 	void renderCameraActors(Video3D* video3D);
-	void renderAnimation(vtkObject* caller, unsigned long eventId, void* clientData, void* callData);
 	void transformActor(vtkSmartPointer<vtkActor> actor, cv::Affine3d transform);	
 	vtkSmartPointer<vtkRenderer> renderer;	
 	int guiFps;
@@ -55,6 +56,9 @@ public:
 	void initialize(Video3D* video3D, vtkSmartPointer<vtkRenderer> renderer);
 	virtual void Execute(vtkObject* caller, unsigned long eventId, void* vtkNotUsed(callData));
 private:
-	Video3D* video3D;
+	vtkSmartPointer<vtkTextActor> getTextActor(cv::Point2i position);
+	vtkSmartPointer<vtkTextActor> frameNumberText;
+	vtkSmartPointer<vtkTextActor> fpsText;	
 	vtkSmartPointer<vtkRenderer> renderer;
+	Video3D* video3D;
 };

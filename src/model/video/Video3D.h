@@ -13,10 +13,11 @@ public:
 	std::vector<int> getCameras();
 	std::map<int, Intrinsics*> getIntrinsics();
 	std::map<int, Extrinsics*> getExtrinsics();
+	int getFrameNumber();
 	Frame3D* getNextFrame();
-	void addFrame(Frame3D* frame);	
+	void addFrame(Frame3D* frame);		
 private:
-	int currentFrame;
+	int frameNumber;
 	std::vector<int> cameras;
 	std::map<int, Intrinsics*> intrinsics;
 	std::map<int, Extrinsics*> extrinsics;

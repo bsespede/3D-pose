@@ -298,6 +298,8 @@ void Console::showResultPreview(Scene scene, CaptureType captureType)
 
 	renderer3D->render(result);
 	delete result;
+
+	showStatusMessage("Preview finished succesfully\n", GREEN);
 }
 
 void Console::showCameraPreview()
@@ -326,6 +328,9 @@ void Console::showCameraPreviewLoop()
 {
 	while (showPreviewUI)
 	{
+		int milisecondsToSleep = (int)(1.0 / renderer2D->getGuiFps() * 1000);
+		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(milisecondsToSleep);
+
 		Packet* safeImage = appController->getSafeImage();
 
 		if (safeImage != nullptr)
@@ -335,8 +340,7 @@ void Console::showCameraPreviewLoop()
 
 		appController->updateSafeImage();	
 
-		int milisecondsToSleep = (int)(1.0 / renderer2D->getGuiFps() * 1000);
-		std::this_thread::sleep_for(std::chrono::milliseconds(milisecondsToSleep));
+		std::this_thread::sleep_until(timePoint);
 	}
 }
 

@@ -20,6 +20,7 @@ ConfigController::ConfigController()
 		cameraNumber++;
 	}
 
+	this->outputDetections = root.get<bool>("config.calibration.outputDetections");
 	this->charucoCols = root.get<int>("config.calibration.charucoCols");
 	this->charucoRows = root.get<int>("config.calibration.charucoRows");
 	this->charucoSquareLength = root.get<float>("config.calibration.charucoSquareLength");
@@ -59,6 +60,11 @@ int ConfigController::getCameraLowFps()
 int ConfigController::getCameraNumber()
 {
 	return (int)cameraOrder.size();
+}
+
+bool ConfigController::getOutputDetections()
+{
+	return outputDetections;
 }
 
 int ConfigController::getCharucoCols()

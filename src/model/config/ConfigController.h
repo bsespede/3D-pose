@@ -16,6 +16,7 @@ public:
 	int getCameraLowFps();
 	int getCameraHighFps();
 	std::map<int, int> getCameraOrder();
+	bool getOutputDetections();
 	int getCharucoCols();
 	int getCharucoRows();	
 	float getCharucoSquareLength();
@@ -27,6 +28,7 @@ private:
 	int cameraHighFps;
 	int cameraLowFps;
 	std::map<int, int> cameraOrder;
+	bool outputDetections;
 	int charucoCols;
 	int charucoRows;
 	float charucoSquareLength;

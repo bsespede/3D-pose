@@ -26,4 +26,5 @@ private:
 	SceneController* sceneController;
 	cv::Ptr<cv::aruco::Dictionary> dictionary;
 	cv::Ptr<cv::aruco::CharucoBoard> board;
+	bool outputDetections;
 };

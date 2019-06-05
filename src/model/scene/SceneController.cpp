@@ -209,7 +209,6 @@ void SceneController::saveExtrinsics(Scene scene, std::map<int, Extrinsics*> ext
 
 void SceneController::savePoses(Scene scene, CaptureType captureType, std::vector<Frame3D*> poses)
 {
-	CalibrationType calibrationType = CalibrationType::POSES;
 	boost::property_tree::ptree root;
 
 	std::string date = getDateString();
@@ -247,17 +246,19 @@ void SceneController::savePoses(Scene scene, CaptureType captureType, std::vecto
 			frameNode.add_child("frameData", frameDataNode);
 			allFramesNode.push_back(make_pair("", frameNode));
 		}
+
+		delete frame;
 	}
 
 	root.add_child("poses.frames", allFramesNode);
 
-	std::string extrinsicsFile = dataFolder + "/" + scene.getName() + "/" + calibrationType.toString() + ".json";
+	std::string extrinsicsFile = dataFolder + "/" + scene.getName() + "/poses-" + captureType.toString() + ".json";
 	boost::property_tree::write_json(extrinsicsFile, root);
 }
 
-void SceneController::saveDetections(cv::Mat output, Scene scene, CaptureType captureType, int frameNumber, CalibrationType calibrationType)
+void SceneController::saveDetections(cv::Mat output, Scene scene, CaptureType captureType, int cameraNumber, int frameNumber, CalibrationType calibrationType)
 {
-	std::string outputFolder = dataFolder + "/" + scene.getName() + "/" + captureType.toString() + "/" + calibrationType.toString();
+	std::string outputFolder = dataFolder + "/" + scene.getName() + "/" + captureType.toString() + "/cam-" + std::to_string(cameraNumber) + "/" + calibrationType.toString();
 
 	if (!boost::filesystem::exists(outputFolder))
 	{
@@ -271,7 +272,6 @@ void SceneController::saveDetections(cv::Mat output, Scene scene, CaptureType ca
 std::map<int, Intrinsics*> SceneController::getIntrinsics(Scene scene)
 {
 	CalibrationType calibrationType = CalibrationType::INTRINSICS;
-
 	std::map<int, Intrinsics*> intrinsics;
 	std::string intrinsicsFile = dataFolder + "/" + scene.getName() + "/" + calibrationType.toString() + ".json";
 
@@ -308,8 +308,9 @@ std::map<int, Intrinsics*> SceneController::getIntrinsics(Scene scene)
 
 std::map<int, Extrinsics*> SceneController::getExtrinsics(Scene scene)
 {
+	CalibrationType calibrationType = CalibrationType::EXTRINSICS;
 	std::map<int, Extrinsics*> extrinsics;
-	std::string extrinsicsFile = dataFolder + "/" + scene.getName() + "/extrinsics.json";
+	std::string extrinsicsFile = dataFolder + "/" + scene.getName() + "/" + calibrationType.toString() + ".json";
 
 	boost::property_tree::ptree root;
 	boost::property_tree::read_json(extrinsicsFile, root);
@@ -341,7 +342,7 @@ std::vector<Frame3D*> SceneController::getPoses(Scene scene, CaptureType capture
 	int capturedFrames = getCapturedFrames(scene, captureType);
 	std::vector<Frame3D*> allFrames = std::vector<Frame3D*>(capturedFrames, nullptr);
 
-	std::string posesFile = dataFolder + "/" + scene.getName() + "/poses.json";
+	std::string posesFile = dataFolder + "/" + scene.getName() + "/poses-" + captureType.toString() +".json";
 
 	boost::property_tree::ptree root;
 	boost::property_tree::read_json(posesFile, root);
@@ -381,7 +382,8 @@ std::vector<Frame3D*> SceneController::getPoses(Scene scene, CaptureType capture
 
 Video3D* SceneController::getResult(Scene scene, CaptureType captureType)
 {
-	std::string extrinsicsFolder = dataFolder + "/" + scene.getName() + "/extrinsics.json";
+	CalibrationType calibrationType = CalibrationType::EXTRINSICS;
+	std::string extrinsicsFolder = dataFolder + "/" + scene.getName() + "/" + calibrationType.toString() + ".json";
 
 	if (!boost::filesystem::exists(extrinsicsFolder))
 	{
