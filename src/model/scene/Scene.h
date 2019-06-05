@@ -2,15 +2,13 @@
 
 #include <string>
 
-using namespace std;
-
 class Scene
 {
 public:
-	Scene(string name, string date);
-	string getDate();
-	string getName();
+	Scene(std::string name, std::string date);
+	std::string getDate();
+	std::string getName();
 private:
-	string name;
-	string date;
+	std::string name;
+	std::string date;
 };

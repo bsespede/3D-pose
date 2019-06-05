@@ -65,7 +65,7 @@ void Console::showSceneInput(Input input)
 	printf("\nInput the name of the scene:\n");
 	printf(">");
 
-	string name;
+	std::string name;
 	getline(cin, name);
 
 	if (!appController->hasScene(name))
@@ -225,7 +225,7 @@ void Console::showCapture(Scene scene, CaptureType captureType)
 	if (showPreviewOnCapture)
 	{
 		showPreviewUI = true;
-		thread camerasThread = thread(&Console::showCameraPreviewLoop, this);
+		std::thread camerasThread = std::thread(&Console::showCameraPreviewLoop, this);
 		camerasThread.detach();
 	}	
 
@@ -310,7 +310,7 @@ void Console::showCameraPreview()
 	}
 
 	showPreviewUI = true;
-	thread camerasThread = thread(&Console::showCameraPreviewLoop, this);
+	std::thread camerasThread = std::thread(&Console::showCameraPreviewLoop, this);
 	camerasThread.detach();
 
 	printf("Previewing cameras (press any key to stop)...\n");
@@ -336,11 +336,11 @@ void Console::showCameraPreviewLoop()
 		appController->updateSafeImage();	
 
 		int milisecondsToSleep = (int)(1.0 / renderer2D->getGuiFps() * 1000);
-		this_thread::sleep_for(chrono::milliseconds(milisecondsToSleep));
+		std::this_thread::sleep_for(std::chrono::milliseconds(milisecondsToSleep));
 	}
 }
 
-void Console::showStatusMessage(string message, int fontColor)
+void Console::showStatusMessage(std::string message, int fontColor)
 {
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), fontColor);
 	printf("%s", message.c_str());

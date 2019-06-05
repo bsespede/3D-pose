@@ -12,19 +12,19 @@ if (OPENMP_FOUND)
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-# Include OptiTrack headers, libraries
+# Include OptiTrack
 set(OptiTrack_INCLUDE_DIR "$ENV{OptiTrack_DIR}/include")
 include_directories(${OptiTrack_INCLUDE_DIR})
 set(OptiTrack_LIB_DIR "$ENV{OptiTrack_DIR}/lib")
 add_library(OptiTrack::CameraLibrary2015x64S STATIC IMPORTED)
 set_property(TARGET OptiTrack::CameraLibrary2015x64S PROPERTY IMPORTED_LOCATION ${OptiTrack_LIB_DIR}/CameraLibrary2015x64S.lib)
 
-#Include OpenCV package, headers, libraries
+#Include OpenCV
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 link_directories(${OpenCV_LIB_DIR})
 
-#Include Boost package, headers, libraries
+#Include Boost
 find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})

@@ -2,7 +2,7 @@
 
 Capture::Capture()
 {
-	this->packets = list<Packet*>();
+	this->packets = std::list<Packet*>();
 }
 
 void Capture::addPacket(Packet* packet)
@@ -10,7 +10,7 @@ void Capture::addPacket(Packet* packet)
 	packets.push_back(packet);
 }
 
-list<Packet*> Capture::getPackets()
+std::list<Packet*> Capture::getPackets()
 {
 	return packets;
 }

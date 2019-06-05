@@ -2,8 +2,6 @@
 
 #include <string>
 
-using namespace std;
-
 class CalibrationType
 {
 public:
@@ -28,7 +26,7 @@ public:
 		return value != other.value;
 	}
 
-	string toString() const
+	std::string toString() const
 	{ 
 		return value == INTRINSICS ? "intrinsics" : value == EXTRINSICS? "extrinsics" : "poses";
 	}

@@ -5,27 +5,24 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <string>
 
-using namespace std;
-using namespace boost;
-
 class ConfigController
 {
 public:
 	ConfigController();
-	string getDataFolder();
+	std::string getDataFolder();
 	int getGuiFps();
 	int getMaxWidth();
 	int getMaxHeight();
 	int getBarHeight();	
 	bool getShowPreviewOnCapture();
 	int getTotalSquares();
-	int getSquareLength();
+	double getSquareLength();
 	int getCameraNumber();
 	int getCameraLowFps();
 	int getCameraHighFps();
 	int getCameraHeight();
 	int getCameraWidth();
-	map<int, int> getCameraOrder();	
+	std::map<int, int> getCameraOrder();	
 	int getMinCalibrationSamples();
 	int getMaxCalibrationSamples();
 	int getCharucoCols();
@@ -33,19 +30,19 @@ public:
 	float getCharucoSquareLength();
 	float getCharucoMarkerLength();
 private:
-	string dataFolder;
+	std::string dataFolder;
 	int guiFps;
 	int maxWidth;
 	int maxHeight;	
 	int barHeight;	
 	bool showPreviewOnCapture;
 	int totalSquares;
-	int squareLength;
+	double squareLength;
 	int cameraHighFps;
 	int cameraLowFps;
 	int cameraHeight;
 	int cameraWidth;
-	map<int, int> cameraOrder;	
+	std::map<int, int> cameraOrder;	
 	int minCalibrationSamples;
 	int maxCalibrationSamples;
 	int charucoCols;

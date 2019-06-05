@@ -11,10 +11,6 @@
 
 #define MAX_CAMERAS 16
 
-using namespace std;
-using namespace cv;
-using namespace CameraLibrary;
-
 class OptitrackCamera
 {
 public:
@@ -26,9 +22,9 @@ public:
 private:
 	int cameraWidth;
 	int cameraHeight;
-	map<int, int> cameraOrder;
+	std::map<int, int> cameraOrder;
 	int cameraCount;
-	CameraList list;
-	Camera* camera[MAX_CAMERAS];
-	cModuleSync* sync;	
+	CameraLibrary::CameraList list;
+	CameraLibrary::Camera* camera[MAX_CAMERAS];
+	CameraLibrary::cModuleSync* sync;
 };

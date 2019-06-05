@@ -26,7 +26,7 @@ bool CameraController::startCameras(CaptureType captureType)
 		capture = new Capture();
 
 		shouldLoopThread = true;
-		thread camerasThread = thread(&CameraController::cameraLoop, this, cameraFps);
+		std::thread camerasThread = std::thread(&CameraController::cameraLoop, this, cameraFps);
 		camerasThread.detach();
 		return true;
 	}
@@ -41,6 +41,9 @@ void CameraController::cameraLoop(int cameraFps)
 
 	while (shouldLoopThread)
 	{
+		int milisecondsToSleep = (int)(1.0 / cameraFps * 1000);
+		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(milisecondsToSleep);
+
 		if (!shouldKeepPacket)
 		{
 			delete currentPacket;
@@ -71,8 +74,7 @@ void CameraController::cameraLoop(int cameraFps)
 			}
 		}
 
-		int milisecondsToSleep = (int)(1.0 / cameraFps * 1000);
-		this_thread::sleep_for(chrono::milliseconds(milisecondsToSleep));
+		std::this_thread::sleep_until(timePoint);
 	}
 }
 
@@ -80,7 +82,7 @@ void CameraController::stopCameras()
 {
 	while (shouldCaptureVideo)
 	{
-		this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 
 	shouldLoopThread = false;

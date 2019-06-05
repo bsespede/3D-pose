@@ -2,17 +2,15 @@
 
 #include <opencv2/core.hpp>
 
-using namespace cv;
-
 class Intrinsics
 {
 public:
-	Intrinsics(Mat cameraMatrix, Mat distortionCoefficients, double reprojectionError);
-	Mat getCameraMatrix();
-	Mat getDistortionCoefficients();
+	Intrinsics(cv::Mat cameraMatrix, cv::Mat distortionCoefficients, double reprojectionError);
+	cv::Mat getCameraMatrix();
+	cv::Mat getDistortionCoefficients();
 	double getReprojectionError();
 private:
-	Mat cameraMatrix;
-	Mat distortionCoefficients;
+	cv::Mat cameraMatrix;
+	cv::Mat distortionCoefficients;
 	double reprojectionError;
 };

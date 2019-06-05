@@ -4,8 +4,6 @@
 #include "model/config/ConfigController.h"
 #include "model/camera/Packet.h"
 
-using namespace cv;
-
 class Renderer2D
 {
 public:

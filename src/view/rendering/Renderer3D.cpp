@@ -7,108 +7,291 @@ Renderer3D::Renderer3D(ConfigController* configController)
 	this->guiFps = configController->getGuiFps();
 }
 
-void Renderer3D::render(Video3D* result)
+void Renderer3D::render(Video3D* video3D)
 {
-	/*viz::Viz3d visualizer = viz::Viz3d("3DPose");
-	visualizer.setBackgroundColor(viz::Color(25.0f, 25.0f, 25.0f), viz::Color(50.0f, 50.0f, 50.0f));
+	vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();	
+	renderer->SetUseFXAA(true);
+	renderer->GradientBackgroundOn();
+	renderer->SetBackground(25 / 255.0, 25 / 255.0, 25 / 255.0);
+	renderer->SetBackground2(50 / 255.0, 50 / 255.0, 50 / 255.0);
 
-	for (int cameraNumber : result->getCameras())
+	vtkSmartPointer<vtkActor> gridActor = getGridActor();
+	renderer->AddActor(gridActor);
+
+	vtkSmartPointer<vtkActor> axesActor = getAxesActor();
+	vtkSmartPointer<vtkFollower> xAxisLabel = getTextActor("X", cv::Point3d(squareLength * 1.25, 0.0, 0.0), renderer->GetActiveCamera());
+	vtkSmartPointer<vtkFollower> yAxisLabel = getTextActor("Y", cv::Point3d(0.0, squareLength * 1.25, 0.0), renderer->GetActiveCamera());
+	vtkSmartPointer<vtkFollower> zAxisLabel = getTextActor("Z", cv::Point3d(0.0, 0.0, squareLength * 1.25), renderer->GetActiveCamera());
+	renderer->AddActor(axesActor);
+	renderer->AddActor(xAxisLabel);
+	renderer->AddActor(yAxisLabel);
+	renderer->AddActor(zAxisLabel);
+
+	std::vector<vtkSmartPointer<vtkActor>> cameraActors = getCameraActors(video3D);
+	for (vtkSmartPointer<vtkActor> cameraActor : cameraActors)
 	{
-		Mat cameraImage = result->getFrustumImages()[cameraNumber];
-		Extrinsics* cameraExtrinsics = result->getExtrinsics()[cameraNumber];
-		Intrinsics* cameraIntrinsics = result->getIntrinsics()[cameraNumber];
-		Mat cameraMatrix = cameraIntrinsics->getCameraMatrix();
-		Matx33d convertedMatrix = Matx33d((double*)cameraMatrix.clone().ptr());
-		
-		viz::WCameraPosition cameraWidget = viz::WCameraPosition(convertedMatrix, cameraImage, 1000.0);
-		visualizer.showWidget("camera-" + to_string(cameraNumber), cameraWidget);
-
-		Mat rotationMatrix;
-		Mat rotationVector = cameraExtrinsics->getRotationVector();
-		Rodrigues(rotationVector, rotationMatrix);
-		Mat translationVector = cameraExtrinsics->getTranslationVector();
-		Affine3d cameraPose = Affine3d(rotationMatrix, translationVector);
-		visualizer.setWidgetPose("camera-" + to_string(cameraNumber), cameraPose);
-
-		viz::WText3D cameraNumberWidget = viz::WText3D(to_string(cameraNumber), Point3d(translationVector), 400.0, true);
-		visualizer.showWidget("text-" + to_string(cameraNumber), cameraNumberWidget);
+		renderer->AddActor(cameraActor);
 	}
 
-	int halfPlaneLength = (totalSquares / 2) * squareLength;
+	/*std::vector<vtkSmartPointer<vtkActor>> cloudActors = getCloudActors(video3D);
+	for (vtkSmartPointer<vtkActor> cloudActor : cloudActors)
+	{
+		renderer->AddActor(cloudActor);
+	}*/
+
+	renderer->ResetCamera();
+
+	vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
+	renderWindow->AddRenderer(renderer);
+	renderWindow->SetSize(renderWindow->GetScreenSize());
+
+	vtkSmartPointer<vtkRenderWindowInteractor> windowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
+	windowInteractor->SetRenderWindow(renderWindow);
+
+	vtkSmartPointer<vtkInteractorStyleTrackballCamera> style = vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
+	windowInteractor->SetInteractorStyle(style);
+	windowInteractor->Start();
+
+	/*Frame3D* currentFrame = nullptr;
+	while (renderWindow->)
+	{
+		Frame3D* previousFrame = currentFrame;
+		currentFrame = video3D->getNextFrame();
+		//updateCloudActors(previousFrame, currentFrame, cloudActors);
+
+		renderer->ResetCameraClippingRange();
+		renderWindow->Render();
+	}*/
+}
+
+vtkSmartPointer<vtkActor> Renderer3D::getGridActor()
+{
+	vtkSmartPointer<vtkPolyData> linesPolyData = vtkSmartPointer<vtkPolyData>::New();
+	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+
+	double halfPlaneLength = totalSquares * squareLength / 2;
+
 	for (int row = 0; row < totalSquares; row++)
 	{
-		for (int col = 0; col < totalSquares; col++)
-		{
-			int id = row * totalSquares + col;
+		double origin[3] = { row * squareLength - halfPlaneLength, -halfPlaneLength, 0.0 };
+		double end[3] = { row * squareLength - halfPlaneLength, (totalSquares - 1) * squareLength - halfPlaneLength, 0.0 };
 
-			viz::WLine squareLineTop = viz::WLine(Point3d(col * squareLength - halfPlaneLength, row * squareLength - halfPlaneLength, 0), Point3d(col * squareLength + squareLength - halfPlaneLength, row * squareLength - halfPlaneLength, 0), viz::Color(100.0f, 100.0f, 100.0f));
-			visualizer.showWidget("top-" + to_string(id), squareLineTop);
-
-			viz::WLine squareLineLeft = viz::WLine(Point3d(col * squareLength - halfPlaneLength, row * squareLength - halfPlaneLength, 0), Point3d(col * squareLength - halfPlaneLength, row * squareLength + squareLength - halfPlaneLength, 0), viz::Color(100.0f, 100.0f, 100.0f));
-			visualizer.showWidget("left-" + to_string(id), squareLineLeft);
-
-			viz::WLine squareLineBottom = viz::WLine(Point3d(col * squareLength - halfPlaneLength, (row + 1) * squareLength - halfPlaneLength, 0), Point3d(col * squareLength + squareLength - halfPlaneLength, (row + 1) * squareLength - halfPlaneLength, 0), viz::Color(100.0f, 100.0f, 100.0f));
-			visualizer.showWidget("bottom-" + to_string(id), squareLineBottom);
-
-			viz::WLine squareLineRight = viz::WLine(Point3d((col + 1) * squareLength - halfPlaneLength, row * squareLength - halfPlaneLength, 0), Point3d((col + 1) * squareLength - halfPlaneLength, row * squareLength + squareLength - halfPlaneLength, 0), viz::Color(100.0f, 100.0f, 100.0f));
-			visualizer.showWidget("right-" + to_string(id), squareLineRight);
-		}
+		points->InsertNextPoint(origin);
+		points->InsertNextPoint(end);
 	}
 
-	viz::WLine xAxis = viz::WLine(Point3d(0, 0, 0), Point3d(squareLength, 0, 0), viz::Color(59.0f, 85.0f, 237.0f));
-	viz::WText3D xAxisText = viz::WText3D("X", Point3d(squareLength + 500, 0, 0), 400.0, true);
-	visualizer.showWidget("axis-x", xAxis);
-	visualizer.showWidget("axis-x-text", xAxisText);
-	visualizer.setRenderingProperty("axis-x", viz::LINE_WIDTH, 2.0);
-
-	viz::WLine yAxis = viz::WLine(Point3d(0, 0, 0), Point3d(0, squareLength, 0), viz::Color(106.0f, 174.0f, 60.0f));
-	viz::WText3D yAxisText = viz::WText3D("Y", Point3d(0, squareLength + 500, 0), 400.0, true);
-	visualizer.showWidget("axis-y", yAxis);
-	visualizer.showWidget("axis-y-text", yAxisText);
-	visualizer.setRenderingProperty("axis-y", viz::LINE_WIDTH, 2.0);
-
-	viz::WLine zAxis = viz::WLine(Point3d(0, 0, 0), Point3d(0, 0, squareLength), viz::Color(155.0f, 99.0f, 32.0f));
-	viz::WText3D zAxisText = viz::WText3D("Z", Point3d(0, 0, squareLength + 500), 400.0, true);
-	visualizer.showWidget("axis-z", zAxis);
-	visualizer.showWidget("axis-z-text", zAxisText);
-	visualizer.setRenderingProperty("axis-z", viz::LINE_WIDTH, 2.0);
-
-	visualizer.resetCamera();
-
-	int frameNumber = 0;
-	vector<map<int, Mat>> posesVideo = result->getPoses();
-
-	visualizer.spinOnce(1, true);
-	visualizer
-	while (!visualizer.wasStopped())
+	for (int col = 0; col < totalSquares; col++)
 	{
-		printf("Priting frame %d\n", frameNumber);
+		double origin[3] = { -halfPlaneLength, col * squareLength - halfPlaneLength, 0.0 };
+		double end[3] = { (totalSquares - 1) * squareLength - halfPlaneLength, col * squareLength - halfPlaneLength, 0.0 };
 
-		if (frameNumber == posesVideo.size())
-		{
-			frameNumber = 0;
-		}
-
-		for (pair<int, Mat> cameraPoses : posesVideo[frameNumber])
-		{
-			int cameraNumber = cameraPoses.first;
-			Mat poses = cameraPoses.second;				
-			viz::WCloud cameraCloud = viz::WCloud(poses);
-			cameraCloud.setRenderingProperty(cv::viz::POINT_SIZE, 5);
-			visualizer.showWidget("cloud-" + to_string(cameraNumber), cameraCloud);
-		}
-			
-		int milisecondsToSleep = (int)(1.0 / guiFps * 1000);
-		this_thread::sleep_for(chrono::milliseconds(milisecondsToSleep));
-
-		for (pair<int, Mat> cameraPoses : posesVideo[frameNumber])
-		{
-			int cameraNumber = cameraPoses.first;
-			visualizer.removeWidget("cloud-" + to_string(cameraNumber));
-		}
-
-		frameNumber++;		
+		points->InsertNextPoint(origin);
+		points->InsertNextPoint(end);
 	}
 
-	delete result;*/
+	linesPolyData->SetPoints(points);
+	vtkSmartPointer<vtkCellArray> gridLines = vtkSmartPointer<vtkCellArray>::New();
+
+	for (int pointIndex = 0; pointIndex <= totalSquares * 4; pointIndex += 2)
+	{
+		vtkSmartPointer<vtkLine> line = vtkSmartPointer<vtkLine>::New();
+		line->GetPointIds()->SetId(0, pointIndex);
+		line->GetPointIds()->SetId(1, pointIndex + 1);
+
+		gridLines->InsertNextCell(line);
+	}
+
+	linesPolyData->SetLines(gridLines);
+
+	vtkSmartPointer<vtkUnsignedCharArray> colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
+	colors->SetNumberOfComponents(3);
+	unsigned char gridLineColor[3] = { 100, 100, 100 };
+
+	for (int pointIndex = 0; pointIndex < totalSquares * 2; pointIndex++)
+	{
+		colors->InsertNextTypedTuple(gridLineColor);
+	}
+
+	linesPolyData->GetCellData()->SetScalars(colors);
+
+	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetInputData(linesPolyData);
+
+	vtkSmartPointer<vtkActor> gridActor = vtkSmartPointer<vtkActor>::New();
+	gridActor->SetMapper(mapper);
+
+	return gridActor;
+}
+
+vtkSmartPointer<vtkActor> Renderer3D::getAxesActor()
+{
+	vtkSmartPointer<vtkPolyData> linesPolyData = vtkSmartPointer<vtkPolyData>::New();
+	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+
+	double axisBegin[3] = { 0.0, 0.0, 0.0 };
+	double xAxisEnd[3] = { squareLength, 0.0, 0.0 };
+	double yAxisEnd[3] = { 0.0, squareLength, 0.0 };
+	double zAxisEnd[3] = { 0.0, 0.0, squareLength };
+
+	points->InsertNextPoint(axisBegin);
+	points->InsertNextPoint(xAxisEnd);
+	points->InsertNextPoint(yAxisEnd);
+	points->InsertNextPoint(zAxisEnd);
+
+	linesPolyData->SetPoints(points);
+
+	vtkSmartPointer<vtkCellArray> axisLines = vtkSmartPointer<vtkCellArray>::New();
+
+	vtkSmartPointer<vtkLine> xLine = vtkSmartPointer<vtkLine>::New();
+	xLine->GetPointIds()->SetId(0, 0);
+	xLine->GetPointIds()->SetId(1, 1);
+	axisLines->InsertNextCell(xLine);
+
+	vtkSmartPointer<vtkLine> yLine = vtkSmartPointer<vtkLine>::New();
+	yLine->GetPointIds()->SetId(0, 0);
+	yLine->GetPointIds()->SetId(1, 2);
+	axisLines->InsertNextCell(yLine);
+
+	vtkSmartPointer<vtkLine> zLine = vtkSmartPointer<vtkLine>::New();
+	zLine->GetPointIds()->SetId(0, 0);
+	zLine->GetPointIds()->SetId(1, 3);
+	axisLines->InsertNextCell(zLine);
+
+	linesPolyData->SetLines(axisLines);
+
+	vtkSmartPointer<vtkUnsignedCharArray> colors = vtkSmartPointer<vtkUnsignedCharArray>::New();
+	colors->SetNumberOfComponents(3);
+
+	unsigned char xAxisColor[3] = { 237, 85, 59 };
+	unsigned char yAxisColor[3] = { 60, 174, 106 };
+	unsigned char zAxisColor[3] = { 32, 99, 155 };
+
+	colors->InsertNextTypedTuple(xAxisColor);
+	colors->InsertNextTypedTuple(yAxisColor);
+	colors->InsertNextTypedTuple(zAxisColor);
+
+	linesPolyData->GetCellData()->SetScalars(colors);
+
+	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetInputData(linesPolyData);
+
+	vtkSmartPointer<vtkActor> axisActor = vtkSmartPointer<vtkActor>::New();
+	axisActor->SetMapper(mapper);
+	axisActor->GetProperty()->SetLineWidth(2);
+
+	return axisActor;
+}
+
+vtkSmartPointer<vtkFollower> Renderer3D::getTextActor(std::string text, cv::Point3d position, vtkSmartPointer<vtkCamera> camera)
+{
+	double scale = 200.0;
+
+	vtkSmartPointer<vtkVectorText> textSource = vtkSmartPointer<vtkVectorText>::New();
+	textSource->SetText(text.c_str());
+	textSource->Update();
+
+	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+	mapper->SetInputConnection(textSource->GetOutputPort());
+
+	vtkSmartPointer<vtkFollower> textActor = vtkSmartPointer<vtkFollower>::New();
+	textActor->SetMapper(mapper);
+	textActor->SetPosition(position.x, position.y, position.z);
+	textActor->SetScale(scale);
+	textActor->SetCamera(camera);
+
+	return textActor;
+}
+
+std::vector<vtkSmartPointer<vtkActor>> Renderer3D::getCameraActors(Video3D* video3D)
+{
+	double scale = 400.0;
+	std::vector<vtkSmartPointer<vtkActor>> cameraActors;
+	std::map<int, Intrinsics*> intrinsics = video3D->getIntrinsics();
+	std::map<int, Extrinsics*> extrinsics = video3D->getExtrinsics();
+
+	for (int cameraNumber : video3D->getCameras())
+	{
+		cv::Mat cameraMatrix = intrinsics[cameraNumber]->getCameraMatrix();
+
+		double fX = cameraMatrix.at<double>(0, 0);
+		double fY = cameraMatrix.at<double>(1, 1);
+		double cY = cameraMatrix.at<double>(1, 2);
+		double fovY = 2.0 * atan2(cY, fY) * 180 / CV_PI;
+		double aspectRatio = fY / fX;
+
+		vtkSmartPointer<vtkCamera> camera = vtkSmartPointer<vtkCamera>::New();
+		camera->SetViewAngle(fovY);
+		camera->SetPosition(0.0, 0.0, 0.0);
+		camera->SetViewUp(0.0, 1.0, 0);
+		camera->SetFocalPoint(0.0, 0.0, 1.0);
+		camera->SetClippingRange(1e-9, scale);
+
+		double planesArray[24];
+		camera->GetFrustumPlanes(aspectRatio, planesArray);
+
+		vtkSmartPointer<vtkPlanes> planes = vtkSmartPointer<vtkPlanes>::New();
+		planes->SetFrustumPlanes(planesArray);
+
+		vtkSmartPointer<vtkFrustumSource> frustumSource = vtkSmartPointer<vtkFrustumSource>::New();
+		frustumSource->SetPlanes(planes);
+
+		vtkSmartPointer<vtkExtractEdges> extractEdges = vtkSmartPointer<vtkExtractEdges>::New();
+		extractEdges->SetInputConnection(frustumSource->GetOutputPort());
+		extractEdges->Update();
+
+		vtkSmartPointer<vtkPolyData> polydata = extractEdges->GetOutput();
+
+		vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+		mapper->SetInputData(polydata);
+
+		vtkSmartPointer<vtkActor> cameraActor = vtkSmartPointer<vtkActor>::New();
+		cameraActor->SetMapper(mapper);
+
+		cv::Mat rotationMatrix;
+		cv::Mat rotationVector = extrinsics[cameraNumber]->getRotationVector();
+		cv::Rodrigues(rotationVector, rotationMatrix);
+		cv::Mat translationVector = extrinsics[cameraNumber]->getTranslationVector();
+		cv::Affine3d cameraTransform = cv::Affine3d(rotationMatrix, translationVector);
+		transformActor(cameraActor, cameraTransform);
+
+		cameraActors.push_back(cameraActor);
+	}	
+
+	return cameraActors;
+}
+
+std::vector<vtkSmartPointer<vtkActor>> Renderer3D::getCloudActors(Video3D* video3D)
+{
+	std::vector<vtkSmartPointer<vtkActor>> cloudActors;
+	return cloudActors;
+}
+
+void Renderer3D::updateCloudActors(Frame3D* previousFrame, Frame3D* currentFrame, std::vector<vtkSmartPointer<vtkActor>> cloudActors)
+{
+	if (previousFrame != nullptr)
+	{
+		if (currentFrame == nullptr)
+		{
+			// clean actor
+		}
+		else
+		{
+			// update actor
+		}
+	}
+	else
+	{
+		if (currentFrame != nullptr)
+		{
+			// add actor
+		}
+	}
+}
+
+void Renderer3D::transformActor(vtkSmartPointer<vtkActor> actor, cv::Affine3d transform)
+{
+	vtkSmartPointer<vtkMatrix4x4> matrix = vtkSmartPointer<vtkMatrix4x4>::New();
+	matrix->DeepCopy(transform.matrix.val);
+	actor->SetUserMatrix(matrix);
+	actor->Modified();
 }

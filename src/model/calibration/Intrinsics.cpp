@@ -1,18 +1,18 @@
 #include "Intrinsics.h"
 
-Intrinsics::Intrinsics(Mat cameraMatrix, Mat distortionCoefficients, double reprojectionError)
+Intrinsics::Intrinsics(cv::Mat cameraMatrix, cv::Mat distortionCoefficients, double reprojectionError)
 {
 	this->cameraMatrix = cameraMatrix;
 	this->distortionCoefficients = distortionCoefficients;
 	this->reprojectionError = reprojectionError;
 }
 
-Mat Intrinsics::getCameraMatrix()
+cv::Mat Intrinsics::getCameraMatrix()
 {
 	return cameraMatrix;
 }
 
-Mat Intrinsics::getDistortionCoefficients()
+cv::Mat Intrinsics::getDistortionCoefficients()
 {
 	return distortionCoefficients;
 }

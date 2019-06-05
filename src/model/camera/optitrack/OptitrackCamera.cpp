@@ -10,13 +10,13 @@ OptitrackCamera::OptitrackCamera(ConfigController* configController)
 bool OptitrackCamera::startCameras(int cameraFps)
 {
 	CameraLibrary_EnableDevelopment();
-	CameraManager::X();
-	CameraManager::X().WaitForInitialization();
+	CameraLibrary::CameraManager::X();
+	CameraLibrary::CameraManager::X().WaitForInitialization();
 	cameraCount = 0;
 
 	for (int i = 0; i < list.Count(); i++)
 	{
-		camera[i] = CameraManager::X().GetCamera(list[i].UID());
+		camera[i] = CameraLibrary::CameraManager::X().GetCamera(list[i].UID());
 		int cameraSerial = list[i].Serial();
 		int cameraNumber = cameraOrder[cameraSerial];
 		
@@ -43,7 +43,7 @@ bool OptitrackCamera::startCameras(int cameraFps)
 		return false;
 	}
 
-	sync = cModuleSync::Create();
+	sync = CameraLibrary::cModuleSync::Create();
 
 	if (sync == nullptr)
 	{
@@ -71,7 +71,7 @@ bool OptitrackCamera::startCameras(int cameraFps)
 
 Packet* OptitrackCamera::getPacket()
 {
-	FrameGroup* frameGroup = sync->GetFrameGroup();
+	CameraLibrary::FrameGroup* frameGroup = sync->GetFrameGroup();
 	
 	if (frameGroup)
 	{
@@ -86,12 +86,12 @@ Packet* OptitrackCamera::getPacket()
 
 		for (int i = 0; i < frameGroup->Count(); i++)
 		{
-			Frame* frame = frameGroup->GetFrame(i);
-			Camera* camera = frame->GetCamera();
+			CameraLibrary::Frame* frame = frameGroup->GetFrame(i);
+			CameraLibrary::Camera* camera = frame->GetCamera();
 
 			int cameraId = cameraOrder[camera->Serial()];
 
-			Mat frameMat = Mat(Size(cameraWidth, cameraHeight), CV_8UC1);
+			cv::Mat frameMat = cv::Mat(cv::Size(cameraWidth, cameraHeight), CV_8UC1);
 			frame->Rasterize(cameraWidth, cameraHeight, (unsigned int)frameMat.step, 8, frameMat.data);
 
 			packet->addData(cameraId, frameMat);
@@ -117,7 +117,7 @@ void OptitrackCamera::stopCameras()
 	}
 
 	sync->RemoveAllCameras();
-	cModuleSync::Destroy(sync);
+	CameraLibrary::cModuleSync::Destroy(sync);
 
 	shutdownCameras();
 }
@@ -132,5 +132,5 @@ void OptitrackCamera::shutdownCameras()
 		}
 	}
 
-	CameraManager::X().Shutdown();
+	CameraLibrary::CameraManager::X().Shutdown();
 }

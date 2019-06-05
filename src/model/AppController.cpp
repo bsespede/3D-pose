@@ -7,17 +7,17 @@ AppController::AppController(ConfigController* configController)
 	this->cameraController = new CameraController(configController);
 }
 
-bool AppController::hasScene(string name)
+bool AppController::hasScene(std::string name)
 {
 	return sceneController->hasScene(name);
 }
 
-Scene AppController::saveScene(string name)
+Scene AppController::saveScene(std::string name)
 {
 	return sceneController->saveScene(name);
 }
 
-Scene AppController::getScene(string name)
+Scene AppController::getScene(std::string name)
 {
 	return sceneController->getScene(name);
 }

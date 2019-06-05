@@ -2,10 +2,10 @@
 
 ConfigController::ConfigController()
 {
-	property_tree::ptree root;
-	property_tree::read_json("app-config.json", root);
+	boost::property_tree::ptree root;
+	boost::property_tree::read_json("app-config.json", root);
 
-	this->dataFolder = root.get<string>("config.dataFolder");
+	this->dataFolder = root.get<std::string>("config.dataFolder");
 
 	this->guiFps = root.get<int>("config.gui.fps");
 	this->maxWidth = root.get<int>("config.gui.maxWidth");
@@ -14,7 +14,7 @@ ConfigController::ConfigController()
 	this->showPreviewOnCapture = root.get<bool>("config.gui.showCapturePreview");
 
 	this->totalSquares = root.get<int>("config.gui.totalSquares");
-	this->squareLength = root.get<int>("config.gui.squareLength");
+	this->squareLength = root.get<double>("config.gui.squareLength");
 	
 	this->cameraLowFps = root.get<int>("config.cameras.lowFps");
 	this->cameraHighFps = root.get<int>("config.cameras.highFps");
@@ -23,7 +23,7 @@ ConfigController::ConfigController()
 
 	int cameraNumber = 0;
 	this->cameraOrder = std::map<int, int>();
-	for (property_tree::ptree::value_type& cameraId : root.get_child("config.cameras.order"))
+	for (boost::property_tree::ptree::value_type& cameraId : root.get_child("config.cameras.order"))
 	{
 		int serial = cameraId.second.get_value<int>();
 		cameraOrder[serial] = cameraNumber;
@@ -39,7 +39,7 @@ ConfigController::ConfigController()
 	this->charucoMarkerLength = root.get<float>("config.calibration.charucoBoard.markerLength");
 }
 
-string ConfigController::getDataFolder()
+std::string ConfigController::getDataFolder()
 {
 	return dataFolder;
 }
@@ -84,12 +84,12 @@ int ConfigController::getTotalSquares()
 	return totalSquares;
 }
 
-int ConfigController::getSquareLength()
+double ConfigController::getSquareLength()
 {
 	return squareLength;
 }
 
-map<int, int> ConfigController::getCameraOrder()
+std::map<int, int> ConfigController::getCameraOrder()
 {
 	return cameraOrder;
 }

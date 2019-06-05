@@ -2,17 +2,15 @@
 
 #include <opencv2/core.hpp>
 
-using namespace cv;
-
 class Extrinsics
 {
 public:
-	Extrinsics(Mat translationVector, Mat rotationVector, double reprojectionError);
-	Mat getTranslationVector();
-	Mat getRotationVector();
+	Extrinsics(cv::Mat translationVector, cv::Mat rotationVector, double reprojectionError);
+	cv::Mat getTranslationVector();
+	cv::Mat getRotationVector();
 	double getReprojectionError();
 private:
-	Mat translationVector;
-	Mat rotationVector;
+	cv::Mat translationVector;
+	cv::Mat rotationVector;
 	double reprojectionError;
 };

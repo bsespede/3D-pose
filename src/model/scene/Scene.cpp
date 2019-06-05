@@ -1,17 +1,17 @@
 #include "Scene.h"
 
-Scene::Scene(string name, string date)
+Scene::Scene(std::string name, std::string date)
 {
 	this->name = name;
 	this->date = date;
 }
 
-string Scene::getDate()
+std::string Scene::getDate()
 {
 	return date;
 }
 
-string Scene::getName()
+std::string Scene::getName()
 {
 	return name;
 }

@@ -3,8 +3,6 @@
 #include <list>
 #include "model/camera/Packet.h"
 
-using namespace std;
-
 class Capture
 {
 public:

@@ -2,20 +2,20 @@
 
 Packet::Packet()
 {
-	this->data = map<int, Mat>();
+	this->data = std::map<int, cv::Mat>();
 }
 
 Packet::Packet(Packet* packet)
 {
-	this->data = map<int, Mat>(packet->getData());
+	this->data = std::map<int, cv::Mat>(packet->getData());
 }
 
-map<int, Mat> Packet::getData()
+std::map<int, cv::Mat> Packet::getData()
 {
 	return data;
 }
 
-void Packet::addData(int index, Mat payload)
+void Packet::addData(int index, cv::Mat payload)
 {
 	data[index] = payload;
 }

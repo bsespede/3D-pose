@@ -2,15 +2,15 @@
 
 Frame3D::Frame3D()
 {
-	this->data = map<int, list<Point3d>>();
+	this->data = std::map<int, std::list<cv::Point3d>>();
 }
 
-map<int, list<Point3d>> Frame3D::getData()
+std::map<int, std::list<cv::Point3d>> Frame3D::getData()
 {
 	return data;
 }
 
-void Frame3D::addData(int index, list<Point3d> payload)
+void Frame3D::addData(int index, std::list<cv::Point3d> payload)
 {
 	data[index] = payload;
 }

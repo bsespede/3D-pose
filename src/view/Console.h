@@ -16,8 +16,6 @@
 #define GREEN 0x0A
 #define WHITE 0x07
 
-using namespace std;
-
 class Console
 {
 public:
@@ -36,9 +34,9 @@ private:
 	void showResultPreview(Scene scene, CaptureType captureType);
 	void showCameraPreview();
 	void showCameraPreviewLoop();
-	void showStatusMessage(string message, int fontColor);
+	void showStatusMessage(std::string message, int fontColor);
 	bool showPreviewOnCapture;
-	atomic<bool> showPreviewUI;
+	std::atomic<bool> showPreviewUI;
 	AppController* appController;
 	Renderer2D* renderer2D;
 	Renderer3D* renderer3D;

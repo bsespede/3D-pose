@@ -1,74 +1,74 @@
 #include "SceneController.h"
 
-SceneController::SceneController(string dataFolder)
+SceneController::SceneController(std::string dataFolder)
 {
 	this->dataFolder = dataFolder;
 }
 
-bool SceneController::hasScene(string name)
+bool SceneController::hasScene(std::string name)
 {
-	return filesystem::exists(dataFolder + "/" + name + "/scene.json");
+	return boost::filesystem::exists(dataFolder + "/" + name + "/scene.json");
 }
 
-Scene SceneController::getScene(string name)
+Scene SceneController::getScene(std::string name)
 {
-	string sceneFolder = dataFolder + "/" + name;
+	std::string sceneFolder = dataFolder + "/" + name;
 
-	property_tree::ptree root;
-	property_tree::read_json(sceneFolder + "/scene.json", root);
+	boost::property_tree::ptree root;
+	boost::property_tree::read_json(sceneFolder + "/scene.json", root);
 	
-	string sceneName = root.get<string>("scene.name");
-	string sceneDate = root.get<string>("scene.date");
+	std::string sceneName = root.get<std::string>("scene.name");
+	std::string sceneDate = root.get<std::string>("scene.date");
 
 	return Scene(sceneName, sceneDate);
 }
 
-Scene SceneController::saveScene(string name)
+Scene SceneController::saveScene(std::string name)
 {
-	string sceneFolder = dataFolder + "/" + name;
-	filesystem::create_directory(sceneFolder);
+	std::string sceneFolder = dataFolder + "/" + name;
+	boost::filesystem::create_directory(sceneFolder);
 
-	string configFile = sceneFolder + "/scene.json";
-	property_tree::ptree root;
+	std::string configFile = sceneFolder + "/scene.json";
+	boost::property_tree::ptree root;
 
-	string date = getDateString();
+	std::string date = getDateString();
 	root.put("scene.name", name);
 	root.put("scene.date", date);
 
-	property_tree::write_json(configFile, root);
+	boost::property_tree::write_json(configFile, root);
 	return Scene(name, date);
 }
 
 bool SceneController::hasCapture(Scene scene, CaptureType captureType)
 {
-	string operationFolder = dataFolder + "/" + scene.getName() + "/" + captureType.toString();
-	return filesystem::exists(operationFolder + "/capture.json");
+	std::string operationFolder = dataFolder + "/" + scene.getName() + "/" + captureType.toString();
+	return boost::filesystem::exists(operationFolder + "/capture.json");
 }
 
 void SceneController::saveCapture(Scene scene, CaptureType captureType, Capture* capture)
 {
-	string operationFolder = dataFolder + "/" + scene.getName() + "/" + captureType.toString();
-	filesystem::create_directory(operationFolder);
+	std::string operationFolder = dataFolder + "/" + scene.getName() + "/" + captureType.toString();
+	boost::filesystem::create_directory(operationFolder);
 
-	string captureFile = operationFolder + "/capture.json";
-	property_tree::ptree root;
+	std::string captureFile = operationFolder + "/capture.json";
+	boost::property_tree::ptree root;
 
-	string date = getDateString();
+	std::string date = getDateString();
 	root.put("capture.date", date);
 
 	int frameNumber = 0;
-	set<int> cameras;
-	list<Packet*> packets = capture->getPackets();
+	std::set<int> cameras;
+	std::list<Packet*> packets = capture->getPackets();
 	for (Packet* packet: packets)
 	{
-		for (pair<int, Mat> pair: packet->getData())
+		for (std::pair<int, cv::Mat> pair: packet->getData())
 		{
 			cameras.insert(pair.first);
-			string camFolder = operationFolder + "/cam-" + to_string(pair.first);
-			filesystem::create_directory(camFolder);
+			std::string camFolder = operationFolder + "/cam-" + std::to_string(pair.first);
+			boost::filesystem::create_directory(camFolder);
 
-			string frameFolder = camFolder + "/" + to_string(frameNumber) + ".png";
-			imwrite(frameFolder, pair.second);			
+			std::string frameFolder = camFolder + "/" + std::to_string(frameNumber) + ".png";
+			cv::imwrite(frameFolder, pair.second);			
 		}
 
 		frameNumber++;
@@ -76,10 +76,10 @@ void SceneController::saveCapture(Scene scene, CaptureType captureType, Capture*
 
 	delete capture;
 
-	property_tree::ptree camerasNode;
+	boost::property_tree::ptree camerasNode;
 	for (int cameraIndex: cameras)
 	{
-		property_tree::ptree cameraNode;
+		boost::property_tree::ptree cameraNode;
 		cameraNode.put("", cameraIndex);
 		camerasNode.push_back(std::make_pair("", cameraNode));
 	}
@@ -87,18 +87,18 @@ void SceneController::saveCapture(Scene scene, CaptureType captureType, Capture*
 	root.add_child("capture.cameras", camerasNode);
 	root.put("capture.frames", frameNumber);
 
-	property_tree::write_json(captureFile, root);
+	boost::property_tree::write_json(captureFile, root);
 }
 
-vector<int> SceneController::getCapturedCameras(Scene scene, CaptureType captureType)
+std::vector<int> SceneController::getCapturedCameras(Scene scene, CaptureType captureType)
 {
-	vector<int> capturedCameras;
+	std::vector<int> capturedCameras;
 
-	string captureFolder = dataFolder + "/" + scene.getName() + "/" + captureType.toString();
-	property_tree::ptree root;
-	property_tree::read_json(captureFolder + "/capture.json", root);	
+	std::string captureFolder = dataFolder + "/" + scene.getName() + "/" + captureType.toString();
+	boost::property_tree::ptree root;
+	boost::property_tree::read_json(captureFolder + "/capture.json", root);	
 
-	for (property_tree::ptree::value_type &camera: root.get_child("capture.cameras"))
+	for (boost::property_tree::ptree::value_type &camera: root.get_child("capture.cameras"))
 	{
 		capturedCameras.push_back(camera.second.get_value<int>());
 	}
@@ -108,51 +108,51 @@ vector<int> SceneController::getCapturedCameras(Scene scene, CaptureType capture
 
 int SceneController::getCapturedFrames(Scene scene, CaptureType captureType)
 {
-	string captureFolder = dataFolder + "/" + scene.getName() + "/" + captureType.toString();
-	property_tree::ptree root;
-	property_tree::read_json(captureFolder + "/capture.json", root);
+	std::string captureFolder = dataFolder + "/" + scene.getName() + "/" + captureType.toString();
+	boost::property_tree::ptree root;
+	boost::property_tree::read_json(captureFolder + "/capture.json", root);
 
 	return root.get<int>("capture.frames");
 }
 
 bool SceneController::hasFrame(Scene scene, CaptureType captureType, int cameraNumber, int frameNumber)
 {
-	string frameFile = dataFolder + "/" + scene.getName() + "/" + captureType.toString() + "/cam-" + to_string(cameraNumber) + "/" + to_string(frameNumber) + ".png";
-	return filesystem::exists(frameFile);
+	std::string frameFile = dataFolder + "/" + scene.getName() + "/" + captureType.toString() + "/cam-" + std::to_string(cameraNumber) + "/" + std::to_string(frameNumber) + ".png";
+	return boost::filesystem::exists(frameFile);
 }
 
-Mat SceneController::getFrame(Scene scene, CaptureType captureType, int cameraNumber, int frameNumber)
+cv::Mat SceneController::getFrame(Scene scene, CaptureType captureType, int cameraNumber, int frameNumber)
 {
-	string frameFile = dataFolder + "/" + scene.getName() + "/" + captureType.toString() + "/cam-" + to_string(cameraNumber) + "/" + to_string(frameNumber) + ".png";
-	return imread(frameFile);
+	std::string frameFile = dataFolder + "/" + scene.getName() + "/" + captureType.toString() + "/cam-" + std::to_string(cameraNumber) + "/" + std::to_string(frameNumber) + ".png";
+	return cv::imread(frameFile);
 }
 
-void SceneController::saveIntrinsics(Scene scene, map<int, Intrinsics*> intrinsics)
+void SceneController::saveIntrinsics(Scene scene, std::map<int, Intrinsics*> intrinsics)
 {
-	string intrinsicsFile = dataFolder + "/" + scene.getName() + "/intrinsics.json";
+	std::string intrinsicsFile = dataFolder + "/" + scene.getName() + "/intrinsics.json";
 
-	property_tree::ptree root;
-	property_tree::ptree camerasNode;
+	boost::property_tree::ptree root;
+	boost::property_tree::ptree camerasNode;
 
-	string date = getDateString();
+	std::string date = getDateString();
 	root.put("calibration.date", date);
 
-	for (pair<int, Intrinsics*> calibrationResult : intrinsics)
+	for (std::pair<int, Intrinsics*> calibrationResult : intrinsics)
 	{
-		property_tree::ptree cameraNode;
+		boost::property_tree::ptree cameraNode;
 		int cameraNumber = calibrationResult.first;
 		Intrinsics* intrinsics = calibrationResult.second;
 
 		cameraNode.put("cameraNumber", cameraNumber);
 		cameraNode.put("reprojectionError", intrinsics->getReprojectionError());
 
-		Mat cameraMatrix = intrinsics->getCameraMatrix();
+		cv::Mat cameraMatrix = intrinsics->getCameraMatrix();
 		cameraNode.put("calibrationMatrix.fx", cameraMatrix.at<double>(0, 0));
 		cameraNode.put("calibrationMatrix.fy", cameraMatrix.at<double>(1, 1));
 		cameraNode.put("calibrationMatrix.cx", cameraMatrix.at<double>(0, 2));
 		cameraNode.put("calibrationMatrix.cy", cameraMatrix.at<double>(1, 2));
 
-		Mat distortionCoefficients = intrinsics->getDistortionCoefficients();
+		cv::Mat distortionCoefficients = intrinsics->getDistortionCoefficients();
 		cameraNode.put("distortionCoefficients.k1", distortionCoefficients.at<double>(0, 0));
 		cameraNode.put("distortionCoefficients.k2", distortionCoefficients.at<double>(0, 1));
 		cameraNode.put("distortionCoefficients.p1", distortionCoefficients.at<double>(0, 2));
@@ -164,34 +164,34 @@ void SceneController::saveIntrinsics(Scene scene, map<int, Intrinsics*> intrinsi
 	}
 
 	root.add_child("calibration.cameras", camerasNode);
-	property_tree::write_json(intrinsicsFile, root);
+	boost::property_tree::write_json(intrinsicsFile, root);
 }
 
-void SceneController::saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsics)
+void SceneController::saveExtrinsics(Scene scene, std::map<int, Extrinsics*> extrinsics)
 {
-	string extrinsicsFile = dataFolder + "/" + scene.getName() + "/extrinsics.json";
+	std::string extrinsicsFile = dataFolder + "/" + scene.getName() + "/extrinsics.json";
 
-	property_tree::ptree root;
-	property_tree::ptree camerasNode;
+	boost::property_tree::ptree root;
+	boost::property_tree::ptree camerasNode;
 
-	string date = getDateString();
+	std::string date = getDateString();
 	root.put("calibration.date", date);
 
-	for (pair<int, Extrinsics*> calibrationResult : extrinsics)
+	for (std::pair<int, Extrinsics*> calibrationResult : extrinsics)
 	{
-		property_tree::ptree cameraNode;
+		boost::property_tree::ptree cameraNode;
 		int cameraNumber = calibrationResult.first;
 		Extrinsics* extrinsics = calibrationResult.second;
 
 		cameraNode.put("cameraNumber", cameraNumber);
 		cameraNode.put("reprojectionError", extrinsics->getReprojectionError());
 
-		Mat translationVector = extrinsics->getTranslationVector();
+		cv::Mat translationVector = extrinsics->getTranslationVector();
 		cameraNode.put("translationVector.x", translationVector.at<double>(0, 0));
 		cameraNode.put("translationVector.y", translationVector.at<double>(1, 0));
 		cameraNode.put("translationVector.z", translationVector.at<double>(2, 0));
 
-		Mat rotationVector = extrinsics->getRotationVector();
+		cv::Mat rotationVector = extrinsics->getRotationVector();
 		cameraNode.put("rotationVector.x", rotationVector.at<double>(0, 0));
 		cameraNode.put("rotationVector.y", rotationVector.at<double>(1, 0));
 		cameraNode.put("rotationVector.z", rotationVector.at<double>(2, 0));
@@ -201,35 +201,35 @@ void SceneController::saveExtrinsics(Scene scene, map<int, Extrinsics*> extrinsi
 	}
 
 	root.add_child("calibration.cameras", camerasNode);
-	property_tree::write_json(extrinsicsFile, root);
+	boost::property_tree::write_json(extrinsicsFile, root);
 }
 
 
-void SceneController::savePoses(Scene scene, CaptureType captureType, vector<Frame3D*> poses)
+void SceneController::savePoses(Scene scene, CaptureType captureType, std::vector<Frame3D*> poses)
 {
-	string extrinsicsFile = dataFolder + "/" + scene.getName() + "/poses.json";
-	property_tree::ptree root;
+	std::string extrinsicsFile = dataFolder + "/" + scene.getName() + "/poses.json";
+	boost::property_tree::ptree root;
 
-	string date = getDateString();
+	std::string date = getDateString();
 	root.put("poses.date", date);
 
-	property_tree::ptree allFramesNode;
+	boost::property_tree::ptree allFramesNode;
 	for (int frameNumber = 0; frameNumber < poses.size(); frameNumber++)
 	{
 		Frame3D* frame = poses[frameNumber];
 
 		if (frame != nullptr)
 		{
-			property_tree::ptree frameDataNode;
-			for (pair<int, list<Point3d>> frameData : frame->getData())
+			boost::property_tree::ptree frameDataNode;
+			for (std::pair<int, std::list<cv::Point3d>> frameData : frame->getData())
 			{
-				property_tree::ptree cameraNode;
+				boost::property_tree::ptree cameraNode;
 				cameraNode.put("cameraNumber", frameData.first);
 
-				property_tree::ptree cameraPosesNode;
-				for (Point3d point : frameData.second)
+				boost::property_tree::ptree cameraPosesNode;
+				for (cv::Point3d point : frameData.second)
 				{
-					property_tree::ptree cameraPoseNode;
+					boost::property_tree::ptree cameraPoseNode;
 					cameraPoseNode.put("x", point.x);
 					cameraPoseNode.put("y", point.y);
 					cameraPoseNode.put("z", point.z);
@@ -240,7 +240,7 @@ void SceneController::savePoses(Scene scene, CaptureType captureType, vector<Fra
 				frameDataNode.push_back(make_pair("", cameraNode));
 			}
 
-			property_tree::ptree frameNode;
+			boost::property_tree::ptree frameNode;
 			frameNode.put("frameNumber", frameNumber);
 			frameNode.add_child("frameData", frameDataNode);
 			allFramesNode.push_back(make_pair("", frameNode));
@@ -248,33 +248,33 @@ void SceneController::savePoses(Scene scene, CaptureType captureType, vector<Fra
 	}
 
 	root.add_child("poses.frames", allFramesNode);
-	property_tree::write_json(extrinsicsFile, root);
+	boost::property_tree::write_json(extrinsicsFile, root);
 }
 
-map<int, Intrinsics*> SceneController::getIntrinsics(Scene scene)
+std::map<int, Intrinsics*> SceneController::getIntrinsics(Scene scene)
 {
-	map<int, Intrinsics*> intrinsics;
-	string captureFolder = dataFolder + "/" + scene.getName();
-	string intrinsicsFile = captureFolder + "/intrinsics.json"; 
-	if (!filesystem::exists(intrinsicsFile))
+	std::map<int, Intrinsics*> intrinsics;
+	std::string captureFolder = dataFolder + "/" + scene.getName();
+	std::string intrinsicsFile = captureFolder + "/intrinsics.json";
+	if (!boost::filesystem::exists(intrinsicsFile))
 	{
 		intrinsicsFile = dataFolder + "/default.json";
 	}
 
-	property_tree::ptree root;
-	property_tree::read_json(intrinsicsFile, root);		
-	for (property_tree::ptree::value_type& cameraNode: root.get_child("calibration.cameras"))
+	boost::property_tree::ptree root;
+	boost::property_tree::read_json(intrinsicsFile, root);		
+	for (boost::property_tree::ptree::value_type& cameraNode: root.get_child("calibration.cameras"))
 	{
 		int cameraNumber = cameraNode.second.get<int>("cameraNumber");
 		double reprojectionError = cameraNode.second.get<double>("reprojectionError");
 
-		Mat calibrationMatrix = Mat(3, 3, CV_64F);
+		cv::Mat calibrationMatrix = cv::Mat(3, 3, CV_64F);
 		calibrationMatrix.at<double>(0, 0) = cameraNode.second.get<double>("calibrationMatrix.fx");
 		calibrationMatrix.at<double>(1, 1) = cameraNode.second.get<double>("calibrationMatrix.fy");
 		calibrationMatrix.at<double>(0, 2) = cameraNode.second.get<double>("calibrationMatrix.cx");
 		calibrationMatrix.at<double>(1, 2) = cameraNode.second.get<double>("calibrationMatrix.cy");
 
-		Mat distortionCoefficients = Mat(1, 5, CV_64F);
+		cv::Mat distortionCoefficients = cv::Mat(1, 5, CV_64F);
 		distortionCoefficients.at<double>(0, 0) = cameraNode.second.get<double>("distortionCoefficients.k1");
 		distortionCoefficients.at<double>(0, 1) = cameraNode.second.get<double>("distortionCoefficients.k2");
 		distortionCoefficients.at<double>(0, 2) = cameraNode.second.get<double>("distortionCoefficients.p1");
@@ -287,26 +287,26 @@ map<int, Intrinsics*> SceneController::getIntrinsics(Scene scene)
 	return intrinsics;
 }
 
-map<int, Extrinsics*> SceneController::getExtrinsics(Scene scene)
+std::map<int, Extrinsics*> SceneController::getExtrinsics(Scene scene)
 {
-	map<int, Extrinsics*> extrinsics;
-	string extrinsicsFile = dataFolder + "/" + scene.getName() + "/extrinsics.json";
+	std::map<int, Extrinsics*> extrinsics;
+	std::string extrinsicsFile = dataFolder + "/" + scene.getName() + "/extrinsics.json";
 
-	property_tree::ptree root;
-	property_tree::read_json(extrinsicsFile, root);
+	boost::property_tree::ptree root;
+	boost::property_tree::read_json(extrinsicsFile, root);
 
-	for (property_tree::ptree::value_type& cameraNode : root.get_child("calibration.cameras"))
+	for (boost::property_tree::ptree::value_type& cameraNode : root.get_child("calibration.cameras"))
 	{
 		int cameraNumber = cameraNode.second.get<int>("cameraNumber");
 
 		double reprojectionError = cameraNode.second.get<double>("reprojectionError");
 
-		Mat translationVector = Mat(3, 1, CV_64F);
+		cv::Mat translationVector = cv::Mat(3, 1, CV_64F);
 		translationVector.at<double>(0, 0) = cameraNode.second.get<double>("translationVector.x");
 		translationVector.at<double>(1, 0) = cameraNode.second.get<double>("translationVector.y");
 		translationVector.at<double>(2, 0) = cameraNode.second.get<double>("translationVector.z");
 
-		Mat rotationVector = Mat(3, 1, CV_64F);
+		cv::Mat rotationVector = cv::Mat(3, 1, CV_64F);
 		rotationVector.at<double>(0, 0) = cameraNode.second.get<double>("rotationVector.x");
 		rotationVector.at<double>(1, 0) = cameraNode.second.get<double>("rotationVector.y");
 		rotationVector.at<double>(2, 0) = cameraNode.second.get<double>("rotationVector.z");
@@ -317,33 +317,33 @@ map<int, Extrinsics*> SceneController::getExtrinsics(Scene scene)
 	return extrinsics;
 }
 
-vector<Frame3D*> SceneController::getPoses(Scene scene, CaptureType captureType)
+std::vector<Frame3D*> SceneController::getPoses(Scene scene, CaptureType captureType)
 {
 	int capturedFrames = getCapturedFrames(scene, captureType);
-	vector<Frame3D*> allFrames = vector<Frame3D*>(capturedFrames, nullptr);
+	std::vector<Frame3D*> allFrames = std::vector<Frame3D*>(capturedFrames, nullptr);
 
-	string posesFile = dataFolder + "/" + scene.getName() + "/poses.json";
+	std::string posesFile = dataFolder + "/" + scene.getName() + "/poses.json";
 
-	property_tree::ptree root;
-	property_tree::read_json(posesFile, root);
-	if (!filesystem::exists(posesFile))
+	boost::property_tree::ptree root;
+	boost::property_tree::read_json(posesFile, root);
+	if (!boost::filesystem::exists(posesFile))
 	{
 		return allFrames;
 	}	
 
-	for (property_tree::ptree::value_type& frameNode : root.get_child("poses.frames"))
+	for (boost::property_tree::ptree::value_type& frameNode : root.get_child("poses.frames"))
 	{
 		Frame3D* frame = new Frame3D();
 		int frameNumber = frameNode.second.get<int>("frameNumber");
 
-		for (property_tree::ptree::value_type& dataNode : frameNode.second.get_child("frameData"))
+		for (boost::property_tree::ptree::value_type& dataNode : frameNode.second.get_child("frameData"))
 		{
-			list<Point3d> reconstructions;
+			std::list<cv::Point3d> reconstructions;
 			int cameraNumber = dataNode.second.get<int>("cameraNumber");
 
-			for (property_tree::ptree::value_type& pointNode : dataNode.second.get_child("points"))
+			for (boost::property_tree::ptree::value_type& pointNode : dataNode.second.get_child("points"))
 			{
-				Point3d point;
+				cv::Point3d point;
 				point.x = pointNode.second.get<double>("x");
 				point.y = pointNode.second.get<double>("y");
 				point.z = pointNode.second.get<double>("z");
@@ -362,35 +362,43 @@ vector<Frame3D*> SceneController::getPoses(Scene scene, CaptureType captureType)
 
 Video3D* SceneController::getResult(Scene scene, CaptureType captureType)
 {
-	vector<int> capturedCameras = getCapturedCameras(scene, captureType);
-	int capturedFrames = getCapturedFrames(scene, captureType);
+	std::string extrinsicsFolder = dataFolder + "/" + scene.getName() + "/extrinsics.json";
 
-	map<int, Intrinsics*> intrinsics = getIntrinsics(scene);
-	map<int, Extrinsics*> extrinsics = getExtrinsics(scene);
-	map<int, Mat> frustumImages;
-
-	string extrinsicsFolder = dataFolder + "/" + scene.getName() + "/extrinsics.json";
-	if (!filesystem::exists(extrinsicsFolder))
+	if (!boost::filesystem::exists(extrinsicsFolder))
 	{
 		return nullptr;
 	}
-	
-	for (int cameraNumber : capturedCameras)
+	else
 	{
-		frustumImages[cameraNumber] = getFrame(scene, captureType, cameraNumber, capturedFrames - 1);
-	}
+		std::vector<int> capturedCameras = getCapturedCameras(scene, captureType);
+		int capturedFrames = getCapturedFrames(scene, captureType);
 
-	vector<Frame3D*> poses = getPoses(scene, captureType);
-	
-	return new Video3D(capturedCameras, intrinsics, extrinsics, frustumImages);
+		std::map<int, Intrinsics*> intrinsics = getIntrinsics(scene);
+		std::map<int, Extrinsics*> extrinsics = getExtrinsics(scene);
+		std::map<int, cv::Mat> frustumImages;
+
+		for (int cameraNumber : capturedCameras)
+		{
+			frustumImages[cameraNumber] = getFrame(scene, captureType, cameraNumber, capturedFrames - 1);
+		}
+
+		Video3D* result = new Video3D(capturedCameras, intrinsics, extrinsics, frustumImages);
+
+		for (Frame3D* frame3D : getPoses(scene, captureType))
+		{
+			result->addFrame(frame3D);
+		}
+
+		return result;
+	}		
 }
 
-string SceneController::getDateString()
+std::string SceneController::getDateString()
 {
 	time_t rawTime = time(NULL);
 	char buffer[26];
 	ctime_s(buffer, sizeof(buffer), &rawTime);
-	string date = string(buffer);
+	std::string date = std::string(buffer);
 	date.erase(std::remove(date.begin(), date.end(), '\n'), date.end());
 
 	return date;

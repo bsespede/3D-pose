@@ -2,8 +2,6 @@
 
 #include <string>
 
-using namespace std;
-
 class CaptureType
 {
 public:
@@ -27,7 +25,7 @@ public:
 		return value != other.value;
 	}
 
-	string toString() const
+	std::string toString() const
 	{ 
 		return value == CALIBRATION ? "calibration" : "mocap";
 	}

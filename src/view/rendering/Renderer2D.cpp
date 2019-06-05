@@ -41,7 +41,7 @@ void Renderer2D::render(Packet* packet)
 	int totalWidth = cols * (resizedWidth + 2) + 1;
 	int totalHeight = rows * (resizedHeight + barHeight + 4) + 1;
 
-	Mat mergedImage = Mat(totalHeight, totalWidth, CV_8UC1, Scalar(0));
+	cv::Mat mergedImage = cv::Mat(totalHeight, totalWidth, CV_8UC1, cv::Scalar(0));
 
 	for (int u = 0; u < cols; u++)
 	{
@@ -50,41 +50,41 @@ void Renderer2D::render(Packet* packet)
 			int startHorizontal = u * (resizedWidth + 2);
 			int startVertical = v * (resizedHeight + barHeight + 4);
 
-			Point2i startLight = Point2i(startHorizontal + 1, startVertical + 1);
-			Point2i endLight = Point2i(startLight.x + resizedWidth, startLight.y + barHeight);
-			rectangle(mergedImage, startLight, endLight, Scalar(115), FILLED);
+			cv::Point2i startLight = cv::Point2i(startHorizontal + 1, startVertical + 1);
+			cv::Point2i endLight = cv::Point2i(startLight.x + resizedWidth, startLight.y + barHeight);
+			rectangle(mergedImage, startLight, endLight, cv::Scalar(115), cv::FILLED);
 
-			Point2i startMid = Point2i(startLight.x + 1, startLight.y + 1);
-			Point2i endMid = Point2i(endLight.x - 1, endLight.y - 1);
-			rectangle(mergedImage, startMid, endMid, Scalar(75), FILLED);
+			cv::Point2i startMid = cv::Point2i(startLight.x + 1, startLight.y + 1);
+			cv::Point2i endMid = cv::Point2i(endLight.x - 1, endLight.y - 1);
+			rectangle(mergedImage, startMid, endMid, cv::Scalar(75), cv::FILLED);
 
-			Point2i startDark = Point2i(startLight.x, endLight.y + 2);
-			Point2i endDark = Point2i(startDark.x + resizedWidth, startDark.y + resizedHeight);
-			rectangle(mergedImage, startDark, endDark, Scalar(25), FILLED);
+			cv::Point2i startDark = cv::Point2i(startLight.x, endLight.y + 2);
+			cv::Point2i endDark = cv::Point2i(startDark.x + resizedWidth, startDark.y + resizedHeight);
+			rectangle(mergedImage, startDark, endDark, cv::Scalar(25), cv::FILLED);
 		}
 	}
 
-	for (pair<int, Mat> pair : packet->getData())
+	for (std::pair<int, cv::Mat> pair : packet->getData())
 	{
 		int u = pair.first % cols;
 		int v = pair.first / cols;
 
 		int startHorizontal = u * (resizedWidth + 2);
 		int startVertical = v * (resizedHeight + barHeight + 4);
-		Point2i startImage = Point2i(startHorizontal + 1, startVertical + 1 + barHeight + 2);
+		cv::Point2i startImage = cv::Point2i(startHorizontal + 1, startVertical + 1 + barHeight + 2);
 
-		Mat resizedImage;
-		resize(pair.second, resizedImage, Size(resizedWidth, resizedHeight));
-		resizedImage.copyTo(mergedImage(Rect(startImage.x, startImage.y, resizedWidth, resizedHeight)));
+		cv::Mat resizedImage;
+		resize(pair.second, resizedImage, cv::Size(resizedWidth, resizedHeight));
+		resizedImage.copyTo(mergedImage(cv::Rect(startImage.x, startImage.y, resizedWidth, resizedHeight)));
 
-		Point2i startText = Point2i(startHorizontal + 5, startVertical + 15);
-		Point2i startTextShadow = Point2i(startHorizontal + 6, startVertical + 16);		
-		putText(mergedImage, "Camera #" + to_string(pair.first), startTextShadow, FONT_HERSHEY_DUPLEX, 0.4, Scalar(0));
-		putText(mergedImage, "Camera #" + to_string(pair.first), startText, FONT_HERSHEY_DUPLEX, 0.4, Scalar(255));
+		cv::Point2i startText = cv::Point2i(startHorizontal + 5, startVertical + 15);
+		cv::Point2i startTextShadow = cv::Point2i(startHorizontal + 6, startVertical + 16);
+		putText(mergedImage, "Camera #" + std::to_string(pair.first), startTextShadow, cv::FONT_HERSHEY_DUPLEX, 0.4, cv::Scalar(0));
+		putText(mergedImage, "Camera #" + std::to_string(pair.first), startText, cv::FONT_HERSHEY_DUPLEX, 0.4, cv::Scalar(255));
 	}
 
 	imshow("Pose3D Cameras", mergedImage);
-	waitKey(1);
+	cv::waitKey(1);
 }
 
 int Renderer2D::getGuiFps()

@@ -4,16 +4,13 @@
 #include <list>
 #include <opencv2/opencv.hpp>
 
-using namespace std;
-using namespace cv;
-
 class Frame3D
 {
 public:
 	Frame3D();
-	map<int, list<Point3d>> getData();
-	void addData(int index, list<Point3d> pointcloud);
+	std::map<int, std::list<cv::Point3d>> getData();
+	void addData(int index, std::list<cv::Point3d> pointcloud);
 	bool hasData();
 private:
-	map<int, list<Point3d>> data;
+	std::map<int, std::list<cv::Point3d>> data;
 };

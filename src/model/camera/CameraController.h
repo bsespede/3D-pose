@@ -9,8 +9,6 @@
 #include "model/camera/Packet.h"
 #include "model/config/ConfigController.h"
 
-using namespace std;
-
 class CameraController
 {
 public:
@@ -29,7 +27,7 @@ private:
 	Capture* capture;
 	Packet* safeImage;
 	OptitrackCamera* optitrackCamera;
-	atomic<bool> shouldLoopThread;
-	atomic<bool> shouldCaptureVideo;
-	atomic<bool> shouldUpdateSafeImage;	
+	std::atomic<bool> shouldLoopThread;
+	std::atomic<bool> shouldCaptureVideo;
+	std::atomic<bool> shouldUpdateSafeImage;
 };
