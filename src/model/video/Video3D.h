@@ -9,11 +9,10 @@
 class Video3D
 {
 public:
-	Video3D(std::vector<int> cameras, std::map<int, Intrinsics*> intrinsics, std::map<int, Extrinsics*> extrinsics, std::map<int, cv::Mat> frustums);
+	Video3D(std::vector<int> cameras, std::map<int, Intrinsics*> intrinsics, std::map<int, Extrinsics*> extrinsics);
 	std::vector<int> getCameras();
 	std::map<int, Intrinsics*> getIntrinsics();
 	std::map<int, Extrinsics*> getExtrinsics();
-	std::map<int, cv::Mat> getFrustums();
 	Frame3D* getNextFrame();
 	void addFrame(Frame3D* frame);	
 private:
@@ -21,6 +20,5 @@ private:
 	std::vector<int> cameras;
 	std::map<int, Intrinsics*> intrinsics;
 	std::map<int, Extrinsics*> extrinsics;
-	std::map<int, cv::Mat> frustums;
 	std::vector<Frame3D*> frames;
 };

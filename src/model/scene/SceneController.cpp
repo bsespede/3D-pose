@@ -371,18 +371,9 @@ Video3D* SceneController::getResult(Scene scene, CaptureType captureType)
 	else
 	{
 		std::vector<int> capturedCameras = getCapturedCameras(scene, captureType);
-		int capturedFrames = getCapturedFrames(scene, captureType);
-
 		std::map<int, Intrinsics*> intrinsics = getIntrinsics(scene);
 		std::map<int, Extrinsics*> extrinsics = getExtrinsics(scene);
-		std::map<int, cv::Mat> frustumImages;
-
-		for (int cameraNumber : capturedCameras)
-		{
-			frustumImages[cameraNumber] = getFrame(scene, captureType, cameraNumber, capturedFrames - 1);
-		}
-
-		Video3D* result = new Video3D(capturedCameras, intrinsics, extrinsics, frustumImages);
+		Video3D* result = new Video3D(capturedCameras, intrinsics, extrinsics);
 
 		for (Frame3D* frame3D : getPoses(scene, captureType))
 		{

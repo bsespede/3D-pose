@@ -2,6 +2,7 @@
 
 Renderer3D::Renderer3D(ConfigController* configController)
 {
+	this->renderer = vtkSmartPointer<vtkRenderer>::New();	
 	this->totalSquares = configController->getTotalSquares();
 	this->squareLength = configController->getSquareLength();
 	this->guiFps = configController->getGuiFps();
@@ -9,37 +10,17 @@ Renderer3D::Renderer3D(ConfigController* configController)
 
 void Renderer3D::render(Video3D* video3D)
 {
-	vtkSmartPointer<vtkRenderer> renderer = vtkSmartPointer<vtkRenderer>::New();	
-	renderer->SetUseFXAA(true);
-	renderer->GradientBackgroundOn();
-	renderer->SetBackground(25 / 255.0, 25 / 255.0, 25 / 255.0);
-	renderer->SetBackground2(50 / 255.0, 50 / 255.0, 50 / 255.0);
-
-	vtkSmartPointer<vtkActor> gridActor = getGridActor();
-	renderer->AddActor(gridActor);
-
-	vtkSmartPointer<vtkActor> axesActor = getAxesActor();
-	vtkSmartPointer<vtkFollower> xAxisLabel = getTextActor("X", cv::Point3d(squareLength * 1.25, 0.0, 0.0), renderer->GetActiveCamera());
-	vtkSmartPointer<vtkFollower> yAxisLabel = getTextActor("Y", cv::Point3d(0.0, squareLength * 1.25, 0.0), renderer->GetActiveCamera());
-	vtkSmartPointer<vtkFollower> zAxisLabel = getTextActor("Z", cv::Point3d(0.0, 0.0, squareLength * 1.25), renderer->GetActiveCamera());
-	renderer->AddActor(axesActor);
-	renderer->AddActor(xAxisLabel);
-	renderer->AddActor(yAxisLabel);
-	renderer->AddActor(zAxisLabel);
-
-	std::vector<vtkSmartPointer<vtkActor>> cameraActors = getCameraActors(video3D);
-	for (vtkSmartPointer<vtkActor> cameraActor : cameraActors)
-	{
-		renderer->AddActor(cameraActor);
-	}
-
-	/*std::vector<vtkSmartPointer<vtkActor>> cloudActors = getCloudActors(video3D);
-	for (vtkSmartPointer<vtkActor> cloudActor : cloudActors)
-	{
-		renderer->AddActor(cloudActor);
-	}*/
-
+	renderBackground();
+	renderGridActor();
+	renderAxesActor();
+	renderCameraActors(video3D);
 	renderer->ResetCamera();
+
+	vtkSmartPointer<Renderer3DCallback> timerCallback = vtkSmartPointer<Renderer3DCallback>::New();
+	timerCallback->initialize(video3D, renderer);
+	/*std::map<int, vtkSmartPointer<vtkPoints>> pointCloudPoints;
+	std::map<int, vtkSmartPointer<vtkActor>> pointCloudActors;
+	renderPointClouds(video3D, pointCloudPoints, pointCloudActors);*/
 
 	vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
 	renderWindow->AddRenderer(renderer);
@@ -47,24 +28,24 @@ void Renderer3D::render(Video3D* video3D)
 
 	vtkSmartPointer<vtkRenderWindowInteractor> windowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
 	windowInteractor->SetRenderWindow(renderWindow);
+	windowInteractor->Initialize();
+	windowInteractor->CreateRepeatingTimer(guiFps);
 
 	vtkSmartPointer<vtkInteractorStyleTrackballCamera> style = vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
+	windowInteractor->AddObserver(vtkCommand::TimerEvent, timerCallback);
 	windowInteractor->SetInteractorStyle(style);
 	windowInteractor->Start();
-
-	/*Frame3D* currentFrame = nullptr;
-	while (renderWindow->)
-	{
-		Frame3D* previousFrame = currentFrame;
-		currentFrame = video3D->getNextFrame();
-		//updateCloudActors(previousFrame, currentFrame, cloudActors);
-
-		renderer->ResetCameraClippingRange();
-		renderWindow->Render();
-	}*/
 }
 
-vtkSmartPointer<vtkActor> Renderer3D::getGridActor()
+void Renderer3D::renderBackground()
+{
+	renderer->SetUseFXAA(true);
+	renderer->GradientBackgroundOn();
+	renderer->SetBackground(25 / 255.0, 25 / 255.0, 25 / 255.0);
+	renderer->SetBackground2(50 / 255.0, 50 / 255.0, 50 / 255.0);
+}
+
+void Renderer3D::renderGridActor()
 {
 	vtkSmartPointer<vtkPolyData> linesPolyData = vtkSmartPointer<vtkPolyData>::New();
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -120,10 +101,10 @@ vtkSmartPointer<vtkActor> Renderer3D::getGridActor()
 	vtkSmartPointer<vtkActor> gridActor = vtkSmartPointer<vtkActor>::New();
 	gridActor->SetMapper(mapper);
 
-	return gridActor;
+	renderer->AddActor(gridActor);
 }
 
-vtkSmartPointer<vtkActor> Renderer3D::getAxesActor()
+void Renderer3D::renderAxesActor()
 {
 	vtkSmartPointer<vtkPolyData> linesPolyData = vtkSmartPointer<vtkPolyData>::New();
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
@@ -179,10 +160,14 @@ vtkSmartPointer<vtkActor> Renderer3D::getAxesActor()
 	axisActor->SetMapper(mapper);
 	axisActor->GetProperty()->SetLineWidth(2);
 
-	return axisActor;
+	renderTextActor("X", cv::Point3d(squareLength * 1.25, 0.0, 0.0));
+	renderTextActor("Y", cv::Point3d(0.0, squareLength * 1.25, 0.0));
+	renderTextActor("Z", cv::Point3d(0.0, 0.0, squareLength * 1.25));
+
+	renderer->AddActor(axisActor);
 }
 
-vtkSmartPointer<vtkFollower> Renderer3D::getTextActor(std::string text, cv::Point3d position, vtkSmartPointer<vtkCamera> camera)
+void Renderer3D::renderTextActor(std::string text, cv::Point3d position)
 {
 	double scale = 200.0;
 
@@ -197,15 +182,15 @@ vtkSmartPointer<vtkFollower> Renderer3D::getTextActor(std::string text, cv::Poin
 	textActor->SetMapper(mapper);
 	textActor->SetPosition(position.x, position.y, position.z);
 	textActor->SetScale(scale);
-	textActor->SetCamera(camera);
+	textActor->SetCamera(renderer->GetActiveCamera());
 
-	return textActor;
+	renderer->AddActor(textActor);
 }
 
-std::vector<vtkSmartPointer<vtkActor>> Renderer3D::getCameraActors(Video3D* video3D)
+void Renderer3D::renderCameraActors(Video3D* video3D)
 {
 	double scale = 400.0;
-	std::vector<vtkSmartPointer<vtkActor>> cameraActors;
+
 	std::map<int, Intrinsics*> intrinsics = video3D->getIntrinsics();
 	std::map<int, Extrinsics*> extrinsics = video3D->getExtrinsics();
 
@@ -254,37 +239,7 @@ std::vector<vtkSmartPointer<vtkActor>> Renderer3D::getCameraActors(Video3D* vide
 		cv::Affine3d cameraTransform = cv::Affine3d(rotationMatrix, translationVector);
 		transformActor(cameraActor, cameraTransform);
 
-		cameraActors.push_back(cameraActor);
-	}	
-
-	return cameraActors;
-}
-
-std::vector<vtkSmartPointer<vtkActor>> Renderer3D::getCloudActors(Video3D* video3D)
-{
-	std::vector<vtkSmartPointer<vtkActor>> cloudActors;
-	return cloudActors;
-}
-
-void Renderer3D::updateCloudActors(Frame3D* previousFrame, Frame3D* currentFrame, std::vector<vtkSmartPointer<vtkActor>> cloudActors)
-{
-	if (previousFrame != nullptr)
-	{
-		if (currentFrame == nullptr)
-		{
-			// clean actor
-		}
-		else
-		{
-			// update actor
-		}
-	}
-	else
-	{
-		if (currentFrame != nullptr)
-		{
-			// add actor
-		}
+		renderer->AddActor(cameraActor);
 	}
 }
 
@@ -294,4 +249,74 @@ void Renderer3D::transformActor(vtkSmartPointer<vtkActor> actor, cv::Affine3d tr
 	matrix->DeepCopy(transform.matrix.val);
 	actor->SetUserMatrix(matrix);
 	actor->Modified();
+}
+
+Renderer3DCallback* Renderer3DCallback::New()
+{
+	Renderer3DCallback* callbackObject = new Renderer3DCallback;
+
+	return callbackObject;
+}
+
+void Renderer3DCallback::initialize(Video3D* video3D, vtkSmartPointer<vtkRenderer> renderer)
+{
+	this->video3D = video3D;
+	this->renderer = renderer;
+}
+
+void Renderer3DCallback::Execute(vtkObject* caller, unsigned long eventId, void* vtkNotUsed(callData))
+{
+	vtkRenderWindowInteractor* renderWindow = dynamic_cast<vtkRenderWindowInteractor*>(caller);
+	Frame3D* currentFrame3D = video3D->getNextFrame();
+
+	if (currentFrame3D == nullptr)
+	{
+		return;
+	}
+
+	for (int cameraNumber : video3D->getCameras())
+	{
+		std::map<int, vtkSmartPointer<vtkActor>> pointCloudActors;
+
+		for (std::pair<int, std::list<cv::Point3d>> frameData : currentFrame3D->getData())
+		{
+			int cameraNumber = frameData.first;
+
+			vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
+			for (cv::Point3d point : frameData.second)
+			{
+				points->InsertNextPoint(point.x, point.y, point.z);
+			}
+
+			vtkSmartPointer<vtkPolyData> pointsPolydata = vtkSmartPointer<vtkPolyData>::New();
+			pointsPolydata->SetPoints(points);
+
+			vtkSmartPointer<vtkVertexGlyphFilter> vertexFilter = vtkSmartPointer<vtkVertexGlyphFilter>::New();
+			vertexFilter->SetInputData(pointsPolydata);
+			vertexFilter->Update();
+
+			vtkSmartPointer<vtkPolyData> polydata = vtkSmartPointer<vtkPolyData>::New();
+			polydata->ShallowCopy(vertexFilter->GetOutput());
+
+			// Visualization
+			vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+			mapper->SetInputData(polydata);
+
+			vtkSmartPointer<vtkActor> pointCloudActor = vtkSmartPointer<vtkActor>::New();
+			pointCloudActor->SetMapper(mapper);
+			pointCloudActor->GetProperty()->SetPointSize(3);
+
+			renderer->AddActor(pointCloudActor);
+
+			pointCloudActors[cameraNumber] = pointCloudActor;
+		}
+
+		renderWindow->GetRenderWindow()->Render();
+
+		for (std::pair<int, std::list<cv::Point3d>> frameData : currentFrame3D->getData())
+		{
+			int cameraNumber = frameData.first;
+			renderer->RemoveActor(pointCloudActors[frameData.first]);
+		}
+	}
 }
