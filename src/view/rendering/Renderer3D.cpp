@@ -233,12 +233,16 @@ void Renderer3D::renderCameraActors(Video3D* video3D)
 		cv::Mat rotationVector = extrinsics[cameraNumber]->getRotationVector();
 		cv::Rodrigues(rotationVector, rotationMatrix);
 		cv::Mat translationVector = extrinsics[cameraNumber]->getTranslationVector();
-		cv::Affine3d cameraTransform = cv::Affine3d(rotationMatrix, translationVector);
+
+		cv::Mat cameraRotatationVector = rotationMatrix.t();
+		cv::Mat cameraTranslationVector = -rotationMatrix.t() * translationVector;
+
+		cv::Affine3d cameraTransform = cv::Affine3d(cameraRotatationVector, cameraTranslationVector);
 		transformActor(cameraActor, cameraTransform);
 
 		renderer->AddActor(cameraActor);
 
-		cv::Point3d cameraTextPosition = cv::Point3d(translationVector);
+		cv::Point3d cameraTextPosition = cv::Point3d(cameraTranslationVector);
 		renderTextActor(std::to_string(cameraNumber), cv::Point3d(cameraTextPosition.x, cameraTextPosition.y, cameraTextPosition.z));
 	}
 }
