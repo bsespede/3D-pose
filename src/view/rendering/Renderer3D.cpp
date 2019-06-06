@@ -26,7 +26,7 @@ void Renderer3D::render(Video3D* video3D)
 	vtkSmartPointer<vtkRenderWindowInteractor> windowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
 	windowInteractor->SetRenderWindow(renderWindow);
 	windowInteractor->Initialize();
-	windowInteractor->CreateRepeatingTimer(guiFps);
+	windowInteractor->CreateRepeatingTimer(1000.0 / guiFps);
 
 	vtkSmartPointer<vtkInteractorStyleTrackballCamera> style = vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
 	windowInteractor->AddObserver(vtkCommand::TimerEvent, timerCallback);
@@ -315,7 +315,7 @@ void Renderer3DCallback::Execute(vtkObject* caller, unsigned long eventId, void*
 
 				vtkSmartPointer<vtkActor> pointCloudActor = vtkSmartPointer<vtkActor>::New();
 				pointCloudActor->SetMapper(mapper);
-				pointCloudActor->GetProperty()->SetPointSize(3);
+				pointCloudActor->GetProperty()->SetPointSize(5);
 
 				renderer->AddActor(pointCloudActor);
 

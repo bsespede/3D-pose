@@ -96,7 +96,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 	std::map<int, Extrinsics*> extrinsics;
 	std::map<int, Intrinsics*> intrinsics = sceneController->getIntrinsics(scene);
 
-	int originCamera = 0;
+	int originCamera = capturedCameras[0];
 	cv::Mat originCameraMatrix = intrinsics[originCamera]->getCameraMatrix();
 	cv::Mat originDistortionCoefficients = intrinsics[originCamera]->getDistortionCoefficients();
 
@@ -117,7 +117,6 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 		{
 			cv::Mat originRotationMatrix;
 			cv::Rodrigues(originRotationVector, originRotationMatrix);
-
 			cv::Mat cameraRotation = originRotationMatrix.t();
 			cv::Mat cameraTranslation = (originRotationMatrix.t() * originTranslationVector) * (-1);
 
@@ -134,7 +133,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 		extrinsics[originCamera] = new Extrinsics(originTranslationVector, originRotationVector, intrinsics[originCamera]->getReprojectionError());
 	}
 
-	#pragma omp parallel for
+	#pragma omp parallel for	
 	for (int cameraIndex = 1; cameraIndex < (int)capturedCameras.size(); cameraIndex++)
 	{
 		int cameraLeft = capturedCameras[cameraIndex - 1];
@@ -222,24 +221,27 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 		cv::Mat essentialMatrix;
 		cv::Mat fundamentalMatrix;
 		double reprojectionError = cv::stereoCalibrate(allObjects, allCornersLeft, allCornersRight, cameraMatrixLeft, distortionCoefficientsLeft, cameraMatrixRight, distortionCoefficientsRight, cameraSize, rotationVector, translationVector, essentialMatrix, fundamentalMatrix);
-		
 		cv::Rodrigues(rotationVector, rotationVector);
-		extrinsics[cameraRight] = new Extrinsics(translationVector, rotationVector, reprojectionError);
 
 		BOOST_LOG_TRIVIAL(warning) << "Found extrinsics pair " << cameraLeft << "->" << cameraRight;
+
+		extrinsics[cameraRight] = new Extrinsics(translationVector, rotationVector, reprojectionError);
 	}
 
-	for (int cameraNumber = 1; cameraNumber < (int)extrinsics.size(); cameraNumber++)
+	for (int cameraIndex = 1; cameraIndex < (int)capturedCameras.size(); cameraIndex++)
 	{
-		cv::Mat composedTranslationVector;
-		cv::Mat composedRotationVector;
-		cv::Mat currentTranslationVector = extrinsics[cameraNumber]->getTranslationVector();
-		cv::Mat currentRotationVector = extrinsics[cameraNumber]->getRotationVector();
-		cv::Mat previousTranslationVector = extrinsics[cameraNumber - 1]->getTranslationVector();
-		cv::Mat previousRotationVector = extrinsics[cameraNumber - 1]->getRotationVector();
+		int cameraLeft = capturedCameras[cameraIndex - 1];
+		int cameraRight = capturedCameras[cameraIndex];
 
-		cv::composeRT(previousRotationVector, previousTranslationVector, currentRotationVector, currentTranslationVector, composedRotationVector, composedTranslationVector);
-		extrinsics[cameraNumber] = new Extrinsics(composedTranslationVector, composedRotationVector, extrinsics[cameraNumber]->getReprojectionError());
+		cv::Mat composedRotationVector;
+		cv::Mat composedTranslationVector;
+		cv::Mat rotationVectorLeft = extrinsics[cameraLeft]->getRotationVector();
+		cv::Mat translationVectorLeft = extrinsics[cameraLeft]->getTranslationVector();
+		cv::Mat rotationVectorRight = extrinsics[cameraRight]->getRotationVector();
+		cv::Mat translationVectorRight = extrinsics[cameraRight]->getTranslationVector();	
+
+		cv::composeRT(rotationVectorLeft, translationVectorLeft, rotationVectorRight, translationVectorRight, composedRotationVector, composedTranslationVector);
+		extrinsics[cameraRight] = new Extrinsics(composedTranslationVector, composedRotationVector, extrinsics[cameraRight]->getReprojectionError());
 	}
 
 	sceneController->saveExtrinsics(scene, extrinsics);
@@ -257,7 +259,7 @@ bool CalibrationController::calculatePoses(Scene scene, CaptureType captureType)
 
 	for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber++)
 	{
-		BOOST_LOG_TRIVIAL(warning) << "Calculating poses for cameras of frame " << frameNumber;
+		BOOST_LOG_TRIVIAL(warning) << "Processing cameras in frame " << frameNumber;
 
 		Frame3D* framePoses = new Frame3D();
 		bool foundPoses = false;
@@ -266,6 +268,7 @@ bool CalibrationController::calculatePoses(Scene scene, CaptureType captureType)
 		for (int cameraIndex = 0; cameraIndex < capturedCameras.size(); cameraIndex++)
 		{
 			int cameraNumber = capturedCameras[cameraIndex];
+
 			cv::Mat cameraMatrix = intrinsics[cameraNumber]->getCameraMatrix();
 			cv::Mat distortionCoefficients = intrinsics[cameraNumber]->getDistortionCoefficients();
 			
@@ -277,27 +280,27 @@ bool CalibrationController::calculatePoses(Scene scene, CaptureType captureType)
 			{
 				cv::Mat rotationVector;
 				cv::Mat translationVector;
+
 				if (cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distortionCoefficients, rotationVector, translationVector))
 				{
-					cv::Mat composedRotationVector;
-					cv::Mat composedTranslationVector;
-					cv::Mat composedRotationMatrix;
-					cv::Mat cameraRotationVector = extrinsics[cameraNumber]->getRotationVector();
-					cv::Mat cameraTranslationVector = extrinsics[cameraNumber]->getTranslationVector();
-
-					cv::composeRT(cameraRotationVector, cameraTranslationVector, rotationVector, translationVector, composedRotationVector, composedTranslationVector);
-					cv::Rodrigues(composedRotationVector, composedRotationMatrix);
-
 					std::list<cv::Point3d> composedPoses;
-					cv::Affine3d affineMatrix = cv::Affine3d(composedRotationMatrix, composedTranslationVector);
+
 					for (int cornerIndex = 0; cornerIndex < board->chessboardCorners.size(); cornerIndex++)
 					{
-						cv::Mat homogeneousPoint = cv::Mat(board->chessboardCorners[cornerIndex]);
-						homogeneousPoint.convertTo(homogeneousPoint, CV_64F);
-						homogeneousPoint.push_back(1.0);
+						cv::Mat cornerModel = cv::Mat(board->chessboardCorners[cornerIndex]);
+						cornerModel.convertTo(cornerModel, CV_64F);
 
-						cv::Point3d transformedPoint = cv::Mat(affineMatrix.matrix * homogeneousPoint, cv::Range(0, 3));
-						composedPoses.push_back(transformedPoint);
+						cv::Mat rotationMatrix;
+						cv::Rodrigues(rotationVector, rotationMatrix);
+						cv::Mat transformedPointCamera = cv::Mat(rotationMatrix * cornerModel + translationVector);
+
+						cv::Mat translationVectorWorld = extrinsics[cameraNumber]->getTranslationVector();
+						cv::Mat rotationVectorWorld = extrinsics[cameraNumber]->getRotationVector();
+						cv::Mat rotationMatrixWorld;
+						cv::Rodrigues(rotationVectorWorld, rotationMatrixWorld);
+
+						cv::Point3d transformedPointWorld = cv::Mat(rotationMatrixWorld.t() * (transformedPointCamera - translationVectorWorld));
+						composedPoses.push_back(transformedPointWorld);
 					}
 
 					if (!composedPoses.empty())

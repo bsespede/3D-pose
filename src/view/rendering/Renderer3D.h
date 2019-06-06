@@ -28,6 +28,12 @@
 #include <vtkVertexGlyphFilter.h>
 #include <vtkTextActor.h>
 #include <vtkTextProperty.h>
+#include <vtkPlaneSource.h>
+#include <vtkTextureMapToPlane.h>
+#include <vtkImageData.h>
+#include <vtkAppendPolyData.h>
+#include <vtkTexture.h>
+#include <vtkImageData.h>
 #include "model/video/Video3D.h"
 #include "model/config/ConfigController.h"
 
