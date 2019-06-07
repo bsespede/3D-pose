@@ -207,52 +207,71 @@ void SceneController::saveExtrinsics(Scene scene, std::map<int, Extrinsics*> ext
 }
 
 
-void SceneController::savePoses(Scene scene, CaptureType captureType, std::vector<Frame3D*> poses)
+void SceneController::saveReconstructions(Scene scene, CaptureType captureType, std::vector<Packet3D*> reconstructions)
 {
 	boost::property_tree::ptree root;
 
 	std::string date = getDateString();
-	root.put("poses.date", date);
+	root.put("reconstruction.date", date);
 
 	boost::property_tree::ptree allFramesNode;
-	for (int frameNumber = 0; frameNumber < poses.size(); frameNumber++)
+	for (int frameNumber = 0; frameNumber < reconstructions.size(); frameNumber++)
 	{
-		Frame3D* frame = poses[frameNumber];
+		Packet3D* packet3D = reconstructions[frameNumber];
 
-		if (frame != nullptr)
+		if (packet3D != nullptr)
 		{
-			boost::property_tree::ptree frameDataNode;
-			for (std::pair<int, std::list<cv::Point3d>> frameData : frame->getData())
+			boost::property_tree::ptree packetDataNode;
+
+			for (std::pair<int, Frame3D*> packetData : packet3D->getData())
 			{
-				boost::property_tree::ptree cameraNode;
-				cameraNode.put("cameraNumber", frameData.first);
+				int cameraNumber = packetData.first;
+				Frame3D* frame3D = packetData.second;
 
-				boost::property_tree::ptree cameraPosesNode;
-				for (cv::Point3d point : frameData.second)
+				boost::property_tree::ptree packetNode;
+				packetNode.put("cameraNumber", cameraNumber);
+
+				boost::property_tree::ptree cameraPointsNode;
+				for (cv::Point3d point : frame3D->getPointData())
 				{
-					boost::property_tree::ptree cameraPoseNode;
-					cameraPoseNode.put("x", point.x);
-					cameraPoseNode.put("y", point.y);
-					cameraPoseNode.put("z", point.z);
-					cameraPosesNode.push_back(make_pair("", cameraPoseNode));
+					boost::property_tree::ptree pointNode;
+					pointNode.put("x", point.x);
+					pointNode.put("y", point.y);
+					pointNode.put("z", point.z);
+					cameraPointsNode.push_back(make_pair("", pointNode));
 				}
-				cameraNode.add_child("points", cameraPosesNode);
+				packetNode.add_child("points", cameraPointsNode);
 
-				frameDataNode.push_back(make_pair("", cameraNode));
+				boost::property_tree::ptree cameraLinesNode;
+				for (std::pair<cv::Point3d, cv::Point3d> line : frame3D->getLineData())
+				{
+					boost::property_tree::ptree lineNode;
+					lineNode.put("x1", line.first.x);
+					lineNode.put("y1", line.first.y);
+					lineNode.put("z1", line.first.z);
+					lineNode.put("x2", line.second.x);
+					lineNode.put("y2", line.second.y);
+					lineNode.put("z2", line.second.z);
+					cameraLinesNode.push_back(make_pair("", lineNode));
+				}
+				packetNode.add_child("lines", cameraLinesNode);
+
+				packetDataNode.push_back(make_pair("", packetNode));
+				delete frame3D;
 			}
 
 			boost::property_tree::ptree frameNode;
 			frameNode.put("frameNumber", frameNumber);
-			frameNode.add_child("frameData", frameDataNode);
+			frameNode.add_child("frameData", packetDataNode);
 			allFramesNode.push_back(make_pair("", frameNode));
 		}
 
-		delete frame;
+		delete packet3D;
 	}
 
-	root.add_child("poses.frames", allFramesNode);
+	root.add_child("reconstruction.frames", allFramesNode);
 
-	std::string extrinsicsFile = dataFolder + "/" + scene.getName() + "/poses-" + captureType.toString() + ".json";
+	std::string extrinsicsFile = dataFolder + "/" + scene.getName() + "/reconstruction-" + captureType.toString() + ".json";
 	boost::property_tree::write_json(extrinsicsFile, root);
 }
 
@@ -337,28 +356,28 @@ std::map<int, Extrinsics*> SceneController::getExtrinsics(Scene scene)
 	return extrinsics;
 }
 
-std::vector<Frame3D*> SceneController::getPoses(Scene scene, CaptureType captureType)
+std::vector<Packet3D*> SceneController::getReconstructions(Scene scene, CaptureType captureType)
 {
 	int capturedFrames = getCapturedFrames(scene, captureType);
-	std::vector<Frame3D*> allFrames = std::vector<Frame3D*>(capturedFrames, nullptr);
+	std::vector<Packet3D*> reconstructions = std::vector<Packet3D*>(capturedFrames, nullptr);
 
-	std::string posesFile = dataFolder + "/" + scene.getName() + "/poses-" + captureType.toString() +".json";
+	std::string posesFile = dataFolder + "/" + scene.getName() + "/reconstruction-" + captureType.toString() +".json";
 
 	boost::property_tree::ptree root;
 	boost::property_tree::read_json(posesFile, root);
 	if (!boost::filesystem::exists(posesFile))
 	{
-		return allFrames;
+		return reconstructions;
 	}	
 
-	for (boost::property_tree::ptree::value_type& frameNode : root.get_child("poses.frames"))
+	for (boost::property_tree::ptree::value_type& frameNode : root.get_child("reconstruction.frames"))
 	{
-		Frame3D* frame = new Frame3D();
+		Packet3D* packet3D = new Packet3D();
 		int frameNumber = frameNode.second.get<int>("frameNumber");
 
 		for (boost::property_tree::ptree::value_type& dataNode : frameNode.second.get_child("frameData"))
 		{
-			std::list<cv::Point3d> reconstructions;
+			Frame3D* frame3D = new Frame3D();
 			int cameraNumber = dataNode.second.get<int>("cameraNumber");
 
 			for (boost::property_tree::ptree::value_type& pointNode : dataNode.second.get_child("points"))
@@ -367,17 +386,32 @@ std::vector<Frame3D*> SceneController::getPoses(Scene scene, CaptureType capture
 				point.x = pointNode.second.get<double>("x");
 				point.y = pointNode.second.get<double>("y");
 				point.z = pointNode.second.get<double>("z");
-
-				reconstructions.push_back(point);
+				frame3D->addData(point);
 			}
 
-			frame->addData(cameraNumber, reconstructions);
+			for (boost::property_tree::ptree::value_type& lineNode : dataNode.second.get_child("lines"))
+			{
+				cv::Point3d point1;
+				point1.x = lineNode.second.get<double>("x1");
+				point1.y = lineNode.second.get<double>("y1");
+				point1.z = lineNode.second.get<double>("z1");
+
+				cv::Point3d point2;
+				point2.x = lineNode.second.get<double>("x2");
+				point2.y = lineNode.second.get<double>("y2");
+				point2.z = lineNode.second.get<double>("z2");
+
+				std::pair<cv::Point3d, cv::Point3d> line = std::pair<cv::Point3d, cv::Point3d>(point1, point2);
+				frame3D->addData(line);
+			}
+
+			packet3D->addData(cameraNumber, frame3D);
 		}
 
-		allFrames[frameNumber] = frame;
+		reconstructions[frameNumber] = packet3D;
 	}
 
-	return allFrames;
+	return reconstructions;
 }
 
 Video3D* SceneController::getResult(Scene scene, CaptureType captureType)
@@ -396,9 +430,9 @@ Video3D* SceneController::getResult(Scene scene, CaptureType captureType)
 		std::map<int, Extrinsics*> extrinsics = getExtrinsics(scene);
 		Video3D* result = new Video3D(capturedCameras, intrinsics, extrinsics);
 
-		for (Frame3D* frame3D : getPoses(scene, captureType))
+		for (Packet3D* packet3D : getReconstructions(scene, captureType))
 		{
-			result->addFrame(frame3D);
+			result->addPacket(packet3D);
 		}
 
 		return result;

@@ -4,7 +4,7 @@
 #include <opencv2/opencv.hpp>
 #include "model/calibration/Intrinsics.h"
 #include "model/calibration/Extrinsics.h"
-#include "model/video/Frame3D.h"
+#include "model/video/Packet3D.h"
 
 class Video3D
 {
@@ -13,16 +13,16 @@ public:
 	std::vector<int> getCameras();
 	std::map<int, Intrinsics*> getIntrinsics();
 	std::map<int, Extrinsics*> getExtrinsics();
-	Frame3D* getNextFrame();
-	int getFrameNumber();
-	bool isVideoActive();
-	void toggleVideo();	
-	void addFrame(Frame3D* frame);		
+	Packet3D* getNextPacket();
+	void addPacket(Packet3D* frame);
+	int getFrameNumber();	
+	void togglePlayback();
+	bool isPlaying();
 private:
-	bool videoActive;
 	int frameNumber;
+	bool playing;	
 	std::vector<int> cameras;
 	std::map<int, Intrinsics*> intrinsics;
 	std::map<int, Extrinsics*> extrinsics;
-	std::vector<Frame3D*> frames;
+	std::vector<Packet3D*> reconstruction;
 };

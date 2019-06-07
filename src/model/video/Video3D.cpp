@@ -6,8 +6,8 @@ Video3D::Video3D(std::vector<int> cameras, std::map<int, Intrinsics*> intrinsics
 	this->cameras = cameras;
 	this->intrinsics = intrinsics;
 	this->extrinsics = extrinsics;
-	this->frames = std::vector<Frame3D*>();
-	this->videoActive = true;
+	this->reconstruction = std::vector<Packet3D*>();
+	this->playing = true;
 }
 
 std::vector<int> Video3D::getCameras()
@@ -30,29 +30,29 @@ int Video3D::getFrameNumber()
 	return frameNumber;
 }
 
-Frame3D* Video3D::getNextFrame()
+Packet3D* Video3D::getNextPacket()
 {
 	frameNumber++;
 
-	if (frameNumber == frames.size())
+	if (frameNumber == reconstruction.size())
 	{
 		frameNumber = 0;
 	}
 
-	return frames[frameNumber];
+	return reconstruction[frameNumber];
 }
 
-void Video3D::toggleVideo()
+void Video3D::togglePlayback()
 {
-	videoActive = !videoActive;
+	playing = !playing;
 }
 
-bool Video3D::isVideoActive()
+bool Video3D::isPlaying()
 {
-	return videoActive;
+	return playing;
 }
 
-void Video3D::addFrame(Frame3D* frame)
+void Video3D::addPacket(Packet3D* packet)
 {
-	frames.push_back(frame);
+	reconstruction.push_back(packet);
 }

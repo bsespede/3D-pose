@@ -1,6 +1,5 @@
 #pragma once
 
-#include <map>
 #include <list>
 #include <opencv2/opencv.hpp>
 
@@ -8,9 +7,11 @@ class Frame3D
 {
 public:
 	Frame3D();
-	std::map<int, std::list<cv::Point3d>> getData();
-	void addData(int index, std::list<cv::Point3d> pointcloud);
-	bool hasData();
+	std::list<cv::Point3d> getPointData();
+	std::list<std::pair<cv::Point3d, cv::Point3d>> getLineData();
+	void addData(cv::Point3d point);
+	void addData(std::pair<cv::Point3d, cv::Point3d> line);
 private:
-	std::map<int, std::list<cv::Point3d>> data;
+	std::list<cv::Point3d> pointData;
+	std::list<std::pair<cv::Point3d, cv::Point3d>> lineData;
 };

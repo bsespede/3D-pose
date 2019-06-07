@@ -23,6 +23,7 @@ private:
 	bool calculatePoses(Scene scene, CaptureType captureType);
 	bool detectCharucoCorners(cv::Mat& inputImage, int minCharucoCorners, std::vector<int>& charucoIds, std::vector<cv::Point2f>& charucoCorners);
 	bool detectCharucoCorners(cv::Mat& inputImage, int minCharucoCorners, cv::Mat& cameraMatrix, cv::Mat& distortionCoefficients, std::vector<int>& charucoIds, std::vector<cv::Point2f>& charucoCorners);
+	cv::Point3d fromModelToWorld(cv::Point3d modelPoint, cv::Mat cameraRotationVector, cv::Mat cameraTranslationVector, cv::Mat worldRotationVector, cv::Mat worldTranslationVector);
 	SceneController* sceneController;
 	cv::Ptr<cv::aruco::Dictionary> dictionary;
 	cv::Ptr<cv::aruco::CharucoBoard> board;

@@ -2,20 +2,26 @@
 
 Frame3D::Frame3D()
 {
-	this->data = std::map<int, std::list<cv::Point3d>>();
+	this->pointData = std::list<cv::Point3d>();
+	this->lineData = std::list<std::pair<cv::Point3d, cv::Point3d>>();
 }
 
-std::map<int, std::list<cv::Point3d>> Frame3D::getData()
+std::list<cv::Point3d> Frame3D::getPointData()
 {
-	return data;
+	return pointData;
 }
 
-void Frame3D::addData(int index, std::list<cv::Point3d> payload)
+std::list<std::pair<cv::Point3d, cv::Point3d>> Frame3D::getLineData()
 {
-	data[index] = payload;
+	return lineData;
 }
 
-bool Frame3D::hasData()
+void Frame3D::addData(cv::Point3d point)
 {
-	return data.empty();
+	pointData.push_back(point);
+}
+
+void Frame3D::addData(std::pair<cv::Point3d, cv::Point3d> line)
+{
+	lineData.push_back(line);
 }

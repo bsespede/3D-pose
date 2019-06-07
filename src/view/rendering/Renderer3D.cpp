@@ -2,7 +2,7 @@
 
 Renderer3D::Renderer3D(ConfigController* configController)
 {
-	this->renderer = vtkSmartPointer<vtkRenderer>::New();	
+	this->renderer = nullptr; vtkSmartPointer<vtkRenderer>::New();
 	this->totalSquares = 20;
 	this->squareLength = 800.0;
 	this->guiFps = configController->getGuiFps();
@@ -10,12 +10,20 @@ Renderer3D::Renderer3D(ConfigController* configController)
 
 void Renderer3D::render(Video3D* video3D)
 {
+	this->renderer = vtkSmartPointer<vtkRenderer>::New();
+
+	renderBackground();
+	renderGridActor();
+	renderAxesActor();
+	renderCameraActors(video3D);
+
 	vtkSmartPointer<Renderer3DTimerCallback> timerCallback = vtkSmartPointer<Renderer3DTimerCallback>::New();
 	timerCallback->SetVariables(video3D, renderer);
 
 	vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
 	renderWindow->AddRenderer(renderer);
 	renderWindow->SetFullScreen(true);
+	renderTextHelpActor(renderWindow);
 
 	vtkSmartPointer<vtkRenderWindowInteractor> windowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
 	windowInteractor->SetRenderWindow(renderWindow);	
@@ -27,14 +35,26 @@ void Renderer3D::render(Video3D* video3D)
 	windowInteractor->SetInteractorStyle(style);
 	style->SetVariables(video3D, windowInteractor);
 
-	renderBackground();
-	renderGridActor();
-	renderAxesActor();
-	renderTextHelpActor(renderWindow);
-	renderCameraActors(video3D);
-	renderer->ResetCamera();
+	renderer->ResetCamera();	
+	changeCameraParameters();
 	
 	windowInteractor->Start();
+
+	renderer->ReleaseGraphicsResources(renderWindow);
+	renderer = nullptr;
+}
+
+void Renderer3D::changeCameraParameters()
+{
+	double halfPlane = squareLength * totalSquares * 2;
+	cv::Point3d lookAt = cv::Point3d(0.0, 0.0, 0.0);
+	cv::Point3d position = cv::Point3d(-halfPlane, halfPlane, halfPlane);
+
+	renderer->GetActiveCamera()->SetPosition(position.x, position.y, position.z);
+	renderer->GetActiveCamera()->SetFocalPoint(lookAt.x, lookAt.y, lookAt.z);
+	renderer->GetActiveCamera()->SetViewUp(0.0, 0.0, 1.0);
+	renderer->ResetCameraClippingRange();
+	renderer->Render();
 }
 
 void Renderer3D::renderBackground()
@@ -109,11 +129,11 @@ void Renderer3D::renderAxesActor()
 	vtkSmartPointer<vtkPolyData> linesPolyData = vtkSmartPointer<vtkPolyData>::New();
 	vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
-	int halfPlane = squareLength * totalSquares / 2;
-	double axisBegin[3] = { 0.0, 0.0, 0.0 };
-	double xAxisEnd[3] = { squareLength, 0.0, 0.0 };
-	double yAxisEnd[3] = { 0.0, squareLength, 0.0 };
-	double zAxisEnd[3] = { 0.0, 0.0, squareLength };
+	double halfPlane = squareLength * (totalSquares + 2) / 2;
+	double axisBegin[3] = { -halfPlane, -halfPlane, 0.0 };
+	double xAxisEnd[3] = { squareLength - halfPlane, -halfPlane, 0.0 };
+	double yAxisEnd[3] = { -halfPlane, squareLength - halfPlane, 0.0 };
+	double zAxisEnd[3] = { -halfPlane, -halfPlane, squareLength };
 
 	points->InsertNextPoint(axisBegin);
 	points->InsertNextPoint(xAxisEnd);
@@ -161,9 +181,9 @@ void Renderer3D::renderAxesActor()
 	axisActor->SetMapper(mapper);
 	axisActor->GetProperty()->SetLineWidth(2);
 
-	renderTextActor("X", cv::Point3d(squareLength * 1.25, 0.0, 0.0));
-	renderTextActor("Y", cv::Point3d(0.0, squareLength * 1.25, 0.0));
-	renderTextActor("Z", cv::Point3d(0.0, 0.0, squareLength * 1.25));
+	renderTextActor("X", cv::Point3d(squareLength * 1.25 - halfPlane, -halfPlane, 0.0));
+	renderTextActor("Y", cv::Point3d(-halfPlane, squareLength * 1.25 - halfPlane, 0.0));
+	renderTextActor("Z", cv::Point3d(-halfPlane, -halfPlane, squareLength * 1.25));
 
 	renderer->AddActor(axisActor);
 }
@@ -195,7 +215,7 @@ void Renderer3D::renderTextHelpActor(vtkSmartPointer<vtkRenderWindow> renderWind
 
 	vtkSmartPointer<vtkTextActor> textActor = vtkSmartPointer<vtkTextActor>::New();
 	textActor->SetDisplayPosition(10, screenHeight - 45);
-	textActor->SetInput("Press 'ESC' to close 3D visualization\nPress 'Enter' to toggle animation");
+	textActor->SetInput("Press 'ESC' to close visualization\nPress 'Enter' to toggle animation");
 	textActor->GetTextProperty()->SetFontSize(14);
 	textActor->GetTextProperty()->SetLineSpacing(1.5);
 	textActor->GetTextProperty()->SetColor(1.0, 1.0, 1.0);
@@ -254,7 +274,7 @@ void Renderer3D::renderCameraActors(Video3D* video3D)
 			color[1] = 85;
 			color[2] = 60;
 		}
-		else if (reprojectionError > 0.5)
+		else if (reprojectionError > 0.3)
 		{
 			color[0] = 235;
 			color[1] = 190;
@@ -324,7 +344,7 @@ void Renderer3DTimerCallback::SetVariables(Video3D* video3D, vtkSmartPointer<vtk
 {
 	this->video3D = video3D;
 	this->renderer = renderer;
-	this->previousActors = std::list<vtkSmartPointer<vtkActor>>();
+	this->previousActors = std::vector<vtkSmartPointer<vtkActor>>();
 	this->cornerText = getTextActor(cv::Point2i(10, 10));
 	renderer->AddActor2D(cornerText);
 }
@@ -351,29 +371,31 @@ void Renderer3DTimerCallback::Execute(vtkObject* caller, unsigned long eventId, 
 	std::string labelText = "FPS: " + std::to_string(fps) + "\n" + "Frame number : " + std::to_string(frameNumber);
 	cornerText->SetInput(labelText.c_str());
 
-	if (!video3D->isVideoActive())
+	if (!video3D->isPlaying())
 	{
 		renderWindow->GetRenderWindow()->Render();
 		return;
 	}
 
-	for (vtkSmartPointer<vtkActor> pointCloudActor : previousActors)
+	for (int position = 0; position < previousActors.size(); position++)
 	{
-		renderer->RemoveActor(pointCloudActor);
+		renderer->RemoveActor(previousActors[position]);
+		previousActors[position] = nullptr;
 	}
 
-	Frame3D* currentFrame3D = video3D->getNextFrame();
+	Packet3D* packet3D = video3D->getNextPacket();
 
 	for (int cameraNumber : video3D->getCameras())
 	{
-		if (currentFrame3D != nullptr)
+		if (packet3D != nullptr)
 		{
-			for (std::pair<int, std::list<cv::Point3d>> frameData : currentFrame3D->getData())
+			for (std::pair<int, Frame3D*> frameData : packet3D->getData())
 			{
+				Frame3D* frame3D = frameData.second;
 				int cameraNumber = frameData.first;
 
 				vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
-				for (cv::Point3d point : frameData.second)
+				for (cv::Point3d point : frame3D->getPointData())
 				{
 					points->InsertNextPoint(point.x, point.y, point.z);
 				}
@@ -398,6 +420,30 @@ void Renderer3DTimerCallback::Execute(vtkObject* caller, unsigned long eventId, 
 				renderer->AddActor(pointCloudActor);
 
 				previousActors.push_back(pointCloudActor);
+
+				for (std::pair<cv::Point3d, cv::Point3d> line : frame3D->getLineData())
+				{
+					cv::Point3d point1 = line.first;
+					cv::Point3d point2 = line.second;
+
+					double point1Array[3] = { point1.x, point1.y, point1.z };
+					double point2Array[3] = { point2.x, point2.y, point2.z };
+
+					vtkSmartPointer<vtkLineSource> lineSource = vtkSmartPointer<vtkLineSource>::New();
+					lineSource->SetPoint1(point1Array);
+					lineSource->SetPoint2(point2Array);
+					lineSource->Update();
+
+					vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+					mapper->SetInputConnection(lineSource->GetOutputPort());
+
+					vtkSmartPointer<vtkActor> lineActor = vtkSmartPointer<vtkActor>::New();
+					lineActor->SetMapper(mapper);
+					lineActor->GetProperty()->SetLineWidth(1);
+
+					renderer->AddActor(lineActor);
+					previousActors.push_back(lineActor);
+				}
 			}
 		}
 	}
@@ -424,7 +470,7 @@ void Renderer3DKeypressCallback::OnKeyPress()
 
 	if (key == "Return")
 	{
-		video3D->toggleVideo();
+		video3D->togglePlayback();
 	}
 	else if (key == "Escape")
 	{

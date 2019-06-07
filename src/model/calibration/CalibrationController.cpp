@@ -255,14 +255,14 @@ bool CalibrationController::calculatePoses(Scene scene, CaptureType captureType)
 
 	std::map<int, Intrinsics*> intrinsics = sceneController->getIntrinsics(scene);
 	std::map<int, Extrinsics*> extrinsics = sceneController->getExtrinsics(scene);
-	std::vector<Frame3D*> allPoses;
+	std::vector<Packet3D*> reconstructions;
 
 	for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber++)
 	{
 		BOOST_LOG_TRIVIAL(warning) << "Processing cameras in frame " << frameNumber;
 
-		Frame3D* framePoses = new Frame3D();
-		bool foundPoses = false;
+		Packet3D* posesPacket = new Packet3D();
+		bool builtPacket = false;
 
 		#pragma omp parallel for
 		for (int cameraIndex = 0; cameraIndex < capturedCameras.size(); cameraIndex++)
@@ -283,48 +283,66 @@ bool CalibrationController::calculatePoses(Scene scene, CaptureType captureType)
 
 				if (cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distortionCoefficients, rotationVector, translationVector))
 				{
-					std::list<cv::Point3d> composedPoses;
+					Frame3D* frame3D = new Frame3D();
+					builtPacket = true;
+
+					cv::Mat extrinsicRotationVector = extrinsics[cameraNumber]->getRotationVector();
+					cv::Mat extrinsicTranslationVector = extrinsics[cameraNumber]->getTranslationVector();
 
 					for (int cornerIndex = 0; cornerIndex < board->chessboardCorners.size(); cornerIndex++)
 					{
-						cv::Mat cornerModel = cv::Mat(board->chessboardCorners[cornerIndex]);
-						cornerModel.convertTo(cornerModel, CV_64F);
-
-						cv::Mat rotationMatrix;
-						cv::Rodrigues(rotationVector, rotationMatrix);
-						cv::Mat transformedPointCamera = cv::Mat(rotationMatrix * cornerModel + translationVector);
-
-						cv::Mat translationVectorWorld = extrinsics[cameraNumber]->getTranslationVector();
-						cv::Mat rotationVectorWorld = extrinsics[cameraNumber]->getRotationVector();
-						cv::Mat rotationMatrixWorld;
-						cv::Rodrigues(rotationVectorWorld, rotationMatrixWorld);
-
-						cv::Point3d transformedPointWorld = cv::Mat(rotationMatrixWorld.t() * (transformedPointCamera - translationVectorWorld));
-						composedPoses.push_back(transformedPointWorld);
+						cv::Point3d modelPoint = cv::Point3d(board->chessboardCorners[cornerIndex].x, board->chessboardCorners[cornerIndex].y, 0.0);
+						cv::Point3d worldPoint = fromModelToWorld(modelPoint, rotationVector, translationVector, extrinsicRotationVector, extrinsicTranslationVector);
+						frame3D->addData(worldPoint);
 					}
+					
+					cv::Point3d upperLeftModel = cv::Point3d(0.0, 0.0, 0.0);
+					cv::Point3d upperRightModel = cv::Point3d(board->getChessboardSize().width * board->getSquareLength(), 0.0, 0.0);
+					cv::Point3d lowerLeftModel = cv::Point3d(0.0, board->getChessboardSize().height * board->getSquareLength(), 0.0);
+					cv::Point3d lowerRightModel = cv::Point3d(board->getChessboardSize().width * board->getSquareLength(), board->getChessboardSize().height * board->getSquareLength(), 0.0);
+					
+					std::vector<cv::Point3d> actualCornersModel;
+					actualCornersModel.push_back(upperLeftModel);
+					actualCornersModel.push_back(upperRightModel);
+					actualCornersModel.push_back(lowerRightModel);
+					actualCornersModel.push_back(lowerLeftModel);					
 
-					if (!composedPoses.empty())
+					std::vector<cv::Point3d> cornersWorld;
+					for (int cornerIndex = 0; cornerIndex < 4; cornerIndex++)
 					{
-						foundPoses = true;
-						framePoses->addData(cameraNumber, composedPoses);
+						cv::Point3d modelPoint = cv::Point3d(actualCornersModel[cornerIndex].x, actualCornersModel[cornerIndex].y, 0.0);
+						cv::Point3d worldPoint = fromModelToWorld(modelPoint, rotationVector, translationVector, extrinsicRotationVector, extrinsicTranslationVector);
+						cornersWorld.push_back(worldPoint);
 					}
+
+					for (int cornerIndex = 0; cornerIndex < 4; cornerIndex++)
+					{
+						int nextCorner = (cornerIndex + 1) % 4;
+						cv::Point3d point1 = cornersWorld[cornerIndex];
+						cv::Point3d point2 = cornersWorld[nextCorner];
+
+						std::pair<cv::Point3d, cv::Point3d> line = std::pair<cv::Point3d, cv::Point3d>(point1, point2);
+						frame3D->addData(line);
+					}
+
+					posesPacket->addData(cameraNumber, frame3D);
 				}
 			}
 		}
 
-		if (!foundPoses)
+		if (!builtPacket)
 		{
-			delete framePoses;
-			allPoses.push_back(nullptr);
+			delete posesPacket;
+			reconstructions.push_back(nullptr);
 		}
 		else
 		{
-			allPoses.push_back(framePoses);
+			reconstructions.push_back(posesPacket);
 		}		
 	}
 
 	BOOST_LOG_TRIVIAL(warning) << "Dumping all the poses to disk";
-	sceneController->savePoses(scene, captureType, allPoses);
+	sceneController->saveReconstructions(scene, captureType, reconstructions);
 	return true;
 }
 
@@ -372,4 +390,19 @@ bool CalibrationController::detectCharucoCorners(cv::Mat& inputImage, int minCha
 	}
 
 	return false;
+}
+
+cv::Point3d CalibrationController::fromModelToWorld(cv::Point3d modelPoint, cv::Mat cameraRotationVector, cv::Mat cameraTranslationVector, cv::Mat worldRotationVector, cv::Mat worldTranslationVector)
+{
+	cv::Mat modelPointMatrix = cv::Mat(modelPoint);
+
+	cv::Mat cameraRotationMatrix;
+	cv::Rodrigues(cameraRotationVector, cameraRotationMatrix);
+	cv::Mat transformedPointCamera = cv::Mat(cameraRotationMatrix * modelPointMatrix + cameraTranslationVector);
+
+	cv::Mat worldRotationMatrix;
+	cv::Rodrigues(worldRotationVector, worldRotationMatrix);
+	cv::Point3d transformedPointWorld = cv::Mat(worldRotationMatrix.t() * (transformedPointCamera - worldTranslationVector));
+
+	return transformedPointWorld;
 }
