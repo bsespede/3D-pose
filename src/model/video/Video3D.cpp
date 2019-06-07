@@ -7,6 +7,7 @@ Video3D::Video3D(std::vector<int> cameras, std::map<int, Intrinsics*> intrinsics
 	this->intrinsics = intrinsics;
 	this->extrinsics = extrinsics;
 	this->frames = std::vector<Frame3D*>();
+	this->videoActive = true;
 }
 
 std::vector<int> Video3D::getCameras()
@@ -39,6 +40,16 @@ Frame3D* Video3D::getNextFrame()
 	}
 
 	return frames[frameNumber];
+}
+
+void Video3D::toggleVideo()
+{
+	videoActive = !videoActive;
+}
+
+bool Video3D::isVideoActive()
+{
+	return videoActive;
 }
 
 void Video3D::addFrame(Frame3D* frame)

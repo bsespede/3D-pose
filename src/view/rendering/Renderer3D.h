@@ -28,12 +28,7 @@
 #include <vtkVertexGlyphFilter.h>
 #include <vtkTextActor.h>
 #include <vtkTextProperty.h>
-#include <vtkPlaneSource.h>
-#include <vtkTextureMapToPlane.h>
-#include <vtkImageData.h>
-#include <vtkAppendPolyData.h>
-#include <vtkTexture.h>
-#include <vtkImageData.h>
+#include <vtkPointData.h>
 #include "model/video/Video3D.h"
 #include "model/config/ConfigController.h"
 
@@ -46,6 +41,7 @@ private:
 	void renderBackground();
 	void renderGridActor();
 	void renderAxesActor();
+	void renderTextHelpActor(vtkSmartPointer<vtkRenderWindow> renderWindow);
 	void renderTextActor(std::string text, cv::Point3d position);
 	void renderCameraActors(Video3D* video3D);
 	void transformActor(vtkSmartPointer<vtkActor> actor, cv::Affine3d transform);	
@@ -55,16 +51,28 @@ private:
 	double squareLength;	
 };
 
-class Renderer3DCallback : public vtkCommand
+class Renderer3DTimerCallback : public vtkCommand
 {
 public:	
-	static Renderer3DCallback* New();
-	void initialize(Video3D* video3D, vtkSmartPointer<vtkRenderer> renderer);
+	static Renderer3DTimerCallback* New();
+	void SetVariables(Video3D* video3D, vtkSmartPointer<vtkRenderer> renderer);
 	virtual void Execute(vtkObject* caller, unsigned long eventId, void* vtkNotUsed(callData));
 private:
+	std::list<vtkSmartPointer<vtkActor>> previousActors;
 	vtkSmartPointer<vtkTextActor> getTextActor(cv::Point2i position);
-	vtkSmartPointer<vtkTextActor> frameNumberText;
-	vtkSmartPointer<vtkTextActor> fpsText;	
+	vtkSmartPointer<vtkTextActor> cornerText;	
 	vtkSmartPointer<vtkRenderer> renderer;
+	Video3D* video3D;
+};
+
+class Renderer3DKeypressCallback : public vtkInteractorStyleTrackballCamera
+{
+public:
+	static Renderer3DKeypressCallback* New();
+	void SetVariables(Video3D* video3D, vtkSmartPointer<vtkRenderWindowInteractor> windowInteractor);
+	vtkTypeMacro(Renderer3DKeypressCallback, vtkInteractorStyleTrackballCamera);
+	virtual void OnKeyPress();
+private:
+	vtkSmartPointer<vtkRenderWindowInteractor> windowInteractor;
 	Video3D* video3D;
 };

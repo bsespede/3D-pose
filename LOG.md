@@ -121,7 +121,9 @@ _2-5-2019 (3hs)__:
 __3-5-2019 (6hs)__:
 - Exportar poses del board a json
 - Cargar las poses en el renderer 3D y playback de video 3D!
-- Faltaria:
-	- Emprolijar clase video3D
-	- Arreglar sleep en camera/UI
 
+__6-5-2019 (3hs)__:
+- Fix muy importante a las poses de los corners del checkerboard en 3D: ANDA PERFECTO!
+- Fix al modelo de la camara en 3D
+- Colorizacion de la camara de a acuerdo al error de reproyeccion
+- Agregado de labels dinamicos en UI
