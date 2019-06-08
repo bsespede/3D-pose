@@ -2,7 +2,7 @@
 
 Renderer3D::Renderer3D(ConfigController* configController)
 {
-	this->renderer = nullptr; vtkSmartPointer<vtkRenderer>::New();
+	this->renderer = nullptr;
 	this->totalSquares = 20;
 	this->squareLength = 800.0;
 	this->guiFps = configController->getGuiFps();
@@ -12,41 +12,43 @@ void Renderer3D::render(Video3D* video3D)
 {
 	this->renderer = vtkSmartPointer<vtkRenderer>::New();
 
-	renderBackground();
-	renderGridActor();
-	renderAxesActor();
-	renderCameraActors(video3D);
-
-	vtkSmartPointer<Renderer3DTimerCallback> timerCallback = vtkSmartPointer<Renderer3DTimerCallback>::New();
-	timerCallback->SetVariables(video3D, renderer);
-
 	vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
 	renderWindow->AddRenderer(renderer);
-	renderWindow->SetFullScreen(true);
-	renderTextHelpActor(renderWindow);
+	renderWindow->SetFullScreen(true);	
 
 	vtkSmartPointer<vtkRenderWindowInteractor> windowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
 	windowInteractor->SetRenderWindow(renderWindow);	
 	windowInteractor->Initialize();
 	windowInteractor->CreateRepeatingTimer(1000.0 / guiFps);
 
-	vtkSmartPointer<Renderer3DKeypressCallback> style = vtkSmartPointer<Renderer3DKeypressCallback>::New();
-	windowInteractor->AddObserver(vtkCommand::TimerEvent, timerCallback);	
-	windowInteractor->SetInteractorStyle(style);
-	style->SetVariables(video3D, windowInteractor);
+	vtkSmartPointer<Renderer3DTimerCallback> timerCallback = vtkSmartPointer<Renderer3DTimerCallback>::New();
+	timerCallback->SetVariables(video3D, renderer);
+	windowInteractor->AddObserver(vtkCommand::TimerEvent, timerCallback);
 
-	renderer->ResetCamera();	
-	changeCameraParameters();
-	
+	vtkSmartPointer<Renderer3DKeypressCallback> keypressCallback = vtkSmartPointer<Renderer3DKeypressCallback>::New();
+	keypressCallback->SetVariables(video3D);
+	windowInteractor->AddObserver(vtkCommand::KeyPressEvent, keypressCallback);
+
+	vtkSmartPointer<vtkInteractorStyleTrackballCamera> style = vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();
+	windowInteractor->SetInteractorStyle(style);
+
+	renderWindow->SetWindowName("3DPose");
+	renderBackground();
+	renderGridActor();
+	renderAxesActor();
+	renderCameraActors(video3D);
+	renderTextHelpActor(renderWindow->GetSize()[1]);
+	resetActiveCamera();
+
 	windowInteractor->Start();
 
 	renderer->ReleaseGraphicsResources(renderWindow);
 	renderer = nullptr;
 }
 
-void Renderer3D::changeCameraParameters()
+void Renderer3D::resetActiveCamera()
 {
-	double halfPlane = squareLength * totalSquares * 2;
+	double halfPlane = squareLength * totalSquares * 1.75;
 	cv::Point3d lookAt = cv::Point3d(0.0, 0.0, 0.0);
 	cv::Point3d position = cv::Point3d(-halfPlane, halfPlane, halfPlane);
 
@@ -54,7 +56,6 @@ void Renderer3D::changeCameraParameters()
 	renderer->GetActiveCamera()->SetFocalPoint(lookAt.x, lookAt.y, lookAt.z);
 	renderer->GetActiveCamera()->SetViewUp(0.0, 0.0, 1.0);
 	renderer->ResetCameraClippingRange();
-	renderer->Render();
 }
 
 void Renderer3D::renderBackground()
@@ -63,6 +64,7 @@ void Renderer3D::renderBackground()
 	renderer->GradientBackgroundOn();
 	renderer->SetBackground(25 / 255.0, 25 / 255.0, 25 / 255.0);
 	renderer->SetBackground2(50 / 255.0, 50 / 255.0, 50 / 255.0);
+	renderer->SetClippingRangeExpansion(100);
 }
 
 void Renderer3D::renderGridActor()
@@ -208,11 +210,8 @@ void Renderer3D::renderTextActor(std::string text, cv::Point3d position)
 	renderer->AddActor(textActor);
 }
 
-void Renderer3D::renderTextHelpActor(vtkSmartPointer<vtkRenderWindow> renderWindow)
+void Renderer3D::renderTextHelpActor(int screenHeight)
 {
-	int screenWidth = renderWindow->GetSize()[0];
-	int screenHeight = renderWindow->GetSize()[1];
-
 	vtkSmartPointer<vtkTextActor> textActor = vtkSmartPointer<vtkTextActor>::New();
 	textActor->SetDisplayPosition(10, screenHeight - 45);
 	textActor->SetInput("Press 'ESC' to close visualization\nPress 'Enter' to toggle animation");
@@ -274,7 +273,7 @@ void Renderer3D::renderCameraActors(Video3D* video3D)
 			color[1] = 85;
 			color[2] = 60;
 		}
-		else if (reprojectionError > 0.3)
+		else if (reprojectionError > 0.15)
 		{
 			color[0] = 235;
 			color[1] = 190;
@@ -448,7 +447,7 @@ void Renderer3DTimerCallback::Execute(vtkObject* caller, unsigned long eventId, 
 		}
 	}
 
-	renderWindow->GetRenderWindow()->Render();	
+	renderWindow->GetRenderWindow()->Render();
 }
 
 Renderer3DKeypressCallback* Renderer3DKeypressCallback::New()
@@ -457,16 +456,15 @@ Renderer3DKeypressCallback* Renderer3DKeypressCallback::New()
 	return callbackObject;
 }
 
-void Renderer3DKeypressCallback::SetVariables(Video3D* video3D, vtkSmartPointer<vtkRenderWindowInteractor> windowInteractor)
+void Renderer3DKeypressCallback::SetVariables(Video3D* video3D)
 {
 	this->video3D = video3D;
-	this->windowInteractor = windowInteractor;
 }
 
-void Renderer3DKeypressCallback::OnKeyPress()
+void Renderer3DKeypressCallback::Execute(vtkObject* caller, unsigned long eventId, void* vtkNotUsed(callData))
 {
-	vtkRenderWindowInteractor* rwi = this->Interactor;
-	std::string key = rwi->GetKeySym();
+	vtkRenderWindowInteractor* renderWindow = dynamic_cast<vtkRenderWindowInteractor*>(caller);
+	std::string key = renderWindow->GetKeySym();
 
 	if (key == "Return")
 	{
@@ -474,9 +472,7 @@ void Renderer3DKeypressCallback::OnKeyPress()
 	}
 	else if (key == "Escape")
 	{
-		windowInteractor->SetRenderWindow(nullptr);
-		windowInteractor->TerminateApp();
+		renderWindow->SetRenderWindow(nullptr);
+		renderWindow->TerminateApp();
 	}
-
-	vtkInteractorStyleTrackballCamera::OnKeyPress();
 }

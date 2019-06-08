@@ -1,5 +1,5 @@
 ﻿cmake_minimum_required(VERSION 3.9)
-project(OpticalMocap LANGUAGES CXX)
+project(3DPose LANGUAGES CXX)
 
 # Find Qt package and set MOC and RCC vars
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

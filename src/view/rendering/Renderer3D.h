@@ -30,6 +30,7 @@
 #include <vtkTextProperty.h>
 #include <vtkPointData.h>
 #include <vtkLineSource.h>
+#include <vtkInteractorStyleJoystickCamera.h>
 #include "model/video/Video3D.h"
 #include "model/config/ConfigController.h"
 
@@ -42,18 +43,18 @@ private:
 	void renderBackground();
 	void renderGridActor();
 	void renderAxesActor();
-	void renderTextHelpActor(vtkSmartPointer<vtkRenderWindow> renderWindow);
+	void renderTextHelpActor(int screenHeight);
 	void renderTextActor(std::string text, cv::Point3d position);
 	void renderCameraActors(Video3D* video3D);
 	void transformActor(vtkSmartPointer<vtkActor> actor, cv::Affine3d transform);
-	void changeCameraParameters();
+	void resetActiveCamera();
 	vtkSmartPointer<vtkRenderer> renderer;	
 	int guiFps;
 	int totalSquares;
 	double squareLength;	
 };
 
-class Renderer3DTimerCallback : public vtkCommand
+class Renderer3DTimerCallback : public vtkCallbackCommand
 {
 public:	
 	static Renderer3DTimerCallback* New();
@@ -67,14 +68,12 @@ private:
 	Video3D* video3D;
 };
 
-class Renderer3DKeypressCallback : public vtkInteractorStyleTrackballCamera
+class Renderer3DKeypressCallback : public vtkCallbackCommand
 {
 public:
 	static Renderer3DKeypressCallback* New();
-	void SetVariables(Video3D* video3D, vtkSmartPointer<vtkRenderWindowInteractor> windowInteractor);
-	vtkTypeMacro(Renderer3DKeypressCallback, vtkInteractorStyleTrackballCamera);
-	virtual void OnKeyPress();
+	void SetVariables(Video3D* video3D);
+	virtual void Execute(vtkObject* caller, unsigned long eventId, void* vtkNotUsed(callData));
 private:
-	vtkSmartPointer<vtkRenderWindowInteractor> windowInteractor;
 	Video3D* video3D;
 };
