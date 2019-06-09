@@ -3,7 +3,7 @@
 Renderer3D::Renderer3D(ConfigController* configController)
 {
 	this->renderer = nullptr;
-	this->totalSquares = 20;
+	this->totalSquares = 17;
 	this->squareLength = 800.0;
 	this->guiFps = configController->getGuiFps();
 }
@@ -11,10 +11,15 @@ Renderer3D::Renderer3D(ConfigController* configController)
 void Renderer3D::render(Video3D* video3D)
 {
 	this->renderer = vtkSmartPointer<vtkRenderer>::New();
+	renderBackground();
+	renderGridActor();
+	renderAxesActor();
+	renderCameraActors(video3D);	
 
 	vtkSmartPointer<vtkRenderWindow> renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
 	renderWindow->AddRenderer(renderer);
 	renderWindow->SetFullScreen(true);	
+	renderTextHelpActor(renderWindow->GetSize()[1]);
 
 	vtkSmartPointer<vtkRenderWindowInteractor> windowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
 	windowInteractor->SetRenderWindow(renderWindow);	
@@ -33,11 +38,7 @@ void Renderer3D::render(Video3D* video3D)
 	windowInteractor->SetInteractorStyle(style);
 
 	renderWindow->SetWindowName("3DPose");
-	renderBackground();
-	renderGridActor();
-	renderAxesActor();
-	renderCameraActors(video3D);
-	renderTextHelpActor(renderWindow->GetSize()[1]);
+	
 	resetActiveCamera();
 
 	windowInteractor->Start();
@@ -52,6 +53,7 @@ void Renderer3D::resetActiveCamera()
 	cv::Point3d lookAt = cv::Point3d(0.0, 0.0, 0.0);
 	cv::Point3d position = cv::Point3d(-halfPlane, halfPlane, halfPlane);
 
+	renderer->ResetCamera();
 	renderer->GetActiveCamera()->SetPosition(position.x, position.y, position.z);
 	renderer->GetActiveCamera()->SetFocalPoint(lookAt.x, lookAt.y, lookAt.z);
 	renderer->GetActiveCamera()->SetViewUp(0.0, 0.0, 1.0);
@@ -64,7 +66,7 @@ void Renderer3D::renderBackground()
 	renderer->GradientBackgroundOn();
 	renderer->SetBackground(25 / 255.0, 25 / 255.0, 25 / 255.0);
 	renderer->SetBackground2(50 / 255.0, 50 / 255.0, 50 / 255.0);
-	renderer->SetClippingRangeExpansion(100);
+	renderer->RemoveCuller(renderer->GetCullers()->GetLastItem());
 }
 
 void Renderer3D::renderGridActor()
@@ -119,6 +121,7 @@ void Renderer3D::renderGridActor()
 
 	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 	mapper->SetInputData(linesPolyData);
+	mapper->StaticOn();
 
 	vtkSmartPointer<vtkActor> gridActor = vtkSmartPointer<vtkActor>::New();
 	gridActor->SetMapper(mapper);
@@ -178,6 +181,7 @@ void Renderer3D::renderAxesActor()
 
 	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 	mapper->SetInputData(linesPolyData);
+	mapper->StaticOn();
 
 	vtkSmartPointer<vtkActor> axisActor = vtkSmartPointer<vtkActor>::New();
 	axisActor->SetMapper(mapper);
@@ -200,12 +204,13 @@ void Renderer3D::renderTextActor(std::string text, cv::Point3d position)
 
 	vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 	mapper->SetInputConnection(textSource->GetOutputPort());
+	mapper->StaticOn();
 
 	vtkSmartPointer<vtkFollower> textActor = vtkSmartPointer<vtkFollower>::New();
 	textActor->SetMapper(mapper);
 	textActor->SetPosition(position.x, position.y, position.z);
 	textActor->SetScale(scale);
-	textActor->SetCamera(renderer->GetActiveCamera());	
+	textActor->SetCamera(renderer->GetActiveCamera());
 
 	renderer->AddActor(textActor);
 }
@@ -299,6 +304,7 @@ void Renderer3D::renderCameraActors(Video3D* video3D)
 
 		vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 		mapper->SetInputData(polydata);
+		mapper->StaticOn();
 
 		vtkSmartPointer<vtkActor> cameraActor = vtkSmartPointer<vtkActor>::New();
 		cameraActor->SetMapper(mapper);
@@ -367,6 +373,7 @@ void Renderer3DTimerCallback::Execute(vtkObject* caller, unsigned long eventId, 
 
 	int fps = (int)(1.0 / renderer->GetLastRenderTimeInSeconds());
 	int frameNumber = video3D->getFrameNumber();
+
 	std::string labelText = "FPS: " + std::to_string(fps) + "\n" + "Frame number : " + std::to_string(frameNumber);
 	cornerText->SetInput(labelText.c_str());
 
@@ -411,6 +418,7 @@ void Renderer3DTimerCallback::Execute(vtkObject* caller, unsigned long eventId, 
 
 				vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 				mapper->SetInputData(polydata);
+				mapper->StaticOn();
 
 				vtkSmartPointer<vtkActor> pointCloudActor = vtkSmartPointer<vtkActor>::New();
 				pointCloudActor->SetMapper(mapper);
@@ -435,6 +443,7 @@ void Renderer3DTimerCallback::Execute(vtkObject* caller, unsigned long eventId, 
 
 					vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
 					mapper->SetInputConnection(lineSource->GetOutputPort());
+					mapper->StaticOn();
 
 					vtkSmartPointer<vtkActor> lineActor = vtkSmartPointer<vtkActor>::New();
 					lineActor->SetMapper(mapper);

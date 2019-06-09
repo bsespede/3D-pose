@@ -124,7 +124,7 @@ bool SceneController::hasFrame(Scene scene, CaptureType captureType, int cameraN
 cv::Mat SceneController::getFrame(Scene scene, CaptureType captureType, int cameraNumber, int frameNumber)
 {
 	std::string frameFile = dataFolder + "/" + scene.getName() + "/" + captureType.toString() + "/cam-" + std::to_string(cameraNumber) + "/" + std::to_string(frameNumber) + ".png";
-	return cv::imread(frameFile);
+	return cv::imread(frameFile, cv::IMREAD_GRAYSCALE);
 }
 
 void SceneController::saveIntrinsics(Scene scene, std::map<int, Intrinsics*> intrinsics)

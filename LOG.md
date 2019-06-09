@@ -113,10 +113,6 @@ _2-5-2019 (3hs)__:
 - Separacion del rendereo 3D del backend
 - Cambio de sistema de coordenadas en el renderer
 - Fix a pose de la camara en world coordinates
-- Faltaria:
-	- Renderear point clouds del board en el tiempo
-	- Proyectar corners del board a 3D en "visualizacion":
-		- Tomar los ptos del modelo del pattern y aplicar su affine transform con los valores del json para llevarlos a 3D
 
 __3-5-2019 (6hs)__:
 - Exportar poses del board a json

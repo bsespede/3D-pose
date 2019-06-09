@@ -31,6 +31,8 @@
 #include <vtkPointData.h>
 #include <vtkLineSource.h>
 #include <vtkInteractorStyleJoystickCamera.h>
+#include <vtkCullerCollection.h>
+#include <chrono>
 #include "model/video/Video3D.h"
 #include "model/config/ConfigController.h"
 
