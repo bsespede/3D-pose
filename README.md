@@ -27,7 +27,10 @@ The following libraries were used:
 
 ## References
 
-- [1] S. Garrido-Jurado, R. Muñoz-Salinas, F. J. Madrid-Cuevas, and M. J. Marín-Jiménez. 2014. "Automatic generation and detection of highly reliable fiducial markers under occlusion", PR, 2014.
-- [2] Z. Zhang, "A flexible new technique for camera calibration," TPAMI, 2000.
-- [3] C. Wu, S. Agarwal, B. Curless and S. M. Seitz, "Multicore bundle adjustment," CVPR, 2011.
-- [4] C. Zhe, S. Tomas, W. Shih-En, S. Yaser, "Realtime Multi-Person 2D Pose Estimation using Part Affinity Fields", CVPR, 2017. 
+[1] S. Garrido-Jurado, R. Muñoz-Salinas, F. J. Madrid-Cuevas, and M. J. Marín-Jiménez. 2014. "Automatic generation and detection of highly reliable fiducial markers under occlusion", PR, 2014.
+
+[2] Z. Zhang, "A flexible new technique for camera calibration," TPAMI, 2000.
+
+[3] C. Wu, S. Agarwal, B. Curless and S. M. Seitz, "Multicore bundle adjustment," CVPR, 2011.
+
+[4] C. Zhe, S. Tomas, W. Shih-En, S. Yaser, "Realtime Multi-Person 2D Pose Estimation using Part Affinity Fields", CVPR, 2017. 
