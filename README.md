@@ -1,20 +1,18 @@
 ﻿# 3DPose
 
-![3DPose](https://raw.githubusercontent.com/bsespede/3D-pose/master/summary.png "Sample visualization of the calibration process")
-
 ## Introduction
 
 This repository contains a multi-view optical motion capture system with support 3D visualizations. It includes a multi-camera calibration tool.
 
 It is composed by the following modules:
-- Capture module:
+- **Capture module**:
 	- Sinchronized capture using Optitrack cameras (but can easily be extended to any type of camera by implementing the adequate interfaces)
 	- Dynamic 2D visualization of the cameras feed
-- Calibration:
+- **Calibration module**:
 	- For intrinsics: charuco based calibration [1][2]
 	- For extrinsics: charuco board pose estimation + nister 5-point algorithm [3]
 	- Dynamic 3D visualization of calibration board
-- Human pose estimation:
+- **Human pose estimation module**:
 	- OpenPose 3D module with CERES non-linear optimization [4]
 
 ## Libraries
