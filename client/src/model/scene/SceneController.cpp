@@ -311,6 +311,7 @@ std::map<int, Intrinsics*> SceneController::getIntrinsics(Scene scene)
 		calibrationMatrix.at<double>(1, 1) = cameraNode.second.get<double>("calibrationMatrix.fy");
 		calibrationMatrix.at<double>(0, 2) = cameraNode.second.get<double>("calibrationMatrix.cx");
 		calibrationMatrix.at<double>(1, 2) = cameraNode.second.get<double>("calibrationMatrix.cy");
+		calibrationMatrix.at<double>(2, 2) = 1.0;
 
 		cv::Mat distortionCoefficients = cv::Mat(1, 5, CV_64F);
 		distortionCoefficients.at<double>(0, 0) = cameraNode.second.get<double>("distortionCoefficients.k1");

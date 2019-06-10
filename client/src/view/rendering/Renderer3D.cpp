@@ -4,7 +4,7 @@ Renderer3D::Renderer3D(ConfigController* configController)
 {
 	this->renderer = nullptr;
 	this->totalSquares = 17;
-	this->squareLength = 800.0;
+	this->squareLength = 1000.0;
 	this->guiFps = configController->getGuiFps();
 }
 

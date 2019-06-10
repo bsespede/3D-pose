@@ -8,13 +8,14 @@ This repository contains a multi-view optical motion capture system with support
 
 It is composed by the following modules:
 - Capture module:
-	- Sinchronized capture using Optitrack cameras (but can easily be extended to any type of camera by implementing the adequate interfaces).
+	- Sinchronized capture using Optitrack cameras (but can easily be extended to any type of camera by implementing the adequate interfaces)
+	- Dynamic 2D visualization of the cameras feed
 - Calibration:
 	- For intrinsics: charuco based calibration [1][2]
 	- For extrinsics: charuco board pose estimation + nister 5-point algorithm [3]
 	- Dynamic 3D visualization of calibration board
 - Human pose estimation:
-	- OpenPose 3D module with CERES optimization [4]
+	- OpenPose 3D module with CERES non-linear optimization [4]
 
 ## Libraries
 
