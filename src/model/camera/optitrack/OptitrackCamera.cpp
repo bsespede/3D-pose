@@ -2,12 +2,11 @@
 
 OptitrackCamera::OptitrackCamera(ConfigController* configController)
 {
-	this->camerasWidth = std::map<int, int>();
-	this->camerasHeight = std::map<int, int>();
-	this->cameraOrder = configController->getCameraOrder();
+	this->cameraFps = configController->getCameraFps();
+	this->cameraData = configController->getCameraData();
 }
 
-bool OptitrackCamera::startCameras(int cameraFps)
+bool OptitrackCamera::startCameras()
 {
 	CameraLibrary_EnableDevelopment();
 	CameraLibrary::CameraManager::X();
@@ -17,16 +16,15 @@ bool OptitrackCamera::startCameras(int cameraFps)
 	for (int i = 0; i < list.Count(); i++)
 	{
 		camera[i] = CameraLibrary::CameraManager::X().GetCamera(list[i].UID());
-		int cameraSerial = list[i].Serial();
-		int cameraNumber = cameraOrder[cameraSerial];
+		int cameraId = cameraData[list[i].Serial()].first;
 		
 		if (camera[i] == nullptr)
 		{
-			BOOST_LOG_TRIVIAL(warning) << "Couldn't connect to camera #" << cameraNumber << ": ";
+			BOOST_LOG_TRIVIAL(warning) << "Couldn't connect to camera " << cameraId;
 		}
 		else
 		{
-			BOOST_LOG_TRIVIAL(warning) << "Connected to camera #" << cameraNumber << " (" << cameraSerial << ")";
+			BOOST_LOG_TRIVIAL(warning) << "Connected to camera " << cameraId;
 			cameraCount++;
 		}
 	}
@@ -34,13 +32,19 @@ bool OptitrackCamera::startCameras(int cameraFps)
 	if (cameraCount == 0)
 	{
 		BOOST_LOG_TRIVIAL(warning) << "Couldn't connect to any camera";
+		shutdownCameras();
 		return false;
 	}
 
 	if (cameraCount != list.Count())
 	{
+		BOOST_LOG_TRIVIAL(warning) << "Couldnt connect to all cameras, shutting down";
 		shutdownCameras();
 		return false;
+	}
+	else
+	{
+		BOOST_LOG_TRIVIAL(warning) << "Connected to " << cameraCount << " cameras";
 	}
 
 	sync = CameraLibrary::cModuleSync::Create();
@@ -48,25 +52,29 @@ bool OptitrackCamera::startCameras(int cameraFps)
 	if (sync == nullptr)
 	{
 		BOOST_LOG_TRIVIAL(error) << "Couldn't create sync group";
+		shutdownCameras();
 		return false;
 	}
 
 	for (int i = 0; i < cameraCount; i++)
 	{
-		sync->AddCamera(camera[i]);
-	}
-
-	for (int i = 0; i < cameraCount; i++)
-	{
-		int cameraId = cameraOrder[camera[i]->Serial()];
-		camerasWidth[cameraId] = camera[i]->Width();
-		camerasHeight[cameraId] = camera[i]->Height();
+		int cameraId = cameraData[camera[i]->Serial()].first;
+		bool cameraCapture = cameraData[camera[i]->Serial()].second;
 		camera[i]->SetNumeric(true, cameraId);
-		camera[i]->SetVideoType(Core::eVideoMode::MJPEGMode);
-		camera[i]->SetMJPEGQuality(0);		
+		camera[i]->SetVideoType(Core::eVideoMode::GrayscaleMode);
 		camera[i]->SetFrameRate(cameraFps);
 		camera[i]->SetLateDecompression(false);
-		camera[i]->Start();	
+
+		if (cameraCapture)
+		{
+			sync->AddCamera(camera[i]);			
+			camera[i]->Start();
+		}
+		else
+		{
+			camera[i]->SetRinglightEnabledWhileStopped(true);
+			camera[i]->Stop();
+		}		
 	}
 
 	return true;
@@ -92,9 +100,9 @@ Packet* OptitrackCamera::getPacket()
 			CameraLibrary::Frame* frame = frameGroup->GetFrame(i);
 			CameraLibrary::Camera* camera = frame->GetCamera();
 
-			int cameraId = cameraOrder[camera->Serial()];
-			int cameraWidth = camerasWidth[cameraId];
-			int cameraHeight= camerasHeight[cameraId];
+			int cameraId = cameraData[camera->Serial()].first;
+			int cameraWidth = camera->Width();
+			int cameraHeight = camera->Height();
 
 			cv::Mat frameMat = cv::Mat(cv::Size(cameraWidth, cameraHeight), CV_8UC1);
 			frame->Rasterize(cameraWidth, cameraHeight, (unsigned int)frameMat.step, 8, frameMat.data);
@@ -105,10 +113,6 @@ Packet* OptitrackCamera::getPacket()
 
 		frameGroup->Release();
 		return packet;
-	}
-	else
-	{
-		BOOST_LOG_TRIVIAL(warning) << "Empty packet";
 	}
 
 	return nullptr;
@@ -129,7 +133,7 @@ void OptitrackCamera::stopCameras()
 
 void OptitrackCamera::shutdownCameras()
 {
-	for (int i = 0; i < cameraCount; i++)
+	for (int i = 0; i < list.Count(); i++)
 	{
 		if (camera[i] != nullptr)
 		{

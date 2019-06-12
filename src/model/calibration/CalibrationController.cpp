@@ -2,15 +2,18 @@
 
 CalibrationController::CalibrationController(ConfigController* configController, SceneController* sceneController)
 {
+	this->sceneController = sceneController;	
+	this->shouldOutputDebugData = configController->getShouldOutputDebugData();
+	this->maxSamplesIntrinsics = configController->getMaxSamplesIntrinsics();
+	this->maxSamplesExtrinsics = configController->getMaxSamplesExtrinsics();
+
 	int charucoCols = configController->getCharucoCols();
 	int charucoRows = configController->getCharucoRows();
 	float charucoSquareLength = configController->getCharucoSquareLength();
 	float charucoMarkerLength = configController->getCharucoMarkerLength();
 
-	this->sceneController = sceneController;
 	this->dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 	this->board = cv::aruco::CharucoBoard::create(charucoCols, charucoRows, charucoSquareLength, charucoMarkerLength, dictionary);
-	this->outputDetections = configController->getOutputDetections();
 }
 
 void CalibrationController::generateCheckboard(int charucoWidth, int charucoHeight, int charucoMargin)
@@ -60,6 +63,11 @@ bool CalibrationController::calculateIntrinsics(Scene scene, CaptureType capture
 		
 		for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber++)
 		{
+			if (totalSamples > maxSamplesIntrinsics)
+			{
+				break;
+			}
+
 			std::vector<int> charucoIds = std::vector<int>();
 			std::vector<cv::Point2f> charucoCorners = std::vector<cv::Point2f>();
 			cv::Mat frame = sceneController->getFrame(scene, captureType, cameraNumber, frameNumber);
@@ -96,41 +104,44 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 	std::map<int, Extrinsics*> extrinsics;
 	std::map<int, Intrinsics*> intrinsics = sceneController->getIntrinsics(scene);
 
-	int originCamera = capturedCameras[0];
-	cv::Mat originCameraMatrix = intrinsics[originCamera]->getCameraMatrix();
-	cv::Mat originDistortionCoefficients = intrinsics[originCamera]->getDistortionCoefficients();
-
-	bool foundPose = false;
-	std::vector<int> charucoIds;
-	std::vector<cv::Point2f> charucoCorners;
-	cv::Mat frame = sceneController->getFrame(scene, captureType, originCamera, capturedFrames - 1);
-
-	if (detectCharucoCorners(frame, 4, originCameraMatrix, originDistortionCoefficients, charucoIds, charucoCorners))
+	for (int cameraId = 0; cameraId < capturedCameras.size(); cameraId++)
 	{
-		BOOST_LOG_TRIVIAL(warning) << "Found board in the floor of camera " << originCamera;
+		int originCamera = capturedCameras[cameraId];
+		cv::Mat originCameraMatrix = intrinsics[originCamera]->getCameraMatrix();
+		cv::Mat originDistortionCoefficients = intrinsics[originCamera]->getDistortionCoefficients();
 
-		cv::Mat originRotationVector;
-		cv::Mat originTranslationVector;
-		foundPose = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, originCameraMatrix, originDistortionCoefficients, originRotationVector, originTranslationVector);
+		bool foundPose = false;
+		std::vector<int> charucoIds;
+		std::vector<cv::Point2f> charucoCorners;
+		cv::Mat frame = sceneController->getFrame(scene, captureType, originCamera, capturedFrames - 1);
 
-		if (foundPose)
+		if (detectCharucoCorners(frame, 1, originCameraMatrix, originDistortionCoefficients, charucoIds, charucoCorners))
 		{
-			cv::Mat originRotationMatrix;
-			cv::Rodrigues(originRotationVector, originRotationMatrix);
-			cv::Mat cameraRotation = originRotationMatrix.t();
-			cv::Mat cameraTranslation = (originRotationMatrix.t() * originTranslationVector) * (-1);
+			BOOST_LOG_TRIVIAL(warning) << "Found board in the floor of camera " << originCamera;
 
-			extrinsics[originCamera] = new Extrinsics(cameraTranslation, cameraRotation, intrinsics[originCamera]->getReprojectionError());
-		}		
-	}
+			cv::Mat originRotationVector;
+			cv::Mat originTranslationVector;
+			foundPose = cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, originCameraMatrix, originDistortionCoefficients, originRotationVector, originTranslationVector);
 
-	if (!foundPose)
-	{
-		BOOST_LOG_TRIVIAL(warning) << "Did not find board in the floor of camera " << originCamera;
+			if (foundPose)
+			{
+				cv::Mat originRotationMatrix;
+				cv::Rodrigues(originRotationVector, originRotationMatrix);
+				cv::Mat cameraRotation = originRotationMatrix.t();
+				cv::Mat cameraTranslation = (originRotationMatrix.t() * originTranslationVector) * (-1);
 
-		cv::Mat originTranslationVector = cv::Mat::zeros(3, 1, CV_64F);
-		cv::Mat originRotationVector = cv::Mat::zeros(3, 1, CV_64F);
-		extrinsics[originCamera] = new Extrinsics(originTranslationVector, originRotationVector, intrinsics[originCamera]->getReprojectionError());
+				extrinsics[originCamera] = new Extrinsics(cameraTranslation, cameraRotation, intrinsics[originCamera]->getReprojectionError());
+			}
+		}
+
+		if (!foundPose)
+		{
+			BOOST_LOG_TRIVIAL(warning) << "Did not find board in the floor of camera " << originCamera;
+
+			cv::Mat originTranslationVector = cv::Mat::zeros(3, 1, CV_64F);
+			cv::Mat originRotationVector = cv::Mat::zeros(3, 1, CV_64F);
+			extrinsics[originCamera] = new Extrinsics(originTranslationVector, originRotationVector, intrinsics[originCamera]->getReprojectionError());
+		}
 	}
 
 	#pragma omp parallel for	
@@ -154,6 +165,11 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 		
 		for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber++)
 		{
+			if (totalSamples > maxSamplesExtrinsics)
+			{
+				break;
+			}
+
 			std::vector<int> idsLeft;
 			std::vector<cv::Point2f> cornersLeft;
 			cv::Mat frameLeft = sceneController->getFrame(scene, captureType, cameraLeft, frameNumber);
@@ -202,7 +218,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 				allCornersRight.push_back(finalCornersRight);
 				totalSamples += (int)finalObjects.size();
 
-				if (outputDetections)
+				if (shouldOutputDebugData)
 				{
 					cv::Mat finalFrameLeft = frameLeft.clone();
 					cv::Mat finalFrameRight = frameRight.clone();

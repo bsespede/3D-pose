@@ -21,9 +21,7 @@ public:
 	Packet* getSafeImage();
 	void updateSafeImage();
 private:
-	void cameraLoop(int cameraFps);	
-	int cameraLowFps;
-	int cameraHighFps;
+	void cameraLoop();
 	Capture* capture;
 	Packet* safeImage;
 	OptitrackCamera* optitrackCamera;

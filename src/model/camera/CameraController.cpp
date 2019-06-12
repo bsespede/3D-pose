@@ -2,8 +2,6 @@
 
 CameraController::CameraController(ConfigController* configController)
 {
-	this->cameraHighFps = configController->getCameraHighFps();
-	this->cameraLowFps = configController->getCameraLowFps();
 	this->optitrackCamera = new OptitrackCamera(configController);
 	this->capture = new Capture();
 	this->safeImage = nullptr;
@@ -14,9 +12,7 @@ CameraController::CameraController(ConfigController* configController)
 
 bool CameraController::startCameras(CaptureType captureType)
 {
-	int cameraFps = (captureType == CaptureType::CALIBRATION)? cameraLowFps : cameraHighFps;
-
-	if (optitrackCamera->startCameras(cameraFps))
+	if (optitrackCamera->startCameras())
 	{
 		if (capture != nullptr)
 		{
@@ -26,7 +22,7 @@ bool CameraController::startCameras(CaptureType captureType)
 		capture = new Capture();
 
 		shouldLoopThread = true;
-		std::thread camerasThread = std::thread(&CameraController::cameraLoop, this, cameraFps);
+		std::thread camerasThread = std::thread(&CameraController::cameraLoop, this);
 		camerasThread.detach();
 		return true;
 	}
@@ -34,16 +30,13 @@ bool CameraController::startCameras(CaptureType captureType)
 	return false;
 }
 
-void CameraController::cameraLoop(int cameraFps)
+void CameraController::cameraLoop()
 {
 	bool shouldKeepPacket = true;
 	Packet* currentPacket = nullptr;
 
 	while (shouldLoopThread)
 	{
-		int milisecondsToSleep = (int)(1.0 / cameraFps * 1000);
-		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(milisecondsToSleep);
-
 		if (!shouldKeepPacket)
 		{
 			delete currentPacket;
@@ -73,8 +66,6 @@ void CameraController::cameraLoop(int cameraFps)
 				shouldUpdateSafeImage = false;
 			}
 		}
-
-		std::this_thread::sleep_until(timePoint);
 	}
 }
 

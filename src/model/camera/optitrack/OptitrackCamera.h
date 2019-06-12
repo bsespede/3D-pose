@@ -15,15 +15,14 @@ class OptitrackCamera
 {
 public:
 	OptitrackCamera(ConfigController* configController);
-	bool startCameras(int cameraFps);
+	bool startCameras();
 	void stopCameras();
 	void shutdownCameras();
 	Packet* getPacket();
 private:
-	std::map<int, int> cameraOrder;
-	std::map<int, int> camerasWidth;
-	std::map<int, int> camerasHeight;
+	int cameraFps;
 	int cameraCount;
+	std::map<int, std::pair<int, bool>> cameraData;	
 	CameraLibrary::CameraList list;
 	CameraLibrary::Camera* camera[MAX_CAMERAS];
 	CameraLibrary::cModuleSync* sync;
