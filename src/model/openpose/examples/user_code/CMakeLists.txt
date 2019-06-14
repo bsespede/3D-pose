@@ -1,5 +1,9 @@
 set(USER_CODE_FILES 3D_pose.cpp)
 
+find_package(Boost COMPONENTS system filesystem REQUIRED)
+include_directories(${Boost_INCLUDE_DIRS})
+link_directories(${Boost_LIBRARY_DIRS})
+
 foreach(USER_CODE_FILE ${USER_CODE_FILES})
 
   get_filename_component(SOURCE_NAME ${USER_CODE_FILE} NAME_WE)
@@ -12,7 +16,7 @@ foreach(USER_CODE_FILE ${USER_CODE_FILES})
 
   message(STATUS "Adding Example ${EXE_NAME}")
   add_executable(${EXE_NAME} ${USER_CODE_FILE})
-  target_link_libraries(${EXE_NAME} openpose ${examples_3rdparty_libraries})
+  target_link_libraries(${EXE_NAME} openpose ${examples_3rdparty_libraries} ${Boost_LIBRARIES})
 
   if (WIN32)
     set_property(TARGET ${EXE_NAME} PROPERTY FOLDER "User Code")

@@ -18,6 +18,8 @@
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <time.h>
+#include <stdio.h>
 
 // Custom OpenPose flags
 // Producer
@@ -54,7 +56,7 @@ namespace InputReader3D
 		this->scenePath = scenePath;
 		this->camerasId = std::vector<int>();
 		this->currentFrame = 130; // ROLL BAKEAR
-		this->maxFrames = 0;
+		this->maxFrames = 140; // ROLL BAKEAR
 		readCaptureInfo();
 
 		this->extrinsics = std::map<int, cv::Mat>();
@@ -74,8 +76,6 @@ namespace InputReader3D
 		{
 			this->camerasId.push_back(camera.second.get_value<int>());
 		}
-
-		this->maxFrames = 140; // ROLL BAKEAR
 	}
 
 	void InputPose3D::readCameraParameters()
@@ -137,20 +137,8 @@ namespace InputReader3D
 			cv::Mat rotationMatrix;
 			cv::Rodrigues(rotationVector, rotationMatrix);
 
-			cv::Mat mergedMatrix = cv::Mat(3, 4, CV_64F);
-
-			for (int row = 0; row < 3; row++)
-			{
-				for (int col = 0; col < 3; col++)
-				{
-					mergedMatrix.at<double>(row, col) = rotationMatrix.at<double>(row, col);
-				}
-			}
-
-			for (int row = 0; row < 3; row++)
-			{
-				mergedMatrix.at<double>(row, 3) = translationVector.at<double>(row, 0);
-			}
+			cv::Mat mergedMatrix;
+			cv::hconcat(rotationMatrix, translationVector, mergedMatrix);
 
 			this->extrinsics[cameraNumber] = mergedMatrix;
 		}
@@ -165,11 +153,11 @@ namespace InputReader3D
 	{
 		std::string framePath = scenePath + "/mocap/cam-" + std::to_string(camId) + "/" + std::to_string(currentFrame) + ".png";
 
-		cv::Mat undistorted;
-		cv::Mat distorted = cv::imread(framePath);
-		cv::undistort(distorted, undistorted, intrinsics[camId], distortions[camId]);
+		cv::Mat distortedImage = cv::imread(framePath);
+		//cv::Mat undistortedImage = cv::Mat(distortedImage.rows, distortedImage.cols, distortedImage.type());
+		//cv::undistort(distortedImage, undistortedImage, intrinsics[camId], distortions[camId]);
 
-		return distorted;
+		return distortedImage;
 	}
 
 	cv::Mat InputPose3D::getIntrinsics(int camId)
@@ -201,15 +189,219 @@ namespace InputReader3D
 	{
 		return currentFrame;
 	}
+
+	class OutputPose3D
+	{
+	public:
+		OutputPose3D(std::string& scenePath);
+		void processResults();
+	private:
+		void prepareJoints();
+		std::string getDateString();
+		std::map<int, std::pair<cv::Point3d, bool>> getJoints3D(int frameNumber);
+		std::vector<std::pair<cv::Point3d, cv::Point3d>> getJointsConnections3D(std::map<int, std::pair<cv::Point3d, bool>> joints);
+		std::string scenePath;
+		int framesNumber;
+		std::vector<std::pair<int, int>> jointsConnections;
+	};
+
+	OutputPose3D::OutputPose3D(std::string& scenePath)
+	{
+		std::string capturePath = scenePath + "/mocap/capture.json";
+		boost::property_tree::ptree root;
+		boost::property_tree::read_json(capturePath, root);
+
+		this->scenePath = scenePath;
+		this->framesNumber = 10;
+		this->jointsConnections = std::vector<std::pair<int, int>>();
+
+		prepareJoints();
+	}
+
+	void OutputPose3D::prepareJoints()
+	{
+		jointsConnections.push_back(std::pair<int, int>(4, 3));
+		jointsConnections.push_back(std::pair<int, int>(3, 2));
+		jointsConnections.push_back(std::pair<int, int>(2, 1));
+		jointsConnections.push_back(std::pair<int, int>(7, 6));
+		jointsConnections.push_back(std::pair<int, int>(6, 5));
+		jointsConnections.push_back(std::pair<int, int>(5, 1));
+		jointsConnections.push_back(std::pair<int, int>(17, 15));
+		jointsConnections.push_back(std::pair<int, int>(15, 0));
+		jointsConnections.push_back(std::pair<int, int>(18, 16));
+		jointsConnections.push_back(std::pair<int, int>(16, 0));
+		jointsConnections.push_back(std::pair<int, int>(0, 1));
+		jointsConnections.push_back(std::pair<int, int>(1, 8));
+		jointsConnections.push_back(std::pair<int, int>(23, 22));
+		jointsConnections.push_back(std::pair<int, int>(24, 11));
+		jointsConnections.push_back(std::pair<int, int>(22, 11));
+		jointsConnections.push_back(std::pair<int, int>(11, 10));
+		jointsConnections.push_back(std::pair<int, int>(10, 9));
+		jointsConnections.push_back(std::pair<int, int>(9, 8));
+		jointsConnections.push_back(std::pair<int, int>(20, 19));
+		jointsConnections.push_back(std::pair<int, int>(19, 14));
+		jointsConnections.push_back(std::pair<int, int>(21, 14));
+		jointsConnections.push_back(std::pair<int, int>(14, 13));
+		jointsConnections.push_back(std::pair<int, int>(13, 12));
+		jointsConnections.push_back(std::pair<int, int>(12, 8));
+	}
+
+	void OutputPose3D::processResults()
+	{
+		op::log("Starting to write Pose3D results...", op::Priority::High);
+
+		boost::property_tree::ptree root;
+
+		std::string date = getDateString();
+		root.put("reconstruction.date", date);
+
+		int cameraNumber = 0;
+		boost::property_tree::ptree allFramesNode;
+		for (int frameNumber = 0; frameNumber < framesNumber; frameNumber++)
+		{
+			op::log("Processing frame " + std::to_string(frameNumber) + "...", op::Priority::High);
+			std::map<int, std::pair<cv::Point3d, bool>> joints = getJoints3D(frameNumber);
+
+			boost::property_tree::ptree packetDataNode;
+			boost::property_tree::ptree packetNode;
+
+			packetNode.put("cameraNumber", cameraNumber);
+
+			boost::property_tree::ptree cameraPointsNode;
+			for (std::pair<int, std::pair<cv::Point3d, bool>> jointNode : joints)
+			{
+					int jointNumber = jointNode.first;
+					std::pair<cv::Point3d, bool> jointData = jointNode.second;
+					if (jointData.second)
+					{
+						boost::property_tree::ptree pointNode;
+						pointNode.put("x", jointData.first.x);
+						pointNode.put("y", jointData.first.y);
+						pointNode.put("z", jointData.first.z);
+						cameraPointsNode.push_back(make_pair("", pointNode));
+					}
+			}
+			packetNode.add_child("points", cameraPointsNode);
+
+			boost::property_tree::ptree cameraLinesNode;
+			for (std::pair<cv::Point3d, cv::Point3d> line : getJointsConnections3D(joints))
+			{
+				boost::property_tree::ptree lineNode;
+				lineNode.put("x1", line.first.x);
+				lineNode.put("y1", line.first.y);
+				lineNode.put("z1", line.first.z);
+				lineNode.put("x2", line.second.x);
+				lineNode.put("y2", line.second.y);
+				lineNode.put("z2", line.second.z);
+				cameraLinesNode.push_back(make_pair("", lineNode));
+			}
+			packetNode.add_child("lines", cameraLinesNode);
+			packetDataNode.push_back(make_pair("", packetNode));
+
+			boost::property_tree::ptree frameNode;
+			frameNode.put("frameNumber", frameNumber);
+			frameNode.add_child("frameData", packetDataNode);
+			allFramesNode.push_back(make_pair("", frameNode));
+		}
+
+		root.add_child("reconstruction.frames", allFramesNode);
+
+		std::string reconstructionFile = scenePath + "/reconstruction-mocap.json";
+		boost::property_tree::write_json(reconstructionFile, root);
+
+		op::log("Finishd writing Pose3D results...", op::Priority::High);
+	}
+
+	std::map<int, std::pair<cv::Point3d, bool>> OutputPose3D::getJoints3D(int frameNumber)
+	{
+		std::map<int, std::pair<cv::Point3d, bool>> joints3D = std::map<int, std::pair<cv::Point3d, bool>>();
+
+		try
+		{
+			std::string jointsFile = scenePath + "/results/" + std::to_string(frameNumber) + "_keypoints.json";
+
+			boost::property_tree::ptree root;
+			boost::property_tree::read_json(jointsFile, root);
+
+			for (boost::property_tree::ptree::value_type& peopleNode : root.get_child("people"))
+			{
+				int index = 0;
+				int jointIndex = 0;
+				double point[] = { 0.0, 0.0, 0.0 };
+				for (boost::property_tree::ptree::value_type& keyPointsNode : peopleNode.second.get_child("pose_keypoints_3d"))
+				{
+					if (index == 3)
+					{
+						bool jointExists = keyPointsNode.second.get_value<int>() == 1;
+						cv::Point3d point3D = cv::Point3d(point[0], point[1], point[2]);
+						joints3D[jointIndex] = std::pair<cv::Point3d, bool>(point3D, jointExists);
+
+						index = 0;
+						jointIndex++;
+						continue;
+					}
+					else
+					{
+						point[index] = keyPointsNode.second.get_value<double>();
+						index++;
+					}
+				}
+			}
+
+			return joints3D;
+		}
+		catch (const std::exception & e)
+		{
+			op::error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+			return joints3D;
+		}
+	}
+
+	std::vector<std::pair<cv::Point3d, cv::Point3d>> OutputPose3D::getJointsConnections3D(std::map<int, std::pair<cv::Point3d, bool>> joints)
+	{
+		std::vector<std::pair<cv::Point3d, cv::Point3d>> jointsConnections3D;
+		try
+		{
+			for (std::pair<int, int> jointConnection : jointsConnections)
+			{
+				if (joints[jointConnection.first].second && joints[jointConnection.second].second)
+				{
+					cv::Point3d first = joints[jointConnection.first].first;
+					cv::Point3d second = joints[jointConnection.second].first;
+
+					std::pair<cv::Point3d, cv::Point3d> line = std::pair<cv::Point3d, cv::Point3d>(first, second);
+					jointsConnections3D.push_back(line);
+				}
+			}
+
+			return jointsConnections3D;
+		}
+		catch (const std::exception & e)
+		{
+			op::error(e.what(), __LINE__, __FUNCTION__, __FILE__);
+			return jointsConnections3D;
+		}
+	}
+
+	std::string OutputPose3D::getDateString()
+	{
+		time_t rawTime = time(NULL);
+		char buffer[26];
+		ctime_r(&rawTime, buffer);
+		std::string date = std::string(buffer);
+		date.erase(std::remove(date.begin(), date.end(), '\n'), date.end());
+
+		return date;
+	}
 }
 
 class WUserInput : public op::WorkerProducer<std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>>
 {
 public:
-	WUserInput(std::string& scenePath)
-	{
-		this->mReader = std::shared_ptr<InputReader3D::InputPose3D>(new InputReader3D::InputPose3D(scenePath));
-	}
+		WUserInput(std::string& scenePath)
+		{
+			this->mReader = std::make_shared<InputReader3D::InputPose3D>(scenePath);
+		}
 
     void initializationOnThread() {}
 
@@ -219,17 +411,31 @@ public:
 		{
 			if (!mReader->hasFrames())
 			{
-				op::log("Last frame read and added to queue. Closing program after it is processed.", op::Priority::High);
-				this->stop();
-				return nullptr;
-			}
-			else
-			{
-				std::lock_guard<std::mutex> g(lock);
+				std::lock_guard<std::mutex> g(mLock);
 
 				if (mBlocked.empty())
 				{
-					op::log("Adding frames to queue ... " + std::to_string(mReader->getCurrentFrame()), op::Priority::High);
+					op::log("No more frames and queue is empty. Closing program.", op::Priority::High);
+					this->stop();
+					
+					return nullptr;
+				}
+				else
+				{
+					std::cout << "Popped => Cam:" << datumToProcess->at(0)->subId << " Frame:" << datumToProcess->at(0)->frameNumber << std::endl;
+					auto datumToProcess = mBlocked.front();
+					mBlocked.pop();
+
+					return datumToProcess;
+				}
+			}
+			else
+			{
+				std::lock_guard<std::mutex> g(mLock);
+
+				if (mBlocked.empty())
+				{
+					op::log("Adding new images of frame " + std::to_string(mReader->getCurrentFrame()) + ".", op::Priority::High);
 
 					std::vector<int> camerasId = mReader->getCamerasId();
 
@@ -238,34 +444,35 @@ public:
 						int cameraNumber = camerasId[cameraIndex];
 
 						// Create new datum
-						auto datumsPtr = std::make_shared<std::vector<std::shared_ptr<op::Datum>>>();						
-						datumsPtr->emplace_back();
-
-						auto& datum = datumsPtr->back();
-						datum = std::make_shared<op::Datum>();
+						auto datumsPtr = std::make_shared<std::vector<std::shared_ptr<op::Datum>>>();
+						auto datumPtr = std::make_shared<op::Datum>();
 
 						// Fill datum
-						datum->cvInputData = mReader->getFrame(cameraNumber);
-						datum->cvOutputData = datum->cvInputData;
-						datum->subId = cameraIndex;
-						datum->subIdMax = camerasId.size() - 1;
+						datumPtr->frameNumber = mReader->getCurrentFrame();
 
-						datum->cameraIntrinsics = mReader->getIntrinsics(cameraNumber);
-						datum->cameraExtrinsics = mReader->getExtrinsics(cameraNumber);
-						datum->cameraMatrix = datum->cameraIntrinsics * datum->cameraExtrinsics;
-						
+						datumPtr->cvInputData = mReader->getFrame(cameraNumber);
+						datumPtr->cvOutputData = datumPtr->cvInputData;
+
+						datumPtr->subId = cameraIndex;
+						datumPtr->subIdMax = camerasId.size() - 1;
+
+						datumPtr->cameraIntrinsics = mReader->getIntrinsics(cameraNumber);
+						datumPtr->cameraExtrinsics = mReader->getExtrinsics(cameraNumber);
+						datumPtr->cameraMatrix = datumPtr->cameraIntrinsics * datumPtr->cameraExtrinsics;
+
+						std::cout << "Pushed => Cam:" << cameraNumber << " Frame:" << mReader->getCurrentFrame() << " SubId:" << cameraIndex << " SubIdMax:" << camerasId.size() - 1 << std::endl;
+						datumsPtr->push_back(datumPtr);
 						mBlocked.push(datumsPtr);
 					}
 
 					mReader->nextFrame();
-
-					op::log("Curr frame... " + std::to_string(mReader->getCurrentFrame()), op::Priority::High);
 				}
 
-				auto ret = mBlocked.front();
+				std::cout << "Popped => Cam:" << datumToProcess->at(0)->subId << " Frame:" << datumToProcess->at(0)->frameNumber << std::endl;
+				auto datumToProcess = mBlocked.front();
 				mBlocked.pop();
 
-				return ret;
+				return datumToProcess;
 			}
 		}
 		catch (const std::exception & e)
@@ -274,12 +481,12 @@ public:
 			op::error(e.what(), __LINE__, __FUNCTION__, __FILE__);
 			return nullptr;
 		}
-    }
+  }
 
 private:
 	std::shared_ptr<InputReader3D::InputPose3D> mReader;
 	std::queue<std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>> mBlocked;
-	std::mutex lock;
+	std::mutex mLock;
 };
 
 void configureWrapper(op::Wrapper& opWrapper)
@@ -398,6 +605,10 @@ int tutorialApiCpp()
 
         // Measuring total time
         op::printTime(opTimer, "OpenPose demo successfully finished. Total time: ", " seconds.", op::Priority::High);
+
+				// Dumping results in Pose3D format
+				InputReader3D::OutputPose3D outputWriter(FLAGS_scene_dir);
+				outputWriter.processResults();
 
         // Return
         return 0;
