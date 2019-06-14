@@ -55,8 +55,7 @@ namespace InputReader3D
 	{
 		this->scenePath = scenePath;
 		this->camerasId = std::vector<int>();
-		this->currentFrame = 130; // ROLL BAKEAR
-		this->maxFrames = 140; // ROLL BAKEAR
+		this->currentFrame = 0;
 		readCaptureInfo();
 
 		this->extrinsics = std::map<int, cv::Mat>();
@@ -76,6 +75,8 @@ namespace InputReader3D
 		{
 			this->camerasId.push_back(camera.second.get_value<int>());
 		}
+
+		this->maxFrames = root.get<int>("capture.frames");
 	}
 
 	void InputPose3D::readCameraParameters()
@@ -212,7 +213,7 @@ namespace InputReader3D
 		boost::property_tree::read_json(capturePath, root);
 
 		this->scenePath = scenePath;
-		this->framesNumber = 10;
+		this->framesNumber = root.get<int>("capture.frames");
 		this->jointsConnections = std::vector<std::pair<int, int>>();
 
 		prepareJoints();
@@ -417,15 +418,15 @@ public:
 				{
 					op::log("No more frames and queue is empty. Closing program.", op::Priority::High);
 					this->stop();
-					
+
 					return nullptr;
 				}
 				else
 				{
-					std::cout << "Popped => Cam:" << datumToProcess->at(0)->subId << " Frame:" << datumToProcess->at(0)->frameNumber << std::endl;
 					auto datumToProcess = mBlocked.front();
 					mBlocked.pop();
 
+					std::cout << "Popped => Cam:" << datumToProcess->at(0)->subId << " Frame:" << datumToProcess->at(0)->frameNumber << std::endl;
 					return datumToProcess;
 				}
 			}
@@ -468,10 +469,10 @@ public:
 					mReader->nextFrame();
 				}
 
-				std::cout << "Popped => Cam:" << datumToProcess->at(0)->subId << " Frame:" << datumToProcess->at(0)->frameNumber << std::endl;
 				auto datumToProcess = mBlocked.front();
 				mBlocked.pop();
 
+				std::cout << "Popped => Cam:" << datumToProcess->at(0)->subId << " Frame:" << datumToProcess->at(0)->frameNumber << std::endl;
 				return datumToProcess;
 			}
 		}
