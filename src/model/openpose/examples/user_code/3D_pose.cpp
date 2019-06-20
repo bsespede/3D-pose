@@ -199,7 +199,7 @@ namespace InputReader3D
 	private:
 		void prepareJoints();
 		std::string getDateString();
-		std::map<int, std::pair<cv::Point3d, bool>> getJoints3D(int frameNumber);
+		std::map<int, std::pair<cv::Point3d, bool>> getJoints3D(int cameraNumber, int frameNumber);
 		std::vector<std::pair<cv::Point3d, cv::Point3d>> getJointsConnections3D(std::map<int, std::pair<cv::Point3d, bool>> joints);
 		std::string scenePath;
 		int framesNumber;
@@ -249,60 +249,61 @@ namespace InputReader3D
 
 	void OutputPose3D::processResults()
 	{
-		op::log("Starting to write Pose3D results...", op::Priority::High);
+		op::log("[Pose3D] Starting result processing module...", op::Priority::NoOutput);
 
 		boost::property_tree::ptree root;
 
 		std::string date = getDateString();
 		root.put("reconstruction.date", date);
 
-		int cameraNumber = 0;
 		boost::property_tree::ptree allFramesNode;
 		for (int frameNumber = 0; frameNumber < framesNumber; frameNumber++)
 		{
-			op::log("Processing frame " + std::to_string(frameNumber) + "...", op::Priority::High);
-			std::map<int, std::pair<cv::Point3d, bool>> joints = getJoints3D(frameNumber);
-
-			boost::property_tree::ptree packetDataNode;
-			boost::property_tree::ptree packetNode;
-
-			packetNode.put("cameraNumber", cameraNumber);
-
-			boost::property_tree::ptree cameraPointsNode;
-			for (std::pair<int, std::pair<cv::Point3d, bool>> jointNode : joints)
+			for (int cameraNumber = 0; cameraNumber < 8; cameraNumber++)
 			{
-					int jointNumber = jointNode.first;
-					std::pair<cv::Point3d, bool> jointData = jointNode.second;
-					if (jointData.second)
-					{
-						boost::property_tree::ptree pointNode;
-						pointNode.put("x", jointData.first.x);
-						pointNode.put("y", jointData.first.y);
-						pointNode.put("z", jointData.first.z);
-						cameraPointsNode.push_back(make_pair("", pointNode));
-					}
-			}
-			packetNode.add_child("points", cameraPointsNode);
+				std::map<int, std::pair<cv::Point3d, bool>> joints = getJoints3D(cameraNumber, frameNumber);
 
-			boost::property_tree::ptree cameraLinesNode;
-			for (std::pair<cv::Point3d, cv::Point3d> line : getJointsConnections3D(joints))
-			{
-				boost::property_tree::ptree lineNode;
-				lineNode.put("x1", line.first.x);
-				lineNode.put("y1", line.first.y);
-				lineNode.put("z1", line.first.z);
-				lineNode.put("x2", line.second.x);
-				lineNode.put("y2", line.second.y);
-				lineNode.put("z2", line.second.z);
-				cameraLinesNode.push_back(make_pair("", lineNode));
-			}
-			packetNode.add_child("lines", cameraLinesNode);
-			packetDataNode.push_back(make_pair("", packetNode));
+				boost::property_tree::ptree packetDataNode;
+				boost::property_tree::ptree packetNode;
 
-			boost::property_tree::ptree frameNode;
-			frameNode.put("frameNumber", frameNumber);
-			frameNode.add_child("frameData", packetDataNode);
-			allFramesNode.push_back(make_pair("", frameNode));
+				packetNode.put("cameraNumber", cameraNumber);
+
+				boost::property_tree::ptree cameraPointsNode;
+				for (std::pair<int, std::pair<cv::Point3d, bool>> jointNode : joints)
+				{
+						int jointNumber = jointNode.first;
+						std::pair<cv::Point3d, bool> jointData = jointNode.second;
+						if (jointData.second)
+						{
+							boost::property_tree::ptree pointNode;
+							pointNode.put("x", jointData.first.x);
+							pointNode.put("y", jointData.first.y);
+							pointNode.put("z", jointData.first.z);
+							cameraPointsNode.push_back(make_pair("", pointNode));
+						}
+				}
+				packetNode.add_child("points", cameraPointsNode);
+
+				boost::property_tree::ptree cameraLinesNode;
+				for (std::pair<cv::Point3d, cv::Point3d> line : getJointsConnections3D(joints))
+				{
+					boost::property_tree::ptree lineNode;
+					lineNode.put("x1", line.first.x);
+					lineNode.put("y1", line.first.y);
+					lineNode.put("z1", line.first.z);
+					lineNode.put("x2", line.second.x);
+					lineNode.put("y2", line.second.y);
+					lineNode.put("z2", line.second.z);
+					cameraLinesNode.push_back(make_pair("", lineNode));
+				}
+				packetNode.add_child("lines", cameraLinesNode);
+				packetDataNode.push_back(make_pair("", packetNode));
+
+				boost::property_tree::ptree frameNode;
+				frameNode.put("frameNumber", frameNumber);
+				frameNode.add_child("frameData", packetDataNode);
+				allFramesNode.push_back(make_pair("", frameNode));
+			}
 		}
 
 		root.add_child("reconstruction.frames", allFramesNode);
@@ -310,16 +311,17 @@ namespace InputReader3D
 		std::string reconstructionFile = scenePath + "/reconstruction-mocap.json";
 		boost::property_tree::write_json(reconstructionFile, root);
 
-		op::log("Finishd writing Pose3D results...", op::Priority::High);
+		op::log("[Pose3D] Finished result processing module...", op::Priority::NoOutput);
 	}
 
-	std::map<int, std::pair<cv::Point3d, bool>> OutputPose3D::getJoints3D(int frameNumber)
+	std::map<int, std::pair<cv::Point3d, bool>> OutputPose3D::getJoints3D(int cameraNumber, int frameNumber)
 	{
 		std::map<int, std::pair<cv::Point3d, bool>> joints3D = std::map<int, std::pair<cv::Point3d, bool>>();
 
 		try
 		{
-			std::string jointsFile = scenePath + "/results/" + std::to_string(frameNumber) + "_keypoints.json";
+			std::string cameraNumberString = (cameraNumber > 0)? "_" + std::to_string(cameraNumber): "";
+			std::string jointsFile = scenePath + "/results/" + std::to_string(frameNumber) + "_keypoints" + cameraNumberString + ".json";
 
 			boost::property_tree::ptree root;
 			boost::property_tree::read_json(jointsFile, root);
@@ -416,7 +418,7 @@ public:
 
 				if (mBlocked.empty())
 				{
-					op::log("No more frames and queue is empty. Closing program.", op::Priority::High);
+					op::log("[Pose3D] Frame processing queue is empty...", op::Priority::NoOutput);
 					this->stop();
 
 					return nullptr;
@@ -425,8 +427,6 @@ public:
 				{
 					auto datumToProcess = mBlocked.front();
 					mBlocked.pop();
-
-					std::cout << "Popped => Cam:" << datumToProcess->at(0)->subId << " Frame:" << datumToProcess->at(0)->frameNumber << std::endl;
 					return datumToProcess;
 				}
 			}
@@ -436,32 +436,25 @@ public:
 
 				if (mBlocked.empty())
 				{
-					op::log("Adding new images of frame " + std::to_string(mReader->getCurrentFrame()) + ".", op::Priority::High);
-
+					op::log("[Pose3D] Processing frame " + std::to_string(mReader->getCurrentFrame()) + "...", op::Priority::NoOutput);
 					std::vector<int> camerasId = mReader->getCamerasId();
 
 					for (int cameraIndex = 0; cameraIndex < camerasId.size(); cameraIndex++)
 					{
 						int cameraNumber = camerasId[cameraIndex];
-
-						// Create new datum
 						auto datumsPtr = std::make_shared<std::vector<std::shared_ptr<op::Datum>>>();
 						auto datumPtr = std::make_shared<op::Datum>();
 
-						// Fill datum
 						datumPtr->frameNumber = mReader->getCurrentFrame();
-
+						datumPtr->name = std::to_string(datumPtr->frameNumber);
 						datumPtr->cvInputData = mReader->getFrame(cameraNumber);
 						datumPtr->cvOutputData = datumPtr->cvInputData;
-
 						datumPtr->subId = cameraIndex;
 						datumPtr->subIdMax = camerasId.size() - 1;
-
 						datumPtr->cameraIntrinsics = mReader->getIntrinsics(cameraNumber);
 						datumPtr->cameraExtrinsics = mReader->getExtrinsics(cameraNumber);
 						datumPtr->cameraMatrix = datumPtr->cameraIntrinsics * datumPtr->cameraExtrinsics;
 
-						std::cout << "Pushed => Cam:" << cameraNumber << " Frame:" << mReader->getCurrentFrame() << " SubId:" << cameraIndex << " SubIdMax:" << camerasId.size() - 1 << std::endl;
 						datumsPtr->push_back(datumPtr);
 						mBlocked.push(datumsPtr);
 					}
@@ -471,8 +464,6 @@ public:
 
 				auto datumToProcess = mBlocked.front();
 				mBlocked.pop();
-
-				std::cout << "Popped => Cam:" << datumToProcess->at(0)->subId << " Frame:" << datumToProcess->at(0)->frameNumber << std::endl;
 				return datumToProcess;
 			}
 		}
@@ -592,20 +583,20 @@ int tutorialApiCpp()
 {
     try
     {
-        op::log("Starting OpenPose demo...", op::Priority::High);
+        op::log("[Pose3D] Starting pose estimation module...", op::Priority::NoOutput);
         const auto opTimer = op::getTimerInit();
 
         // OpenPose wrapper
-        op::log("Configuring OpenPose...", op::Priority::High);
+        op::log("[Pose3D] Configuring pose estimation module...", op::Priority::NoOutput);
         op::Wrapper opWrapper;
         configureWrapper(opWrapper);
 
         // Start, run, and stop processing - exec() blocks this thread until OpenPose wrapper has finished
-        op::log("Starting thread(s)...", op::Priority::High);
+        op::log("[Pose3D] Executing pose estimation module...", op::Priority::NoOutput);
         opWrapper.exec();
 
         // Measuring total time
-        op::printTime(opTimer, "OpenPose demo successfully finished. Total time: ", " seconds.", op::Priority::High);
+        op::printTime(opTimer, "[Pose3D] Computed poses in ", " seconds...", op::Priority::NoOutput);
 
 				// Dumping results in Pose3D format
 				InputReader3D::OutputPose3D outputWriter(FLAGS_scene_dir);
