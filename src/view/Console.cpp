@@ -328,9 +328,6 @@ void Console::showCameraPreviewLoop()
 {
 	while (showPreviewUI)
 	{
-		int milisecondsToSleep = (int)(1.0 / renderer2D->getGuiFps() * 1000);
-		std::chrono::system_clock::time_point timePoint = std::chrono::system_clock::now() + std::chrono::milliseconds(milisecondsToSleep);
-
 		Packet* safeImage = appController->getSafeImage();
 
 		if (safeImage != nullptr)
@@ -338,9 +335,7 @@ void Console::showCameraPreviewLoop()
 			renderer2D->render(safeImage);
 		}	
 
-		appController->updateSafeImage();	
-
-		std::this_thread::sleep_until(timePoint);
+		appController->updateSafeImage();
 	}
 }
 
