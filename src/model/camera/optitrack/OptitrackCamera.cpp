@@ -12,6 +12,7 @@ bool OptitrackCamera::startCameras()
 	CameraLibrary::CameraManager::X();
 	CameraLibrary::CameraManager::X().WaitForInitialization();
 	cameraCount = 0;
+	cameraCountActive = 0;
 
 	for (int i = 0; i < list.Count(); i++)
 	{
@@ -61,20 +62,18 @@ bool OptitrackCamera::startCameras()
 		int cameraId = cameraData[camera[i]->Serial()].first;
 		bool cameraCapture = cameraData[camera[i]->Serial()].second;
 		camera[i]->SetNumeric(true, cameraId);
-		camera[i]->SetVideoType(Core::eVideoMode::GrayscaleMode);
+		camera[i]->SetVideoType(Core::eVideoMode::MJPEGMode);
+		camera[i]->SetMJPEGQuality(100);
 		camera[i]->SetFrameRate(cameraFps);
 		camera[i]->SetLateDecompression(false);
 
 		if (cameraCapture)
 		{
-			sync->AddCamera(camera[i]);			
-			camera[i]->Start();
+			cameraCountActive++;
+			sync->AddCamera(camera[i]);
 		}
-		else
-		{
-			camera[i]->SetRinglightEnabledWhileStopped(true);
-			camera[i]->Stop();
-		}		
+		
+		camera[i]->Start();
 	}
 
 	return true;
@@ -86,7 +85,7 @@ Packet* OptitrackCamera::getPacket()
 	
 	if (frameGroup)
 	{
-		if (frameGroup->Count() != cameraCount)
+		if (frameGroup->Count() != cameraCountActive)
 		{			
 			frameGroup->Release();
 			BOOST_LOG_TRIVIAL(warning) << "Dropped unsynced frame";

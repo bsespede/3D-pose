@@ -52,7 +52,9 @@ bool CalibrationController::calculateIntrinsics(Scene scene, CaptureType capture
 	#pragma omp parallel for
 	for (int cameraIndex = 0; cameraIndex < capturedCameras.size(); cameraIndex++)
 	{
+		
 		int cameraNumber = capturedCameras[cameraIndex];
+		int usableFrameNumber = 0;
 		int totalSamples = 0;
 
 		BOOST_LOG_TRIVIAL(warning) << "Calculating intrincs camera " << cameraNumber;
@@ -60,23 +62,24 @@ bool CalibrationController::calculateIntrinsics(Scene scene, CaptureType capture
 		cv::Size frameSize = sceneController->getFrame(scene, captureType, cameraNumber, 0).size();
 		std::vector<std::vector<int>> allCharucoIds;
 		std::vector<std::vector<cv::Point2f>> allCharucoCorners;
-		
+
 		for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber++)
 		{
-			if (totalSamples > maxSamplesIntrinsics)
-			{
-				break;
-			}
-
 			std::vector<int> charucoIds = std::vector<int>();
 			std::vector<cv::Point2f> charucoCorners = std::vector<cv::Point2f>();
 			cv::Mat frame = sceneController->getFrame(scene, captureType, cameraNumber, frameNumber);
 			
 			if (detectCharucoCorners(frame, 5, charucoIds, charucoCorners))
 			{
-				allCharucoIds.push_back(charucoIds);
-				allCharucoCorners.push_back(charucoCorners);	
-				totalSamples += (int)allCharucoCorners.size();
+				if (usableFrameNumber == 10)
+				{
+					allCharucoIds.push_back(charucoIds);
+					allCharucoCorners.push_back(charucoCorners);
+					totalSamples += (int)allCharucoCorners.size();
+					usableFrameNumber = 0;
+				}
+
+				usableFrameNumber++;
 			}			
 		}
 
@@ -149,6 +152,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 	{
 		int cameraLeft = capturedCameras[cameraIndex - 1];
 		int cameraRight = capturedCameras[cameraIndex];
+		int usableFrameNumber = 0;
 		int totalSamples = 0;		
 
 		BOOST_LOG_TRIVIAL(warning) << "Calculating extrinsics pair " << cameraLeft << "->" << cameraRight;
@@ -163,7 +167,7 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 		std::vector<std::vector<cv::Point2f>> allCornersLeft;
 		std::vector<std::vector<cv::Point2f>> allCornersRight;
 		
-		for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber++)
+		for (int frameNumber = 0; frameNumber < capturedFrames; frameNumber += 5)
 		{
 			if (totalSamples > maxSamplesExtrinsics)
 			{
@@ -213,20 +217,26 @@ bool CalibrationController::calculateExtrinsics(Scene scene, CaptureType capture
 
 			if (finalObjects.size() >= 4) 
 			{
-				allObjects.push_back(finalObjects);
-				allCornersLeft.push_back(finalCornersLeft);
-				allCornersRight.push_back(finalCornersRight);
-				totalSamples += (int)finalObjects.size();
-
-				if (shouldOutputDebugData)
+				if (usableFrameNumber == 10)
 				{
-					cv::Mat finalFrameLeft = frameLeft.clone();
-					cv::Mat finalFrameRight = frameRight.clone();
-					cv::aruco::drawDetectedCornersCharuco(finalFrameLeft, finalCornersLeft, finalIds, cv::Scalar(255, 255, 255));
-					cv::aruco::drawDetectedCornersCharuco(finalFrameRight, finalCornersRight, finalIds, cv::Scalar(255, 255, 255));
-					sceneController->saveDetections(finalFrameLeft, scene, captureType, cameraLeft, frameNumber, CalibrationType::EXTRINSICS);
-					sceneController->saveDetections(finalFrameRight, scene, captureType, cameraRight, frameNumber, CalibrationType::EXTRINSICS);
+					allObjects.push_back(finalObjects);
+					allCornersLeft.push_back(finalCornersLeft);
+					allCornersRight.push_back(finalCornersRight);
+					totalSamples += (int)finalObjects.size();
+					usableFrameNumber = 0;
+
+					if (shouldOutputDebugData)
+					{
+						cv::Mat finalFrameLeft = frameLeft.clone();
+						cv::Mat finalFrameRight = frameRight.clone();
+						cv::aruco::drawDetectedCornersCharuco(finalFrameLeft, finalCornersLeft, finalIds, cv::Scalar(255, 255, 255));
+						cv::aruco::drawDetectedCornersCharuco(finalFrameRight, finalCornersRight, finalIds, cv::Scalar(255, 255, 255));
+						sceneController->saveDetections(finalFrameLeft, scene, captureType, cameraLeft, frameNumber, CalibrationType::EXTRINSICS);
+						sceneController->saveDetections(finalFrameRight, scene, captureType, cameraRight, frameNumber, CalibrationType::EXTRINSICS);
+					}
 				}
+
+				usableFrameNumber++;				
 			}
 		}
 

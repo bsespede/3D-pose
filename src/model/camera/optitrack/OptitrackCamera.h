@@ -22,6 +22,7 @@ public:
 private:
 	int cameraFps;
 	int cameraCount;
+	int cameraCountActive;
 	std::map<int, std::pair<int, bool>> cameraData;	
 	CameraLibrary::CameraList list;
 	CameraLibrary::Camera* camera[MAX_CAMERAS];
